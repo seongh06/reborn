@@ -2,6 +2,7 @@ rootProject.name = "reborn"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             mavenContent {
@@ -25,10 +26,26 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        maven("https://devrepo.kakao.com/nexus/content/groups/public/")
     }
 }
 
-include(":app:androidApp")
-include(":app:shared")
-include(":core")
+include(":composeApp")
 include(":server")
+
+include(":core:model")
+include(":core:network")
+include(":core:data")
+include(":core:domain")
+include(":core:designsystem")
+include(":core:ui")
+include(":core:navigation")
+include(":core:common")
+
+include(":feature:intro")
+include(":feature:aerometer")
+include(":feature:admin:home")
+include(":feature:admin:adjust")
+include(":feature:admin:feedback")
+include(":feature:admin:data")
+include(":feature:admin:setting")

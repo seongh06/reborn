@@ -1,23 +1,77 @@
 [versions]
-agp = "9.0.1"
-android-compileSdk = "36"
-android-minSdk = "24"
-android-targetSdk = "36"
-androidx-activity = "1.13.0"
-androidx-appcompat = "1.7.1"
-androidx-core = "1.18.0"
-androidx-espresso = "3.7.0"
-androidx-lifecycle = "2.11.0-beta01"
-androidx-testExt = "1.3.0"
-composeMultiplatform = "1.11.0"
-junit = "4.13.2"
-kotlin = "2.3.21"
 logback = "1.5.32"
 springBoot = "3.4.5"
 springDependencyManagement = "1.1.7"
-material3 = "1.11.0-alpha07"
+agp = "8.11.2"
+android-compileSdk = "36"
+android-minSdk = "28"
+android-targetSdk = "36"
+kotlinx-coroutines = "1.9.0"
+androidx-activity = "1.12.2"
+androidx-appcompat = "1.7.1"
+androidx-core = "1.17.0"
+androidx-espresso = "3.7.0"
+androidx-lifecycle = "2.9.6"
+androidx-testExt = "1.3.0"
+composeMultiplatform = "1.10.0"
+junit = "4.13.2"
+kotlin = "2.3.0"
+material3 = "1.10.0-alpha05"
+kotlinStdlib = "2.3.0"
+runner = "1.5.2"
+core = "1.5.0"
+
+androidx-navigation = "2.9.2" #2.9.7 오류 발생
+
+# https://github.com/detekt/detekt
+detekt = "1.23.7"
+
+#Koin
+koin = "4.0.0"
+koinComposeMultiplatform = "1.2.0-Beta4" #CMP용
+
+#Serialization
+kotlinx-serialization = "1.7.3"
+
+#Coil 이미지 로딩 라이브러리
+coil = "3.4.0"
+activityKtx = "1.12.4"
+
+#Moko 권한 허용 라이브러리
+moko-permissions = "0.20.1"
+
+#ktor
+ktor = "3.4.0"
+
+#https://github.com/gmazzo/gradle-buildconfig-plugin
+buildconfig="6.0.9"
+
+androidx-datastore = "1.1.1"
+androidx-datastore-preferences = "1.2.0"
+
+#precompose
+precompose="1.5.8"
+firebaseCrashlyticsBuildtools = "3.0.6"
+
+#kakao
+kakao = "2.23.2"
+datastoreCore = "1.2.1"
+
+#reorderable (이미지 드로그앤 드롭 구현)
+reorderable = "3.0.0"
+media3Exoplayer = "1.10.0"
+media3Ui = "1.10.0"
+
+#oss
+playServicesOssLicenses = "17.5.1"
+oss-plugin = "0.12.0"
+
 
 [libraries]
+
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -26,7 +80,7 @@ androidx-testExt-junit = { module = "androidx.test.ext:junit", version.ref = "an
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
-compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
+compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
@@ -35,19 +89,99 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
-logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinStdlib" }
+androidx-runner = { group = "androidx.test", name = "runner", version.ref = "runner" }
+androidx-core = { group = "androidx.test", name = "core", version.ref = "core" }
+compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+
+##plugin
+verify-detektPlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+
+##PreCompose
+precompose = { group = "moe.tlaster", name = "precompose", version.ref = "precompose" }
+precompose-viewmodel = { group = "moe.tlaster", name = "precompose-viewmodel", version.ref = "precompose" }
+precompose-koin = { group = "moe.tlaster", name = "precompose-koin", version.ref = "precompose" }
+
+##koin
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koinComposeMultiplatform" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koinComposeMultiplatform" }
+
+#Serialization
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+#navigation
+androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
+
+#coil
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-ktor = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", version.ref = "coil" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
+
+#moko
+moko-permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "moko-permissions" }
+
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "androidx-datastore-preferences" }
+androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "androidx-datastore" }
+
+# Ktor
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-engine = { module = "io.ktor:ktor-client-engine", version.ref = "ktor" }
+ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlyticsBuildtools" }
+
+#kakao
+kakao-sdk-user = { group = "com.kakao.sdk", name = "v2-user", version.ref = "kakao" }
+
+#reorderable
+compose-reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3Exoplayer" }
+androidx-media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3Ui" }
+play-services-oss-licenses = { group = "com.google.android.gms", name = "play-services-oss-licenses", version.ref = "playServicesOssLicenses" }
+
+# Spring Boot (server module)
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
-kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
 
 [plugins]
-androidApplication = { id = "com.android.application", version.ref = "agp" }
-androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+androidLint = { id = "com.android.lint", version.ref = "agp" }
+
+#Serialization
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+
+buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
+
+kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+
+#SpringBoot
 kotlinSpring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 springBoot = { id = "org.springframework.boot", version.ref = "springBoot" }
 springDependencyManagement = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+
+
+## precompiled plugins
+reborn-application = { id = "reborn.application", version = "unspecified" }
+reborn-compose = { id = "reborn.compose", version = "unspecified" }
+reborn-feature = { id = "reborn.feature", version = "unspecified" }
+reborn-library = { id = "reborn.library", version = "unspecified" }
+
+oss = { id = "com.google.android.gms.oss-licenses-plugin", version.ref = "oss-plugin" }
