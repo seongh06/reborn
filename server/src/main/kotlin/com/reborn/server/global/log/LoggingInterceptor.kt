@@ -27,8 +27,13 @@ class LoggingInterceptor : HandlerInterceptor {
         handler: Any,
         ex: Exception?,
     ) {
-        val elapsed = System.currentTimeMillis() - (request.getAttribute(START_TIME_ATTR) as? Long ?: 0L)
-        log.info("<<< {} {} {} ({}ms)", request.method, request.requestURI, response.status, elapsed)
+        val startTime = request.getAttribute(START_TIME_ATTR) as? Long
+        val elapsed = if (startTime != null) System.currentTimeMillis() - startTime else -1L
+        if (ex != null) {
+            log.error("<<< {} {} {} ({}ms)", request.method, request.requestURI, response.status, elapsed, ex)
+        } else {
+            log.info("<<< {} {} {} ({}ms)", request.method, request.requestURI, response.status, elapsed)
+        }
     }
 
     companion object {
