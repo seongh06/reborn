@@ -5,12 +5,9 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.MDC
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
-@Component
 class JwtFilter(
     private val jwtProvider: JwtProvider,
 ) : OncePerRequestFilter() {
@@ -21,17 +18,18 @@ class JwtFilter(
         filterChain: FilterChain,
     ) {
         val token = resolveToken(request)
-        if (token != null && jwtProvider.validate(token)) {
-            val userId = jwtProvider.getUserId(token)
-            MDC.put(USER_ID_MDC_KEY, userId.toString())
-            SecurityContextHolder.getContext().authentication =
-                UsernamePasswordAuthenticationToken(userId, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+        if (token != null) {
+            val userId = jwtProvider.parseClaims(token)?.subject?.toLongOrNull()
+            if (userId != null) {
+                MDC.put(USER_ID_MDC_KEY, userId.toString())
+                SecurityContextHolder.getContext().authentication =
+                    UsernamePasswordAuthenticationToken(userId, null, emptyList())
+            }
         }
         try {
             filterChain.doFilter(request, response)
         } finally {
             MDC.remove(USER_ID_MDC_KEY)
-            SecurityContextHolder.clearContext()
         }
     }
 
