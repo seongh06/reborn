@@ -11,6 +11,7 @@ group = "com.reborn.server"
 version = "1.0.0"
 
 dependencies {
+    implementation(platform(libs.aws.sdk.bom))
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.data.jpa)
@@ -19,6 +20,7 @@ dependencies {
     implementation(libs.kotlin.reflect)
     implementation(libs.springdoc.openapi.webmvc)
     implementation(libs.jjwt.api)
+    implementation(libs.aws.sdk.s3)
     runtimeOnly(libs.jjwt.impl)
     runtimeOnly(libs.jjwt.jackson)
     runtimeOnly(libs.mysql.connector.j)
