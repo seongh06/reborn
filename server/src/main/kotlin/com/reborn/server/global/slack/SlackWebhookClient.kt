@@ -21,7 +21,7 @@ class SlackWebhookClient(
         .readTimeout(Duration.ofSeconds(3))
         .build()
 
-    @Async(AsyncConfig.ASYNC_EXECUTOR)
+    @Async(AsyncConfig.SLACK_EXECUTOR)
     fun send(message: String) {
         if (webhookUrl.isBlank()) return
         runCatching {

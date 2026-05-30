@@ -17,6 +17,11 @@ class S3Config(
     @Value("\${cloud.aws.region.static}") private val region: String,
 ) {
 
+    init {
+        require(accessKey.isNotBlank()) { "cloud.aws.credentials.access-key must not be blank" }
+        require(secretKey.isNotBlank()) { "cloud.aws.credentials.secret-key must not be blank" }
+    }
+
     @Bean
     fun s3Client(): S3Client = S3Client.builder()
         .region(Region.of(region))

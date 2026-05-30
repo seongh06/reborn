@@ -4,6 +4,7 @@ import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.model.ErrorResponse
 import com.reborn.server.global.slack.SlackWebhookClient
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.HttpRequestMethodNotSupportedException
@@ -44,7 +45,13 @@ class GlobalExceptionHandler(
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception): ResponseEntity<ErrorResponse> {
         log.error("Unhandled exception", e)
-        slackWebhookClient.send("🚨 *[ReBorn] 서버 오류 발생*\n```${e::class.simpleName}: ${e.message}```")
+        val requestId = MDC.get("requestId") ?: "unknown"
+        slackWebhookClient.send(
+            "🚨 *[ReBorn] 서버 오류 발생*\n" +
+                "• 타입: `${e::class.simpleName}`\n" +
+                "• RequestId: `$requestId`\n" +
+                "• 상세 내용은 서버 로그를 확인하세요",
+        )
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ErrorResponse.of(CommonErrorCode.INTERNAL_SERVER_ERROR))

@@ -8,7 +8,6 @@ import org.springframework.web.multipart.MultipartFile
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
-import software.amazon.awssdk.services.s3.model.ObjectCannedACL
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.util.UUID
 
@@ -23,7 +22,13 @@ class S3Uploader(
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun upload(file: MultipartFile, directory: String = "uploads"): String {
-        val key = "$directory/${UUID.randomUUID()}-${file.originalFilename}"
+        val extension = file.originalFilename
+            ?.substringAfterLast('.', "")
+            ?.takeIf { it.matches(SAFE_EXTENSION_PATTERN) }
+            ?.let { ".$it" }
+            ?: ""
+        val key = "$directory/${UUID.randomUUID()}$extension"
+
         s3Client.putObject(
             PutObjectRequest.builder()
                 .bucket(bucket)
@@ -45,5 +50,9 @@ class S3Uploader(
                 .build(),
         )
         log.info("S3 delete success: {}", key)
+    }
+
+    companion object {
+        private val SAFE_EXTENSION_PATTERN = Regex("^[a-zA-Z0-9]{1,10}$")
     }
 }
