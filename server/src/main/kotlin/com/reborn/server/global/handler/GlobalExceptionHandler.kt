@@ -2,6 +2,7 @@ package com.reborn.server.global.handler
 
 import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.model.ErrorResponse
+import com.reborn.server.global.slack.SlackWebhookClient
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -11,7 +12,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
-class GlobalExceptionHandler {
+class GlobalExceptionHandler(
+    private val slackWebhookClient: SlackWebhookClient,
+) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -41,6 +44,7 @@ class GlobalExceptionHandler {
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception): ResponseEntity<ErrorResponse> {
         log.error("Unhandled exception", e)
+        slackWebhookClient.send("🚨 *[ReBorn] 서버 오류 발생*\n```${e::class.simpleName}: ${e.message}```")
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ErrorResponse.of(CommonErrorCode.INTERNAL_SERVER_ERROR))

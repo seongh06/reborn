@@ -2,6 +2,7 @@
 logback = "1.5.32"
 springdoc = "2.8.3"
 jjwt = "0.12.6"
+awssdk = "2.28.3"
 springBoot = "3.4.5"
 springDependencyManagement = "1.1.7"
 agp = "8.11.2"
@@ -165,6 +166,8 @@ jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
 mysql-connector-j = { module = "com.mysql:mysql-connector-j" }
+aws-sdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "awssdk" }
+aws-sdk-s3 = { module = "software.amazon.awssdk:s3" }
 
 
 [plugins]
