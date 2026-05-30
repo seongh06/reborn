@@ -1,5 +1,6 @@
 [versions]
 logback = "1.5.32"
+springdoc = "2.8.3"
 springBoot = "3.4.5"
 springDependencyManagement = "1.1.7"
 agp = "8.11.2"
@@ -155,6 +156,7 @@ spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-start
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+springdoc-openapi-webmvc = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 
 
 [plugins]
