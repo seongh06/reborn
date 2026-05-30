@@ -1,5 +1,8 @@
 [versions]
 logback = "1.5.32"
+springdoc = "2.8.3"
+jjwt = "0.12.6"
+awssdk = "2.28.3"
 springBoot = "3.4.5"
 springDependencyManagement = "1.1.7"
 agp = "8.11.2"
@@ -155,6 +158,16 @@ spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-start
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+springdoc-openapi-webmvc = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
+jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
+jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
+mysql-connector-j = { module = "com.mysql:mysql-connector-j" }
+aws-sdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "awssdk" }
+aws-sdk-s3 = { module = "software.amazon.awssdk:s3" }
 
 
 [plugins]

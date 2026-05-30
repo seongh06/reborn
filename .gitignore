@@ -40,5 +40,4 @@ captures
 node_modules/
 
 # ── Claude Code ───────────────────────
-.claude/
-CLAUDE.md
+.claude/settings.local.json
