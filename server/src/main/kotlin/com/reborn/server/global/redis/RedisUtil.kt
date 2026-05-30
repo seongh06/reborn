@@ -15,11 +15,15 @@ class RedisUtil(
         redisTemplate.opsForValue().set(key, value, ttl)
 
     fun delete(key: String): Boolean =
-        redisTemplate.delete(key)
+        redisTemplate.delete(key) ?: false
 
     fun exists(key: String): Boolean =
         redisTemplate.hasKey(key) ?: false
 
+    /**
+     * 키의 TTL을 갱신한다.
+     * @return true = TTL 갱신 성공, false = 키 없음 또는 연산 실패
+     */
     fun expire(key: String, ttl: Duration): Boolean =
         redisTemplate.expire(key, ttl) ?: false
 }

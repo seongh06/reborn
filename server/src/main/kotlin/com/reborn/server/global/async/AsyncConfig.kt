@@ -1,5 +1,6 @@
 package com.reborn.server.global.async
 
+import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -8,6 +9,7 @@ import org.springframework.scheduling.annotation.AsyncConfigurer
 import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Executor
+import java.util.concurrent.ThreadPoolExecutor
 
 @Configuration
 @EnableAsync
@@ -21,6 +23,7 @@ class AsyncConfig : AsyncConfigurer {
             queueCapacity = QUEUE_CAPACITY
             setThreadNamePrefix("async-")
             setTaskDecorator(MdcTaskDecorator())
+            setRejectedExecutionHandler(ThreadPoolExecutor.CallerRunsPolicy())
             initialize()
         }
 
@@ -33,12 +36,19 @@ class AsyncConfig : AsyncConfigurer {
 }
 
 private class MdcTaskDecorator : TaskDecorator {
+
+    private val log = LoggerFactory.getLogger(MdcTaskDecorator::class.java)
+
     override fun decorate(runnable: Runnable): Runnable {
         val contextMap = MDC.getCopyOfContextMap().orEmpty()
         return Runnable {
             try {
+                MDC.clear()
                 if (contextMap.isNotEmpty()) MDC.setContextMap(contextMap)
                 runnable.run()
+            } catch (e: Exception) {
+                log.error("Async task failed", e)
+                throw e
             } finally {
                 MDC.clear()
             }
