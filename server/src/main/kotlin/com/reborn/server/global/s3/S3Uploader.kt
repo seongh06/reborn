@@ -11,6 +11,11 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.util.UUID
 
+data class S3UploadResponse(
+    val key: String,
+    val url: String
+)
+
 @Component
 @ConditionalOnBean(S3Client::class)
 class S3Uploader(
@@ -21,13 +26,15 @@ class S3Uploader(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun upload(file: MultipartFile, directory: String = "uploads"): String {
+    fun upload(file: MultipartFile, directory: String = "uploads"): S3UploadResponse {
         val extension = file.originalFilename
             ?.substringAfterLast('.', "")
             ?.takeIf { it.matches(SAFE_EXTENSION_PATTERN) }
             ?.let { ".$it" }
             ?: ""
+
         val key = "$directory/${UUID.randomUUID()}$extension"
+        val url = "https://$bucket.s3.$region.amazonaws.com/$key"
 
         s3Client.putObject(
             PutObjectRequest.builder()
@@ -38,18 +45,24 @@ class S3Uploader(
                 .build(),
             RequestBody.fromInputStream(file.inputStream, file.size),
         )
-        log.info("S3 upload success: {}", key)
-        return "https://$bucket.s3.$region.amazonaws.com/$key"
+
+        log.info("S3 upload success: key={}, url={}", key, url)
+        return S3UploadResponse(key = key, url = url)
     }
 
     fun delete(key: String) {
-        s3Client.deleteObject(
-            DeleteObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .build(),
-        )
-        log.info("S3 delete success: {}", key)
+        try {
+            s3Client.deleteObject(
+                DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build(),
+            )
+            log.info("S3 delete success: key={}", key)
+        } catch (e: Exception) {
+            log.error("S3 delete failed: key={}", key, e)
+            throw e
+        }
     }
 
     companion object {

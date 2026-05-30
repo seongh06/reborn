@@ -13,7 +13,7 @@ erDiagram
     place {
         INT placeId PK "장소 ID (AUTO_INCREMENT)"
         VARCHAR name "장소명"
-        VARCHAR placeType "장소 유형 (CAFE / OFFICE / HOME 등)"
+        VARCHAR placeType "장소 유형 (HOME / STORE / COMPANY)"
         DOUBLE latitude "위도"
         DOUBLE longitude "경도"
         VARCHAR qrCode UK "QR 웹페이지 식별 고유 코드"

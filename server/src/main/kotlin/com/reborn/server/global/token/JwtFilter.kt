@@ -19,13 +19,20 @@ class JwtFilter(
     ) {
         val token = resolveToken(request)
         if (token != null) {
-            val userId = jwtProvider.parseClaims(token)?.subject?.toLongOrNull()
-            if (userId != null) {
-                MDC.put(USER_ID_MDC_KEY, userId.toString())
-                SecurityContextHolder.getContext().authentication =
-                    UsernamePasswordAuthenticationToken(userId, null, emptyList())
+
+            val claims = jwtProvider.parseClaims(token)
+
+            if (claims != null && claims[JwtProvider.TYPE_KEY] == JwtProvider.ACCESS_TYPE) {
+                val userId = claims.subject?.toLongOrNull()
+
+                if (userId != null) {
+                    MDC.put(USER_ID_MDC_KEY, userId.toString())
+                    SecurityContextHolder.getContext().authentication =
+                        UsernamePasswordAuthenticationToken(userId, null, emptyList())
+                }
             }
         }
+
         try {
             filterChain.doFilter(request, response)
         } finally {

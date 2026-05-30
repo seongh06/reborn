@@ -34,7 +34,12 @@ class AsyncConfig : AsyncConfigurer {
             maxPoolSize = 2
             queueCapacity = 50
             setThreadNamePrefix("slack-")
-            setRejectedExecutionHandler(ThreadPoolExecutor.DiscardPolicy())
+            setTaskDecorator(MdcTaskDecorator())
+            setRejectedExecutionHandler { r, executor ->
+                val queueSize = (executor as? ThreadPoolExecutor)?.queue?.size ?: "unknown"
+                LoggerFactory.getLogger("SlackExecutor")
+                    .warn("Slack notification dropped. Task: {}, Queue Size: {}", r.javaClass.simpleName, queueSize)
+            }
             initialize()
         }
 
@@ -52,10 +57,9 @@ private class MdcTaskDecorator : TaskDecorator {
     private val log = LoggerFactory.getLogger(MdcTaskDecorator::class.java)
 
     override fun decorate(runnable: Runnable): Runnable {
-        val contextMap = MDC.getCopyOfContextMap().orEmpty()
+        val contextMap = MDC.getCopyOfContextMap() ?: emptyMap()
         return Runnable {
             try {
-                MDC.clear()
                 if (contextMap.isNotEmpty()) MDC.setContextMap(contextMap)
                 runnable.run()
             } catch (e: Exception) {

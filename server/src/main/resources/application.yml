@@ -5,9 +5,9 @@ cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
 jwt:
-  secret: ${JWT_SECRET:cmVib3JuLXNlY3JldC1rZXktZm9yLWRldmVsb3BtZW50LW9ubHktbm90LWZvci1wcm9kdWN0aW9u}
-  access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:3600000}
-  refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:1209600000}
+  secret: ${JWT_SECRET:}
+  access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:3600000} # 1시간 (ms)
+  refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:1209600000} # 14일 (ms)
 
 spring:
   datasource:

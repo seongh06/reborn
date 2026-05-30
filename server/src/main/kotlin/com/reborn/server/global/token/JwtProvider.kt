@@ -16,24 +16,41 @@ class JwtProvider(
     @Value("\${jwt.access-token-expiry}") private val accessTokenExpiry: Long,
     @Value("\${jwt.refresh-token-expiry}") private val refreshTokenExpiry: Long,
 ) {
-    private val key: SecretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret))
+    private val key: SecretKey
+
+    init {
+        require(secret.isNotBlank()) {
+            "JWT_SECRET 환경 변수가 설정되지 않았거나 비어 있습니다. 보안을 위해 필수 설정이 필요합니다."
+        }
+
+        val keyBytes = Decoders.BASE64.decode(secret)
+        this.key = Keys.hmacShaKeyFor(keyBytes)
+    }
+
     private val parser: JwtParser = Jwts.parser().verifyWith(key).build()
 
-    fun createAccessToken(userId: Long): String = buildToken(userId, accessTokenExpiry)
+    fun createAccessToken(userId: Long): String = buildToken(userId, accessTokenExpiry, ACCESS_TYPE)
 
-    fun createRefreshToken(userId: Long): String = buildToken(userId, refreshTokenExpiry)
+    fun createRefreshToken(userId: Long): String = buildToken(userId, refreshTokenExpiry, REFRESH_TYPE)
 
     fun parseClaims(token: String): Claims? = runCatching {
         parser.parseSignedClaims(token).payload
     }.getOrNull()
 
-    private fun buildToken(userId: Long, expiry: Long): String {
+    private fun buildToken(userId: Long, expiry: Long, type: String): String {
         val now = Date()
         return Jwts.builder()
             .subject(userId.toString())
+            .claim(TYPE_KEY, type)
             .issuedAt(now)
             .expiration(Date(now.time + expiry))
             .signWith(key)
             .compact()
+    }
+
+    companion object {
+        const val TYPE_KEY = "type"
+        const val ACCESS_TYPE = "access"
+        const val REFRESH_TYPE = "refresh"
     }
 }
