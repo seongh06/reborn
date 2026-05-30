@@ -15,15 +15,21 @@ class WebMvcConfig(
 
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/api/**")
-            .allowedOrigins(*allowedOrigins)
+            .allowedOriginPatterns(*allowedOrigins)
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)
             .maxAge(3600)
+        registry.addMapping("/ws/**")
+            .allowedOriginPatterns(*allowedOrigins)
+            .allowedMethods("GET", "POST")
+            .allowedHeaders("*")
+            .allowCredentials(true)
     }
 
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(loggingInterceptor)
             .addPathPatterns("/**")
+            .excludePathPatterns("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html")
     }
 }

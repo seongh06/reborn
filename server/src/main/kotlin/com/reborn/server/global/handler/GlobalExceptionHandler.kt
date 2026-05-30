@@ -16,10 +16,12 @@ class GlobalExceptionHandler {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @ExceptionHandler(BusinessAlertException::class)
-    fun handleBusinessAlertException(e: BusinessAlertException): ResponseEntity<ErrorResponse> =
-        ResponseEntity
+    fun handleBusinessAlertException(e: BusinessAlertException): ResponseEntity<ErrorResponse> {
+        log.warn("Business exception [{}]: {}", e.errorCode, e.message)
+        return ResponseEntity
             .status(e.errorCode.code)
             .body(ErrorResponse.of(e.errorCode))
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
@@ -27,7 +29,7 @@ class GlobalExceptionHandler {
             ?: CommonErrorCode.INVALID_INPUT.message
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
-            .body(ErrorResponse.of(400, message))
+            .body(ErrorResponse.of(CommonErrorCode.INVALID_INPUT.code, message))
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
