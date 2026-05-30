@@ -3,7 +3,6 @@ package com.reborn.server.global.swagger
 import io.swagger.v3.oas.models.Components
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Info
-import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -19,7 +18,6 @@ class SwaggerConfig {
                 .description("스마트 실내 환경 모니터링 및 IoT 제어 플랫폼 API 문서")
                 .version("v1.0.0"),
         )
-        .addSecurityItem(SecurityRequirement().addList(SECURITY_SCHEME_NAME))
         .components(
             Components().addSecuritySchemes(
                 SECURITY_SCHEME_NAME,

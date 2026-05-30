@@ -17,7 +17,8 @@ class LoggingInterceptor : HandlerInterceptor {
         handler: Any,
     ): Boolean {
         request.setAttribute(START_TIME_ATTR, System.currentTimeMillis())
-        log.info(">>> {} {} from {}", request.method, request.requestURI, request.remoteAddr)
+        val clientIp = request.getHeader("X-Forwarded-For")?.substringBefore(",")?.trim() ?: request.remoteAddr
+        log.info(">>> {} {} from {}", request.method, request.requestURI, clientIp)
         return true
     }
 
