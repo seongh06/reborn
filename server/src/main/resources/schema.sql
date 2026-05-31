@@ -90,13 +90,14 @@ CREATE TABLE IF NOT EXISTS `device`
     COMMENT = '기기 (Arduino / Kiosk)';
 
 -- ------------------------------------------------
--- 5. sensorLogs
+-- 5. sensor_logs
 -- 복합 인덱스 (device_id, created_at DESC) → 최신 로그 조회 최적화
+-- device_id nullable + SET NULL → 기기 삭제 시 로그 데이터 보존
 -- ------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sensorLogs`
+CREATE TABLE IF NOT EXISTS `sensor_logs`
 (
     `id`          BIGINT      NOT NULL AUTO_INCREMENT COMMENT '로그 PK',
-    `device_id`   BIGINT      NOT NULL COMMENT '기기 FK',
+    `device_id`   BIGINT      NULL COMMENT '기기 FK (기기 삭제 시 NULL)',
     `temperature` DOUBLE      NULL COMMENT '온도 (°C)',
     `humidity`    DOUBLE      NULL COMMENT '습도 (%)',
     `illuminance` INT         NULL COMMENT '조도 (lux)',
@@ -105,24 +106,25 @@ CREATE TABLE IF NOT EXISTS `sensorLogs`
     `updated_at`  DATETIME(6) NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_sensor_device`
-        FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE CASCADE
+        FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE SET NULL
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '센서 수집 로그';
 
 CREATE INDEX `idx_sensor_device_created`
-    ON `sensorLogs` (`device_id`, `created_at` DESC)
+    ON `sensor_logs` (`device_id`, `created_at` DESC)
     COMMENT '기기별 최신 로그 조회 최적화';
 
 -- ------------------------------------------------
 -- 6. feedback
 -- user_agent VARCHAR(1024) → 긴 User-Agent 수용
+-- device_id nullable + SET NULL → 기기 삭제 시 피드백 데이터 보존
 -- ------------------------------------------------
 CREATE TABLE IF NOT EXISTS `feedback`
 (
     `id`            BIGINT        NOT NULL AUTO_INCREMENT COMMENT '피드백 PK',
-    `device_id`     BIGINT        NOT NULL COMMENT '기기 FK (KIOSK)',
+    `device_id`     BIGINT        NULL COMMENT '기기 FK (기기 삭제 시 NULL)',
     `content`       VARCHAR(1000) NOT NULL COMMENT '피드백 내용',
     `session_token` VARCHAR(255)  NOT NULL COMMENT 'QR 접속 임시 세션 토큰',
     `user_agent`    VARCHAR(1024) NULL COMMENT '브라우저 User-Agent',
@@ -131,7 +133,7 @@ CREATE TABLE IF NOT EXISTS `feedback`
     `updated_at`    DATETIME(6)   NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_feedback_device`
-        FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE CASCADE
+        FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE SET NULL
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
