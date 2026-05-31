@@ -138,3 +138,7 @@ CREATE TABLE IF NOT EXISTS `feedback`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '방문자 피드백';
+
+CREATE INDEX `idx_feedback_device_status`
+    ON `feedback` (`device_id`, `status`)
+    COMMENT '기기별 상태 필터 조회 최적화';
