@@ -28,7 +28,7 @@ class Feedback(
     @Column(nullable = false)
     val sessionToken: String,
 
-    @Column
+    @Column(length = 1024)
     val userAgent: String? = null,
 
     @Column(nullable = false)

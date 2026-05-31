@@ -26,8 +26,8 @@ class SlackWebhookClient(
         if (webhookUrl.isBlank()) return
         runCatching {
             restTemplate.postForObject(webhookUrl, SlackPayload(text = message), String::class.java)
-        }.onFailure {
-            log.error("Slack webhook failed: {}", it.message)
+        }.onFailure { e ->
+            log.error("Slack webhook failed", e)
         }
     }
 

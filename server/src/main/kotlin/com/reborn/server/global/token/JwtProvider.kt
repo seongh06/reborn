@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtParser
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.Date
@@ -27,6 +28,7 @@ class JwtProvider(
         this.key = Keys.hmacShaKeyFor(keyBytes)
     }
 
+    private val log = LoggerFactory.getLogger(javaClass)
     private val parser: JwtParser = Jwts.parser().verifyWith(key).build()
 
     fun createAccessToken(userId: Long): String = buildToken(userId, accessTokenExpiry, ACCESS_TYPE)
@@ -35,6 +37,8 @@ class JwtProvider(
 
     fun parseClaims(token: String): Claims? = runCatching {
         parser.parseSignedClaims(token).payload
+    }.onFailure { e ->
+        log.debug("JWT 파싱 실패: {}", e.message)
     }.getOrNull()
 
     private fun buildToken(userId: Long, expiry: Long, type: String): String {

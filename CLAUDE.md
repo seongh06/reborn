@@ -245,7 +245,7 @@ main                           ← 실서비스 배포 (GitHub Actions 트리거
 * **TEST:** 테스트 코드 추가 및 수정
     * `SERVER/TEST#1-4: JwtProvider 단위 테스트 작성`
 
---- 
+---
 
 ## 🎨 코드 스타일 규칙
 

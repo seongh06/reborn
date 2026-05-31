@@ -15,6 +15,11 @@ services:
       - ./mysql_data:/var/lib/mysql
     networks:
       - reborn-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7.0-alpine
@@ -26,6 +31,11 @@ services:
       - ./redis_data:/data
     networks:
       - reborn-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   mongodb:
     image: mongo:6.0
@@ -40,6 +50,11 @@ services:
       - ./mongo_data:/data/db
     networks:
       - reborn-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ping:1})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend-app:
     image: seongh06/reborn-backend:latest
@@ -49,6 +64,7 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - JWT_SECRET=${JWT_SECRET}
       - SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/reborn_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -57,9 +73,12 @@ services:
       - SPRING_DATA_MONGODB_URI=mongodb://root:${MONGO_ROOT_PASSWORD}@mongodb:27017/reborn_db?authSource=admin
       - TZ=Asia/Seoul
     depends_on:
-      - database
-      - redis
-      - mongodb
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
     networks:
       - reborn-network
 

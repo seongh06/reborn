@@ -57,16 +57,17 @@ private class MdcTaskDecorator : TaskDecorator {
     private val log = LoggerFactory.getLogger(MdcTaskDecorator::class.java)
 
     override fun decorate(runnable: Runnable): Runnable {
-        val contextMap = MDC.getCopyOfContextMap() ?: emptyMap()
+        val contextMap = MDC.getCopyOfContextMap()
         return Runnable {
+            val previousContext = MDC.getCopyOfContextMap()
             try {
-                if (contextMap.isNotEmpty()) MDC.setContextMap(contextMap)
+                if (contextMap != null) MDC.setContextMap(contextMap) else MDC.clear()
                 runnable.run()
             } catch (e: Exception) {
                 log.error("Async task failed", e)
                 throw e
             } finally {
-                MDC.clear()
+                if (previousContext != null) MDC.setContextMap(previousContext) else MDC.clear()
             }
         }
     }
