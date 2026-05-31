@@ -7,4 +7,4 @@
 - 브랜치 및 서브 이슈 식별 번호(`SERVER/FEAT/#X-X`)를 타입 뒤에 명시함.
 
 ```text
-<type>: SERVER/FEAT/#X-X <description> (명사형 종결)
+<type>: [SERVER/FEAT/#X-X] <description> (명사형 종결)

@@ -6,5 +6,7 @@ interface UserRepository : JpaRepository<User, Long> {
 
     fun findByEmail(email: String): User?
 
+    fun findByEmailAndProvider(email: String, provider: OAuthProvider): User?
+
     fun existsByEmail(email: String): Boolean
 }
