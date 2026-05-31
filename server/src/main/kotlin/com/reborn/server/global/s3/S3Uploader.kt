@@ -36,15 +36,17 @@ class S3Uploader(
         val key = "$directory/${UUID.randomUUID()}$extension"
         val url = "https://$bucket.s3.$region.amazonaws.com/$key"
 
-        s3Client.putObject(
-            PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .contentType(file.contentType)
-                .contentLength(file.size)
-                .build(),
-            RequestBody.fromInputStream(file.inputStream, file.size),
-        )
+        file.inputStream.use { inputStream ->
+            s3Client.putObject(
+                PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .contentType(file.contentType)
+                    .contentLength(file.size)
+                    .build(),
+                RequestBody.fromInputStream(inputStream, file.size),
+            )
+        }
 
         log.info("S3 upload success: key={}, url={}", key, url)
         return S3UploadResponse(key = key, url = url)
