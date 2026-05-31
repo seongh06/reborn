@@ -13,7 +13,11 @@ interface SensorLogsRepository : JpaRepository<SensorLogs, Long> {
 
     fun findAllByDeviceId(deviceId: Long, pageable: Pageable): Page<SensorLogs>
 
-    @Query("SELECT s FROM SensorLogs s WHERE s.device.id = :deviceId AND s.createdAt BETWEEN :from AND :to ORDER BY s.createdAt DESC")
+    @Query(
+        "SELECT s FROM SensorLogs s " +
+            "WHERE s.device.id = :deviceId AND s.createdAt BETWEEN :from AND :to " +
+            "ORDER BY s.createdAt DESC",
+    )
     fun findAllByDeviceIdAndPeriod(
         @Param("deviceId") deviceId: Long,
         @Param("from") from: LocalDateTime,
