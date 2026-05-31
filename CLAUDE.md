@@ -200,60 +200,50 @@ docker-compose logs -f server
 ```
 
 ---
-
 ## 🌿 브랜치 전략
 
-```
-main                          ← 실서비스 배포 (GitHub Actions 트리거)
-└── dev                       ← 개발 통합 · 검증
-     └── feature/{영역}-{기능} ← 기능 단위 작업
-```
+main                           ← 실서비스 배포 (GitHub Actions 트리거)
+└── dev                        ← 개발 통합 · 검증
+└── feature/{영역}-{기능}  ← 기능 단위 작업 (Epic 하위 작업 단위)
 
-### 브랜치 네이밍
 
-```
-feature/server-collect-api
-feature/server-db-jpa
-feature/auth-kakao-oauth
-feature/app-intro-screen
-feature/app-admin-dashboard
-feature/app-aerometer-mode
-feature/infra-docker-compose
-fix/server-sensor-null-crash
-hotfix/fcm-token-missing
-chore/gitignore-setup
-```
+### 브랜치 네이밍 규칙
+* **형식:** `{type}/{영역}-{기능}`
+* **예시:**
+    * `feature/server-jwt-auth`
+    * `feature/server-logging-mdc`
+    * `feature/app-lck-ranking`
+    * `fix/server-token-expired`
+    * `refactor/server-security-config`
+    * `chore/server-gradle-dependency`
 
 ### PR 흐름
-
-```
-feature/* → dev (기능 완성 시)
-dev → main (Phase 완료 시, GitHub Actions 자동 배포 트리거)
-```
+* `feature/*` 또는 `fix/*` → `dev` (하위 이슈 또는 단위 기능 완성 시)
+* `dev` → `main` (각 Phase 완료 시, GitHub Actions 자동 배포 트리거)
 
 ---
 
-## 📝 커밋 컨벤션
+## 📝 커밋 컨벤션 (Commit Convention)
 
-```
-feat(scope)     : 새로운 기능
-fix(scope)      : 버그 수정
-refactor(scope) : 리팩토링
-chore(scope)    : 빌드, 설정, 의존성
-docs            : 문서 수정
-style(scope)    : 코드 포맷
-test(scope)     : 테스트 코드
-```
+### 커밋 메시지 기본 구조
+{영역}/{타입}#{Epic번호}-{Sub이슈번호}: {작업 내용 명사형 종결}
 
-**scope 예시**
+* **영역:** `SERVER`, `APP` 등 대문자 표기
+* **타입:** `FEAT`, `FIX`, `REFACTOR`, `CHORE`, `DOCS`, `TEST` 등 대문자 표기
 
-```
-feat(server): POST /api/collect 엔드포인트 구현
-feat(app): 관리자 대시보드 화면 구현
-fix(server): sensorLogs null 저장 오류 수정
-chore(infra): docker-compose.yml 초안 작성
-refactor(server): AdminService Command/Query 분리
-```
+### 타입별 정의 및 예시
+* **FEAT:** 새로운 기능 구현
+    * `SERVER/FEAT#1-4: JWT 인프라 및 보안 필터 구현`
+* **FIX:** 버그 수정
+    * `SERVER/FIX#2-1: 토큰 만료 예외 처리 오류 수정`
+* **REFACTOR:** 리팩토링 (기능 변경 없는 코드 구조 개선)
+    * `SERVER/REFACTOR#1-5: SecurityConfig 구조 개선`
+* **CHORE:** 빌드 설정, 의존성 추가, 환경변수 변경 등
+    * `SERVER/CHORE#1-1: JJWT 라이브러리 의존성 추가`
+* **DOCS:** 문서 생성 및 수정 (README, API 문서 등)
+    * `SERVER/DOCS#1-2: Swagger 설정 가이드라인 문서 작성`
+* **TEST:** 테스트 코드 추가 및 수정
+    * `SERVER/TEST#1-4: JwtProvider 단위 테스트 작성`
 
 ---
 

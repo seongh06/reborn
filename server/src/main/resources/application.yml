@@ -3,3 +3,39 @@ server:
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+jwt:
+  secret: ${JWT_SECRET:}
+  access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:3600000} # 1시간 (ms)
+  refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:1209600000} # 14일 (ms)
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/reborn?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:reborn}
+    password: ${DB_PASSWORD:reborn}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:none}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+    open-in-view: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    region:
+      static: ${AWS_REGION:ap-northeast-2}
+    s3:
+      bucket: ${AWS_S3_BUCKET:reborn-dev}
+
+slack:
+  webhook-url: ${SLACK_WEBHOOK_URL:}
