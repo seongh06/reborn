@@ -12,7 +12,7 @@ services:
       MYSQL_DATABASE: "reborn"
       TZ: "Asia/Seoul"
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - ./mysql_reborn_data:/var/lib/mysql
     networks:
       - reborn-network
     healthcheck:
