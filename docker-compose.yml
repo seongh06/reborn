@@ -16,7 +16,7 @@ services:
     networks:
       - reborn-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "sh", "-c", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h localhost -u root"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,7 +47,7 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - JWT_SECRET=${JWT_SECRET}
       - DB_URL=jdbc:mysql://database:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
-      - DB_USERNAME=root
+      - DB_USERNAME=${DB_USERNAME:-root}
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PORT=6379

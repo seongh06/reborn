@@ -34,6 +34,9 @@ class SecurityConfig(
 
                     .requestMatchers("/api/auth/**").permitAll()
 
+                    // Arduino 기기 인증 (Device Key 헤더) — JWT 불필요
+                    .requestMatchers("/api/collect", "/api/current").permitAll()
+
                     .anyRequest().authenticated()
             }
             .addFilterBefore(JwtFilter(jwtProvider), UsernamePasswordAuthenticationFilter::class.java)
