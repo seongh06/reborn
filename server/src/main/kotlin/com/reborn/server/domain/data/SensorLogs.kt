@@ -13,12 +13,12 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "sensorLogs")
+@Table(name = "sensor_logs")
 class SensorLogs(
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "device_id", nullable = false)
-    val device: Device,
+    @JoinColumn(name = "device_id")
+    val device: Device?,
 
     @Column
     val temperature: Double? = null,
