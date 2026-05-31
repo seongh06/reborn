@@ -12,8 +12,8 @@ jwt:
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true}
-    username: ${DB_USERNAME:reborn}
-    password: ${DB_PASSWORD:reborn}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: ReBornHikariCP
@@ -44,8 +44,8 @@ spring:
 
 logging:
   level:
-    org.hibernate.SQL: ${LOG_SQL_LEVEL:off}
-    org.hibernate.orm.jdbc.bind: ${LOG_SQL_BIND_LEVEL:off}
+    org.hibernate.SQL: off
+    org.hibernate.orm.jdbc.bind: off
 
 cloud:
   aws:

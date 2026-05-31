@@ -70,23 +70,24 @@ CREATE TABLE `device`
 ) COMMENT = '기기 정보 (Arduino 센서 및 공기계 앱)';
 
 -- ------------------------------------------------
--- 5. sensorLogs
+-- 5. sensor_logs
 -- 복합 인덱스 추가 → 최신 데이터 조회 성능 확보
+-- device_id NULL 허용 → 기기 삭제 시 로그 보존
 -- ------------------------------------------------
-CREATE TABLE `sensorLogs`
+CREATE TABLE `sensor_logs`
 (
-    `logId`       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '로그 ID',
-    `deviceId`    VARCHAR(50)  NOT NULL COMMENT '기기 ID',
-    `temperature` DECIMAL(4, 2) NULL COMMENT '온도 (°C)',
-    `humidity`    DECIMAL(4, 2) NULL COMMENT '습도 (%)',
-    `illuminance` INT          NULL COMMENT '조도 (lux)',
-    `peopleCount` INT          NULL COMMENT '재실 인원 수',
-    `discomfort`  DECIMAL(4, 2) NULL COMMENT '불쾌지수',
-    `createdAt`   DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '수집일시',
-    PRIMARY KEY (`logId`),
-    INDEX `idx_sensorLogs_deviceId_createdAt` (`deviceId`, `createdAt` DESC) COMMENT '기기별 최신 로그 조회 최적화',
-    CONSTRAINT `FK_device_TO_sensorLogs`
-        FOREIGN KEY (`deviceId`) REFERENCES `device` (`deviceId`) ON DELETE CASCADE
+    `id`          BIGINT        NOT NULL AUTO_INCREMENT COMMENT '로그 ID',
+    `device_id`   VARCHAR(50)   NULL     COMMENT '기기 ID',
+    `temperature` DECIMAL(4, 2) NULL     COMMENT '온도 (°C)',
+    `humidity`    DECIMAL(4, 2) NULL     COMMENT '습도 (%)',
+    `illuminance` INT           NULL     COMMENT '조도 (lux)',
+    `occupancy`   INT           NULL     COMMENT '재실 인원 수',
+    `created_at`  DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '수집일시',
+    `updated_at`  DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    PRIMARY KEY (`id`),
+    INDEX `idx_sensor_logs_device_id_created_at` (`device_id`, `created_at` DESC) COMMENT '기기별 최신 로그 조회 최적화',
+    CONSTRAINT `FK_device_TO_sensor_logs`
+        FOREIGN KEY (`device_id`) REFERENCES `device` (`deviceId`) ON DELETE SET NULL
 ) COMMENT = '센서 수집 로그';
 
 -- ------------------------------------------------

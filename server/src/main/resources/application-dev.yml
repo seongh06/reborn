@@ -1,0 +1,4 @@
+logging:
+  level:
+    org.hibernate.SQL: ${LOG_SQL_LEVEL:debug}
+    org.hibernate.orm.jdbc.bind: ${LOG_SQL_BIND_LEVEL:trace}
