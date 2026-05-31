@@ -19,8 +19,8 @@ import jakarta.persistence.Table
 class Feedback(
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "device_id", nullable = false)
-    val device: Device,
+    @JoinColumn(name = "device_id")
+    val device: Device?,
 
     @Column(nullable = false, length = 1000)
     val content: String,
