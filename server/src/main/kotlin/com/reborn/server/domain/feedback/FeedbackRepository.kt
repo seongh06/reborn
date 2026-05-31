@@ -10,5 +10,7 @@ interface FeedbackRepository : JpaRepository<Feedback, Long> {
 
     fun findAllByDeviceIdAndStatus(deviceId: Long, status: FeedbackStatus, pageable: Pageable): Page<Feedback>
 
+    fun countByDeviceId(deviceId: Long): Long
+
     fun existsBySessionToken(sessionToken: String): Boolean
 }

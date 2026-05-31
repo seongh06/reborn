@@ -9,10 +9,10 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      MYSQL_DATABASE: "reborn_db"
+      MYSQL_DATABASE: "reborn"
       TZ: "Asia/Seoul"
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - ./mysql_reborn_data:/var/lib/mysql
     networks:
       - reborn-network
     healthcheck:
@@ -37,47 +37,27 @@ services:
       timeout: 3s
       retries: 5
 
-  mongodb:
-    image: mongo:6.0
-    container_name: reborn-mongodb
-    restart: always
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: "root"
-      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_ROOT_PASSWORD}"
-    volumes:
-      - ./mongo_data:/data/db
-    networks:
-      - reborn-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand({ping:1})"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend-app:
     image: seongh06/reborn-backend:latest
-    container_name: kopring-backend-server
+    container_name: reborn-backend-server
     restart: always
     ports:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - JWT_SECRET=${JWT_SECRET}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/reborn_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_DATA_REDIS_HOST=redis
-      - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_MONGODB_URI=mongodb://root:${MONGO_ROOT_PASSWORD}@mongodb:27017/reborn_db?authSource=admin
+      - DB_URL=jdbc:mysql://database:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+      - DB_USERNAME=root
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SQL_INIT_MODE=never
+      - JPA_DDL_AUTO=validate
       - TZ=Asia/Seoul
     depends_on:
       database:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
     networks:
       - reborn-network
