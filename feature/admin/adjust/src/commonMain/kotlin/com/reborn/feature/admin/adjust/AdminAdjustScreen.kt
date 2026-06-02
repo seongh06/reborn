@@ -8,14 +8,31 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
 import org.koin.compose.viewmodel.koinViewModel
+
+@OptIn(ExperimentalUnsignedTypes::class)
+@Composable
+fun AdminAdjustRoute(
+    viewModel: AdminAdjustViewModel = koinViewModel()
+){
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    AdminAdjustScreen(
+        state = uiState
+    )
+
+}
+
+
 
 @Composable
 fun AdminAdjustScreen(
-    viewModel: AdminAdjustViewModel = koinViewModel()
+    state: AdminAdjustUiState
 ) {
-    val uiState by viewModel.uiState.collectAsState()
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(if (uiState.isDeviceConnected) "IoT Connected" else "IoT Disconnected")
+        Text(if (state is AdminAdjustUiState.Loading) "IoT Connected" else "IoT Disconnected")
     }
 }
