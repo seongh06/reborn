@@ -10,5 +10,9 @@ interface UserPlaceMappingRepository : JpaRepository<UserPlaceMapping, Long> {
 
     fun findAllByPlaceId(placeId: Long): List<UserPlaceMapping>
 
+    fun findAllByUserIdAndAccessLevel(userId: Long, accessLevel: AccessLevel): List<UserPlaceMapping>
+
     fun existsByUserIdAndPlaceId(userId: Long, placeId: Long): Boolean
+
+    fun deleteByUserIdAndPlaceId(userId: Long, placeId: Long)
 }

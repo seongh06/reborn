@@ -1,5 +1,7 @@
-package com.reborn.server.domain.device
+package com.reborn.server.domain.device.repository
 
+import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.device.DeviceType
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface DeviceRepository : JpaRepository<Device, Long> {

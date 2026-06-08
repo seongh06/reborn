@@ -20,8 +20,8 @@ data class S3UploadResponse(
 @ConditionalOnBean(S3Client::class)
 class S3Uploader(
     private val s3Client: S3Client,
-    @Value("\${cloud.aws.s3.bucket}") private val bucket: String,
-    @Value("\${cloud.aws.region.static}") private val region: String,
+    @param:Value("\${cloud.aws.s3.bucket}") private val bucket: String,
+    @param:Value("\${cloud.aws.region.static}") private val region: String,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)

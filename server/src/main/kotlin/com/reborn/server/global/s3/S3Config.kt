@@ -12,9 +12,9 @@ import software.amazon.awssdk.services.s3.S3Client
 @Configuration
 @ConditionalOnProperty(prefix = "cloud.aws.credentials", name = ["access-key"], matchIfMissing = false)
 class S3Config(
-    @Value("\${cloud.aws.credentials.access-key}") private val accessKey: String,
-    @Value("\${cloud.aws.credentials.secret-key}") private val secretKey: String,
-    @Value("\${cloud.aws.region.static}") private val region: String,
+    @param:Value("\${cloud.aws.credentials.access-key}") private val accessKey: String,
+    @param:Value("\${cloud.aws.credentials.secret-key}") private val secretKey: String,
+    @param:Value("\${cloud.aws.region.static}") private val region: String,
 ) {
 
     init {

@@ -23,4 +23,7 @@ interface SensorLogsRepository : JpaRepository<SensorLogs, Long> {
         @Param("from") from: LocalDateTime,
         @Param("to") to: LocalDateTime,
     ): List<SensorLogs>
+
+    // 기기 삭제(ON DELETE SET NULL) 후 device_id = NULL 상태인 고아 로그 조회
+    fun findAllByDeviceIsNull(pageable: Pageable): Page<SensorLogs>
 }

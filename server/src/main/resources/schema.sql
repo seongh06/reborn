@@ -105,16 +105,13 @@ CREATE TABLE IF NOT EXISTS `sensor_logs`
     `created_at`  DATETIME(6) NOT NULL COMMENT '수집일시',
     `updated_at`  DATETIME(6) NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
+    KEY `idx_sensor_device_created` (`device_id`, `created_at` DESC) COMMENT '기기별 최신 로그 조회 최적화',
     CONSTRAINT `fk_sensor_device`
         FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE SET NULL
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '센서 수집 로그';
-
-CREATE INDEX `idx_sensor_device_created`
-    ON `sensor_logs` (`device_id`, `created_at` DESC)
-    COMMENT '기기별 최신 로그 조회 최적화';
 
 -- ------------------------------------------------
 -- 6. feedback
@@ -132,6 +129,7 @@ CREATE TABLE IF NOT EXISTS `feedback`
     `created_at`    DATETIME(6)   NOT NULL COMMENT '작성일시',
     `updated_at`    DATETIME(6)   NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
+    KEY `idx_feedback_device_status` (`device_id`, `status`) COMMENT '기기별 상태 필터 조회 최적화',
     CONSTRAINT `fk_feedback_device`
         FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE SET NULL
 ) ENGINE = InnoDB
