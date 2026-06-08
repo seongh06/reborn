@@ -123,8 +123,8 @@ user ──< user_place_mapping >── place ──< device ──< sensorLogs
 | POST | `/api/auth/kakao` | 카카오 소셜 로그인 | ❌ |
 | POST | `/api/auth/google` | 구글 소셜 로그인 | ❌ |
 | POST | `/api/auth/refresh` | AccessToken 재발급 | ❌ |
-| POST | `/api/collect` | 센서 데이터 수집 (Arduino) | Device Key |
-| GET | `/api/current` | 특정 기기 최신 센서 데이터 조회 | ❌ |
+| POST | `/api/sensor/collect` | 센서 데이터 수집 (Arduino) | Device Key |
+| GET | `/api/sensor/current` | 특정 기기 최신 센서 데이터 조회 | ❌ |
 | GET | `/api/data/history` | 센서 로그 히스토리 조회 | ✅ |
 | POST | `/api/feedback` | 피드백 제출 (QR 웹) | ❌ |
 | GET | `/api/feedback` | 피드백 목록 조회 | ✅ ADMIN |
@@ -141,7 +141,7 @@ user ──< user_place_mapping >── place ──< device ──< sensorLogs
 
 ### 센서 수집 흐름
 ```
-Arduino → POST /api/collect → server/domain/data → sensorLogs 저장
+Arduino → POST /api/sensor/collect → server/domain/data → sensorLogs 저장
 ```
 
 ### 피드백 → FCM 알림 흐름

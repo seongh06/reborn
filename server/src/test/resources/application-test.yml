@@ -1,0 +1,8 @@
+jwt:
+  secret: dGVzdC1vbmx5LWR1bW15LWp3dC1zZWNyZXQta2V5LWZvci1zcHJpbmctY29udGV4dC1sb2FkaW5nLTEyMzQ1Ng==
+
+cloud:
+  aws:
+    credentials:
+      access-key: test-dummy-access-key
+      secret-key: test-dummy-secret-key

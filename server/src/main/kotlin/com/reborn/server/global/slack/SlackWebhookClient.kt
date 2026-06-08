@@ -12,7 +12,7 @@ import java.time.Duration
 @Component
 class SlackWebhookClient(
     restTemplateBuilder: RestTemplateBuilder,
-    @Value("\${slack.webhook-url:}") private val webhookUrl: String,
+    @param:Value("\${slack.webhook-url:}") private val webhookUrl: String,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
