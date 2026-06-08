@@ -1,14 +1,18 @@
 package com.reborn.core.navigation
 
-sealed interface Route {
-    data object Intro : Route
-    data object Aerometer : Route
+import kotlinx.serialization.Serializable
 
+@Serializable
+sealed interface Route {
+    @Serializable data object Intro : Route
+    @Serializable data object Aerometer : Route
+
+    @Serializable
     sealed interface Admin : Route {
-        data object Home : Admin
-        data object Adjust : Admin
-        data object Feedback : Admin
-        data object Data : Admin
-        data object Setting : Admin
+        @Serializable data object Home : Admin
+        @Serializable data object Adjust : Admin
+        @Serializable data object Feedback : Admin
+        @Serializable data object Data : Admin
+        @Serializable data object Setting : Admin
     }
 }

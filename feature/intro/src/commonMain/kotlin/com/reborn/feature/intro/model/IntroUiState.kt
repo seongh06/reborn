@@ -1,5 +1,15 @@
 package com.reborn.feature.intro.model
 
-data class IntroUiState(
-    val isLoading: Boolean = false
-)
+import androidx.compose.runtime.Immutable
+
+@Immutable
+sealed interface IntroUiState{
+    data object Loading : IntroUiState
+}
+
+sealed interface IntroIntent{
+    data object LoadInitial : IntroIntent
+    data object NavigateToAdmin : IntroIntent
+    data object NavigateToAerometer : IntroIntent
+
+}
