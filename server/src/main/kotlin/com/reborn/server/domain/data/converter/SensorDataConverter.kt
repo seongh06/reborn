@@ -1,6 +1,9 @@
-package com.reborn.server.domain.data
+package com.reborn.server.domain.data.converter
 
+import com.reborn.server.domain.data.SensorLogs
+import com.reborn.server.domain.data.dto.SensorDataDto
 import com.reborn.server.domain.device.Device
+import org.springframework.data.domain.Page
 
 object SensorDataConverter {
 
@@ -20,6 +23,26 @@ object SensorDataConverter {
             illuminance = entity.illuminance,
             peopleCount = entity.occupancy,
             discomfort = calculateDiscomfort(entity.temperature, entity.humidity),
+            createdAt = requireNotNull(entity.createdAt),
+        )
+
+    fun toHistoryResponse(deviceId: String, logs: Page<SensorLogs>): SensorDataDto.HistoryResponse =
+        SensorDataDto.HistoryResponse(
+            deviceId = deviceId,
+            logs = logs.content.map(::toHistoryItem),
+            page = logs.number,
+            size = logs.size,
+            totalElements = logs.totalElements,
+            totalPages = logs.totalPages,
+        )
+
+    private fun toHistoryItem(entity: SensorLogs): SensorDataDto.HistoryItem =
+        SensorDataDto.HistoryItem(
+            logId = entity.id,
+            temperature = entity.temperature,
+            humidity = entity.humidity,
+            illuminance = entity.illuminance,
+            peopleCount = entity.occupancy,
             createdAt = requireNotNull(entity.createdAt),
         )
 

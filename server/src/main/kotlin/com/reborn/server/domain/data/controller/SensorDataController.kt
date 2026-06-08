@@ -1,5 +1,7 @@
-package com.reborn.server.domain.data
+package com.reborn.server.domain.data.controller
 
+import com.reborn.server.domain.data.dto.SensorDataDto
+import com.reborn.server.domain.data.service.SensorDataService
 import com.reborn.server.global.model.ApiResponse
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping

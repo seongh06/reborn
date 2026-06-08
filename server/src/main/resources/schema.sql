@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `place`
     `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '장소 PK',
     `name`        VARCHAR(255) NOT NULL COMMENT '장소명',
     `qr_code`     VARCHAR(255) NOT NULL COMMENT 'QR 코드 식별자',
+    `type`        VARCHAR(20)  NOT NULL COMMENT '공간 유형 (HOME / STORE / COMPANY)',
     `description` VARCHAR(255) NULL COMMENT '장소 설명',
     `created_at`  DATETIME(6)  NOT NULL COMMENT '등록일시',
     `updated_at`  DATETIME(6)  NOT NULL COMMENT '수정일시',

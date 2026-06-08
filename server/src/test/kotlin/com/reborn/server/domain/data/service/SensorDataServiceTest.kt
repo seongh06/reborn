@@ -1,9 +1,14 @@
-package com.reborn.server.domain.data
+package com.reborn.server.domain.data.service
 
+import com.reborn.server.domain.data.SensorLogs
+import com.reborn.server.domain.data.SensorLogsRepository
+import com.reborn.server.domain.data.dto.SensorDataDto
 import com.reborn.server.domain.device.Device
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.place.Place
+import com.reborn.server.domain.place.PlaceType
+import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import org.assertj.core.api.Assertions.assertThat
@@ -16,6 +21,8 @@ import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 
 @ExtendWith(MockitoExtension::class)
 class SensorDataServiceTest {
@@ -26,6 +33,9 @@ class SensorDataServiceTest {
     @Mock
     private lateinit var sensorLogsRepository: SensorLogsRepository
 
+    @Mock
+    private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
+
     @InjectMocks
     private lateinit var sensorDataService: SensorDataService
 
@@ -33,7 +43,7 @@ class SensorDataServiceTest {
 
     @BeforeEach
     fun setUp() {
-        val place = Place(name = "테스트 거실", qrCode = "qr-test")
+        val place = Place(name = "테스트 거실", qrCode = "qr-test", type = PlaceType.HOME)
         device = Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = "arduino_room_01", name = "거실")
     }
 
@@ -147,5 +157,52 @@ class SensorDataServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `getHistory - 접근 권한이 있으면 페이징된 로그 목록을 반환한다`() {
+        val pageable = PageRequest.of(0, 20)
+        val log = SensorLogs(
+            device = device,
+            temperature = 26.5,
+            humidity = 62.3,
+            illuminance = 480,
+            occupancy = 3,
+            id = 10023,
+        ).apply { prePersist() }
+
+        given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
+        given(userPlaceMappingRepository.existsByUserIdAndPlaceId(1L, device.place.id)).willReturn(true)
+        given(sensorLogsRepository.findAllByDeviceId(device.id, pageable)).willReturn(PageImpl(listOf(log), pageable, 1))
+
+        val response = sensorDataService.getHistory("arduino_room_01", 1L, pageable)
+
+        assertThat(response.deviceId).isEqualTo("arduino_room_01")
+        assertThat(response.logs).hasSize(1)
+        assertThat(response.logs[0].logId).isEqualTo(10023L)
+        assertThat(response.totalElements).isEqualTo(1L)
+    }
+
+    @Test
+    fun `getHistory - 등록되지 않은 기기면 예외가 발생한다`() {
+        val pageable = PageRequest.of(0, 20)
+        given(deviceRepository.findByDeviceKey("unknown_device")).willReturn(null)
+
+        assertThatThrownBy { sensorDataService.getHistory("unknown_device", 1L, pageable) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `getHistory - 장소 접근 권한이 없으면 예외가 발생한다`() {
+        val pageable = PageRequest.of(0, 20)
+        given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
+        given(userPlaceMappingRepository.existsByUserIdAndPlaceId(1L, device.place.id)).willReturn(false)
+
+        assertThatThrownBy { sensorDataService.getHistory("arduino_room_01", 1L, pageable) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
     }
 }

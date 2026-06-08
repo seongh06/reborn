@@ -1,8 +1,14 @@
-package com.reborn.server.domain.data
+package com.reborn.server.domain.data.service
 
+import com.reborn.server.domain.data.SensorLogs
+import com.reborn.server.domain.data.SensorLogsRepository
+import com.reborn.server.domain.data.converter.SensorDataConverter
+import com.reborn.server.domain.data.dto.SensorDataDto
 import com.reborn.server.domain.device.repository.DeviceRepository
+import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -11,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional
 class SensorDataService(
     private val deviceRepository: DeviceRepository,
     private val sensorLogsRepository: SensorLogsRepository,
+    private val userPlaceMappingRepository: UserPlaceMappingRepository,
 ) {
 
     @Transactional
@@ -32,6 +39,18 @@ class SensorDataService(
         device.updateOnlineStatus(true)
 
         return SensorDataConverter.toCollectResponse(sensorLog)
+    }
+
+    fun getHistory(deviceId: String, userId: Long, pageable: Pageable): SensorDataDto.HistoryResponse {
+        val device = deviceRepository.findByDeviceKey(deviceId)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "등록되지 않은 기기입니다.")
+
+        if (!userPlaceMappingRepository.existsByUserIdAndPlaceId(userId, device.place.id)) {
+            throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "해당 장소에 대한 접근 권한이 없습니다.")
+        }
+
+        val logs = sensorLogsRepository.findAllByDeviceId(device.id, pageable)
+        return SensorDataConverter.toHistoryResponse(deviceId, logs)
     }
 
     fun getCurrent(deviceId: String): SensorDataDto.CurrentResponse {
