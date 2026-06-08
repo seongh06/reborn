@@ -19,8 +19,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -64,7 +64,7 @@ fun App() {
                                 .drawBehind {
                                     val strokeWidth = 1.dp.toPx()
                                     drawLine(
-                                        color = Color.Black,
+                                        color = RebornTheme.color.grayScale700,
                                         start = Offset(0f, 0f),
                                         end = Offset(size.width, 0f),
                                         strokeWidth = strokeWidth
@@ -120,7 +120,7 @@ fun App() {
                 NavHost(
                     navController = navController,
                     startDestination = Route.Intro,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize().padding(innerPadding)
                 ) {
                     introNavGraph(
                         onNavigateToAdmin = {
@@ -135,7 +135,7 @@ fun App() {
                         }
                     )
                     adminHomeNavGraph()
-                    adjustNavGraph(innerPadding = innerPadding)
+                    adjustNavGraph()
                     adminFeedbackNavGraph()
                     adminDataNavGraph()
                     adminSettingNavGraph()

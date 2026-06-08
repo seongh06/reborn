@@ -6,9 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class AdminAdjustViewModel(
-
-) : ViewModel() {
+class AdminAdjustViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<AdminAdjustUiState>(AdminAdjustUiState.Loading)
     val uiState = _uiState.asStateFlow()
 

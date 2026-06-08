@@ -1,9 +1,6 @@
 package com.reborn.core.designsystem
 
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -14,12 +11,8 @@ import com.reborn.core.designsystem.theme.RebornColor
 import com.reborn.core.designsystem.theme.RebornTypography
 import com.reborn.core.designsystem.theme.rebornTypography
 
-private val LightColors = lightColorScheme()
-private val DarkColors = darkColorScheme()
-
 @Composable
 fun RebornTheme(
-    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     BoxWithConstraints {
@@ -31,7 +24,7 @@ fun RebornTheme(
 
         val fixedDensity = Density(
             density = fixedDensityValue,
-            fontScale = 1f
+            fontScale = currentDensity.fontScale
         )
 
         val colors: RebornColor = RebornColor

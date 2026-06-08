@@ -46,37 +46,21 @@ object RebornColor : RebornColors{
     override val grayScale800 = Color(0xFF4A4A4A)
     override val grayScale900 = Color(0xFF121212)
     override val temperature = Color(0xFFD65C5C)
-    override val temperatureRadial: Brush
-        get() = Brush.radialGradient(
-            colors = listOf(
-                Color(0x47B60000),
-                Color(0x1A000000)
-            )
-        )
+    override val temperatureRadial: Brush = Brush.radialGradient(
+        colors = listOf(Color(0x47B60000), Color(0x1A000000))
+    )
     override val humidity = Color(0xFF5CADD6)
-    override val humidityRadial: Brush
-        get() = Brush.radialGradient(
-            colors = listOf(
-                Color(0x475CADD6),
-                Color(0x1A000000)
-            )
-        )
+    override val humidityRadial: Brush = Brush.radialGradient(
+        colors = listOf(Color(0x475CADD6), Color(0x1A000000))
+    )
     override val illuminance = Color(0xFFD6C25C)
-    override val illuminanceRadial: Brush
-        get() = Brush.radialGradient(
-            colors = listOf(
-                Color(0x47F7F7F7),
-                Color(0x1A000000)
-            )
-        )
+    override val illuminanceRadial: Brush = Brush.radialGradient(
+        colors = listOf(Color(0x47F7F7F7), Color(0x1A000000))
+    )
     override val occupancy = Color(0xFF5CD65C)
-    override val occupancyRadial: Brush
-        get() = Brush.radialGradient(
-            colors = listOf(
-                Color(0x47F7F7F7),
-                Color(0x1A000000)
-            )
-        )
+    override val occupancyRadial: Brush = Brush.radialGradient(
+        colors = listOf(Color(0x47F7F7F7), Color(0x1A000000))
+    )
     override val feedbackHot = Color(0xFFBF4040)
     override val feedbackSmell = Color(0xFFBF8040)
     override val feedbackLight = Color(0xFFBFBF40)

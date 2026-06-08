@@ -11,18 +11,6 @@ import org.jetbrains.compose.resources.Font
 import reborn.core.designsystem.generated.resources.Res
 import reborn.core.designsystem.generated.resources.*
 
-/*
-@Composable
-fun Float.toFixedSp(): TextUnit {
-    val density = LocalDensity.current
-    return with(density) { this@toFixedSp / density.fontScale }.sp
-}
-
-@Composable
-fun Int.toFixedSp(): TextUnit {
-    val density = LocalDensity.current
-    return with(density) { this@toFixedSp / density.fontScale }.sp
-}*/
 val Pretendard: FontFamily
     @Composable
     get() = FontFamily(

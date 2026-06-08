@@ -1,6 +1,5 @@
 package com.reborn.feature.intro.model
 
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 
 @Immutable

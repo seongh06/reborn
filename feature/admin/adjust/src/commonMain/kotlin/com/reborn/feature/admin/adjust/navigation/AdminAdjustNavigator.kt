@@ -1,6 +1,5 @@
 package com.reborn.feature.admin.adjust.navigation
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -12,12 +11,8 @@ fun NavController.navigateAdminAdjust(navOptions: NavOptions) {
     navigate(route = Route.Admin.Adjust, navOptions = navOptions)
 }
 
-fun NavGraphBuilder.adjustNavGraph(
-    innerPadding: PaddingValues,
-) {
+fun NavGraphBuilder.adjustNavGraph() {
     composable<Route.Admin.Adjust> {
-        AdminAdjustRoute(
-
-        )
+        AdminAdjustRoute()
     }
 }
