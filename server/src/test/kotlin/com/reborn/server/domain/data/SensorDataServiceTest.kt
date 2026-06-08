@@ -77,6 +77,36 @@ class SensorDataServiceTest {
     }
 
     @Test
+    fun `collect - 측정값이 모두 비어있으면 예외가 발생한다`() {
+        val request = SensorDataDto.CollectRequest()
+
+        assertThatThrownBy { sensorDataService.collect("arduino_room_01", request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `collect - 습도가 0~100 범위를 벗어나면 예외가 발생한다`() {
+        val request = SensorDataDto.CollectRequest(humidity = 120.0)
+
+        assertThatThrownBy { sensorDataService.collect("arduino_room_01", request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `collect - 조도 또는 재실 인원이 음수면 예외가 발생한다`() {
+        val request = SensorDataDto.CollectRequest(illuminance = -10)
+
+        assertThatThrownBy { sensorDataService.collect("arduino_room_01", request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
     fun `getCurrent - 등록된 기기의 최신 센서 데이터를 반환한다`() {
         val latestLog = SensorLogs(
             device = device,
