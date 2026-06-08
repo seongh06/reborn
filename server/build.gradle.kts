@@ -27,3 +27,7 @@ dependencies {
     runtimeOnly(libs.mysql.connector.j)
     testImplementation(libs.spring.boot.starter.test)
 }
+
+tasks.test {
+    useJUnitPlatform()
+}
