@@ -1,4 +1,4 @@
-package com.reborn.server.domain.data
+package com.reborn.server.domain.data.dto
 
 import java.time.LocalDateTime
 
@@ -25,6 +25,24 @@ class SensorDataDto {
         val illuminance: Int?,
         val peopleCount: Int?,
         val discomfort: Double?,
+        val createdAt: LocalDateTime,
+    )
+
+    data class HistoryResponse(
+        val deviceId: String,
+        val logs: List<HistoryItem>,
+        val page: Int,
+        val size: Int,
+        val totalElements: Long,
+        val totalPages: Int,
+    )
+
+    data class HistoryItem(
+        val logId: Long,
+        val temperature: Double?,
+        val humidity: Double?,
+        val illuminance: Int?,
+        val peopleCount: Int?,
         val createdAt: LocalDateTime,
     )
 }
