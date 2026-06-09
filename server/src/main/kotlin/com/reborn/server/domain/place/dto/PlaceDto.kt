@@ -1,12 +1,13 @@
 package com.reborn.server.domain.place.dto
 
+import jakarta.validation.constraints.NotBlank
 import java.time.LocalDateTime
 
 class PlaceDto {
 
     data class RegisterRequest(
-        val name: String? = null,
-        val type: String? = null,
+        @field:NotBlank val name: String? = null,
+        @field:NotBlank val type: String? = null,
     )
 
     data class RegisterResponse(

@@ -165,6 +165,7 @@ jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
 jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 mysql-connector-j = { module = "com.mysql:mysql-connector-j" }
 aws-sdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "awssdk" }
 aws-sdk-s3 = { module = "software.amazon.awssdk:s3" }

@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS `place`
     `created_at`  DATETIME(6)  NOT NULL COMMENT '등록일시',
     `updated_at`  DATETIME(6)  NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_place_qr_code` (`qr_code`)
+    UNIQUE KEY `uk_place_qr_code` (`qr_code`),
+    CONSTRAINT `chk_place_type` CHECK (`type` IN ('HOME', 'STORE', 'COMPANY'))
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci

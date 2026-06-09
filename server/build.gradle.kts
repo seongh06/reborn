@@ -14,6 +14,7 @@ version = "1.0.0"
 dependencies {
     implementation(platform(libs.aws.sdk.bom))
     implementation(libs.spring.boot.starter.web)
+    implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.data.redis)

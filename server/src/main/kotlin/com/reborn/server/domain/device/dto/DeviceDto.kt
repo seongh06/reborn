@@ -1,13 +1,15 @@
 package com.reborn.server.domain.device.dto
 
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import java.time.LocalDateTime
 
 class DeviceDto {
 
     data class RegisterRequest(
-        val placeId: Long? = null,
-        val deviceId: String? = null,
-        val deviceName: String? = null,
+        @field:NotNull val placeId: Long? = null,
+        @field:NotBlank val deviceId: String? = null,
+        @field:NotBlank val deviceName: String? = null,
     )
 
     data class RegisterResponse(

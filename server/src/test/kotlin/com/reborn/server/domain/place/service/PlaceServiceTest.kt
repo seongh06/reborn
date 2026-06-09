@@ -6,6 +6,8 @@ import com.reborn.server.domain.auth.UserRepository
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.PlaceType
+import com.reborn.server.domain.place.AccessLevel
+import com.reborn.server.domain.place.UserPlaceMapping
 import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.domain.place.dto.PlaceDto
 import com.reborn.server.global.handler.BusinessAlertException
@@ -15,10 +17,12 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import java.util.Optional
 
@@ -58,6 +62,12 @@ class PlaceServiceTest {
         assertThat(response.name).isEqualTo("우리집")
         assertThat(response.type).isEqualTo("HOME")
         assertThat(response.createdAt).isEqualTo(savedPlace.createdAt)
+
+        val mappingCaptor = ArgumentCaptor.forClass(UserPlaceMapping::class.java)
+        verify(userPlaceMappingRepository).save(mappingCaptor.capture())
+        assertThat(mappingCaptor.value.accessLevel).isEqualTo(AccessLevel.ADMIN)
+        assertThat(mappingCaptor.value.user).isEqualTo(user)
+        assertThat(mappingCaptor.value.place).isEqualTo(savedPlace)
     }
 
     @Test

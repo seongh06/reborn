@@ -10,6 +10,7 @@ import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -43,9 +44,13 @@ class DeviceService(
             throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 등록된 기기입니다.")
         }
 
-        val device = deviceRepository.save(
-            Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = deviceKey, name = deviceName),
-        )
+        val device = try {
+            deviceRepository.save(
+                Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = deviceKey, name = deviceName),
+            )
+        } catch (e: DataIntegrityViolationException) {
+            throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 등록된 기기입니다.")
+        }
 
         return DeviceConverter.toRegisterResponse(device)
     }
