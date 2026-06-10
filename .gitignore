@@ -19,8 +19,13 @@ xcuserdata
 *.jar
 *.war
 *.class
+*.log
 application-local.yml
 application-secret.yml
+
+# ── Docker 볼륨 데이터 ─────────────────
+mysql_reborn_data/
+redis_data/
 
 # ── 환경변수 / 시크릿 ─────────────────
 .env
@@ -41,3 +46,4 @@ node_modules/
 
 # ── Claude Code ───────────────────────
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
