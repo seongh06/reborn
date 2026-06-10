@@ -1,7 +1,7 @@
 package com.reborn.server.global.s3
 
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -10,7 +10,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 
 @Configuration
-@ConditionalOnProperty(prefix = "cloud.aws.credentials", name = ["access-key"], matchIfMissing = false)
+@ConditionalOnExpression("#{T(org.springframework.util.StringUtils).hasText('\${cloud.aws.credentials.access-key:}')}")
 class S3Config(
     @param:Value("\${cloud.aws.credentials.access-key}") private val accessKey: String,
     @param:Value("\${cloud.aws.credentials.secret-key}") private val secretKey: String,
