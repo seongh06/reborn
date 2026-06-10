@@ -10,7 +10,10 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 
 @Configuration
-@ConditionalOnExpression("#{T(org.springframework.util.StringUtils).hasText('\${cloud.aws.credentials.access-key:}')}")
+@ConditionalOnExpression(
+    "#{T(org.springframework.util.StringUtils).hasText('\${cloud.aws.credentials.access-key:}') " +
+        "and T(org.springframework.util.StringUtils).hasText('\${cloud.aws.credentials.secret-key:}')}",
+)
 class S3Config(
     @param:Value("\${cloud.aws.credentials.access-key}") private val accessKey: String,
     @param:Value("\${cloud.aws.credentials.secret-key}") private val secretKey: String,

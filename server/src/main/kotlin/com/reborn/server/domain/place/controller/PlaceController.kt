@@ -24,7 +24,11 @@ class PlaceController(
     private val placeService: PlaceService,
 ) {
 
-    @Operation(summary = "장소 등록", description = "새로운 장소를 등록합니다. 등록한 사용자에게 자동으로 ADMIN 권한이 부여됩니다. 공간 유형은 HOME·STORE·COMPANY 중 하나를 입력하세요.")
+    @Operation(
+        summary = "장소 등록",
+        description = "새로운 장소를 등록합니다. 등록한 사용자에게 자동으로 ADMIN 권한이 부여됩니다. " +
+            "공간 유형은 HOME·STORE·COMPANY 중 하나를 입력하세요.",
+    )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "등록 성공 — placeId, 장소명, 공간 유형, 생성일시 반환"),
         SwaggerApiResponse(responseCode = "400", description = "장소 이름 누락 또는 정의되지 않은 공간 유형"),

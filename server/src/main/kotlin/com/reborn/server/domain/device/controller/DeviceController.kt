@@ -24,7 +24,11 @@ class DeviceController(
     private val deviceService: DeviceService,
 ) {
 
-    @Operation(summary = "Arduino 기기 등록", description = "특정 장소에 Arduino IoT 기기를 등록합니다. 해당 장소의 ADMIN 권한이 필요하며, KIOSK(공기계) 등록은 페어링 코드 방식으로 별도 처리됩니다.")
+    @Operation(
+        summary = "Arduino 기기 등록",
+        description = "특정 장소에 Arduino IoT 기기를 등록합니다. 해당 장소의 ADMIN 권한이 필요하며, " +
+            "KIOSK(공기계) 등록은 페어링 코드 방식으로 별도 처리됩니다.",
+    )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "등록 성공 — deviceId, 기기명, 기기 유형(ARDUINO), 등록일시 반환"),
         SwaggerApiResponse(responseCode = "400", description = "필수 필드 누락 (placeId, deviceId, deviceName)"),

@@ -22,7 +22,10 @@ class SensorDataController(
     private val sensorDataService: SensorDataService,
 ) {
 
-    @Operation(summary = "센서 데이터 수집", description = "Arduino 기기가 온도·습도·조도·재실 인원 데이터를 서버에 전송합니다. 헤더의 X-Device-Id로 기기를 식별합니다.")
+    @Operation(
+        summary = "센서 데이터 수집",
+        description = "Arduino 기기가 온도·습도·조도·재실 인원 데이터를 서버에 전송합니다. 헤더의 X-Device-Id로 기기를 식별합니다.",
+    )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "수집 성공 — logId, 불쾌지수, 수집일시 반환"),
         SwaggerApiResponse(responseCode = "400", description = "센서 값이 모두 비어있거나 유효 범위를 벗어난 경우"),
@@ -35,7 +38,10 @@ class SensorDataController(
     ): ApiResponse<SensorDataDto.CollectResponse> =
         ApiResponse.success(sensorDataService.collect(deviceId, request))
 
-    @Operation(summary = "최신 센서 데이터 조회", description = "특정 기기의 가장 최근 센서 로그 1건을 조회합니다.")
+    @Operation(
+        summary = "최신 센서 데이터 조회",
+        description = "특정 기기의 가장 최근 센서 로그 1건을 조회합니다.",
+    )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "조회 성공 — 온도·습도·조도·재실 인원·불쾌지수 반환"),
         SwaggerApiResponse(responseCode = "404", description = "등록되지 않은 기기이거나 수집된 데이터 없음"),

@@ -26,7 +26,10 @@ class DataController(
     private val sensorDataService: SensorDataService,
 ) {
 
-    @Operation(summary = "센서 로그 히스토리 조회", description = "특정 기기의 센서 로그 목록을 페이징하여 반환합니다. 해당 장소에 접근 권한이 있는 사용자만 조회 가능합니다.")
+    @Operation(
+        summary = "센서 로그 히스토리 조회",
+        description = "특정 기기의 센서 로그 목록을 페이징하여 반환합니다. 해당 장소에 접근 권한이 있는 사용자만 조회 가능합니다.",
+    )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "조회 성공 — 로그 목록 및 페이징 정보 반환"),
         SwaggerApiResponse(responseCode = "401", description = "인증 실패 (유효하지 않거나 만료된 AccessToken)"),
