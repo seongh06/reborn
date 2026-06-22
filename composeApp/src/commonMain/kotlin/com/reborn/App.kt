@@ -48,6 +48,9 @@ fun App() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
 
+            val lineColor = RebornTheme.color.grayScale700
+            val surfaceColor = RebornTheme.color.grayScale100
+
             Scaffold(
                 containerColor = RebornTheme.color.grayScale100,
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -56,13 +59,13 @@ fun App() {
 
                     if (!isIntro) {
                         Surface(
-                            color = RebornTheme.color.grayScale100,
+                            color = surfaceColor,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .drawBehind {
                                     val strokeWidth = 1.dp.toPx()
                                     drawLine(
-                                        color = RebornTheme.color.grayScale700,
+                                        color = lineColor,
                                         start = Offset(0f, 0f),
                                         end = Offset(size.width, 0f),
                                         strokeWidth = strokeWidth

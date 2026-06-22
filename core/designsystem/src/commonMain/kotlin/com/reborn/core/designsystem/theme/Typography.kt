@@ -39,15 +39,15 @@ val rebornTypography: RebornTypography
         val pretendard = Pretendard
         return RebornTypography(
             //pretendard
-            displayLarge = TextStyle(fontFamily = pretendard, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, lineHeight = 40.sp, letterSpacing = (-0.5).em),
-            headlineMedium = TextStyle(fontFamily = pretendard, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, lineHeight = 32.sp, letterSpacing = (-0.3).em),
-            titleLarge = TextStyle(fontFamily = pretendard, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, letterSpacing = (-0.2).em),
+            displayLarge = TextStyle(fontFamily = pretendard, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, lineHeight = 40.sp, letterSpacing = (-0.005).em),
+            headlineMedium = TextStyle(fontFamily = pretendard, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, lineHeight = 32.sp, letterSpacing = (-0.003).em),
+            titleLarge = TextStyle(fontFamily = pretendard, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, letterSpacing = (-0.002).em),
             titleMedium = TextStyle(fontFamily = pretendard, fontSize = 18.sp, fontWeight = FontWeight.Medium, lineHeight = 26.sp),
             titleSmall = TextStyle(fontFamily = pretendard, fontSize = 16.sp, fontWeight = FontWeight.Medium, lineHeight = 24.sp),
-            bodyLarge = TextStyle(fontFamily = pretendard, fontSize = 16.sp, fontWeight = FontWeight.Normal, lineHeight = 24.sp, letterSpacing = (0.1).em),
-            bodyMedium = TextStyle(fontFamily = pretendard, fontSize = 14.sp, fontWeight = FontWeight.Normal, lineHeight = 20.sp,letterSpacing = (0.1).em),
-            labelLarge = TextStyle(fontFamily = pretendard, fontSize = 14.sp, fontWeight = FontWeight.Medium, lineHeight = 20.sp, letterSpacing = (0.1).em),
-            labelMedium = TextStyle(fontFamily = pretendard, fontSize = 12.sp, fontWeight = FontWeight.Medium, lineHeight = 16.sp, letterSpacing = (0.2).em),
+            bodyLarge = TextStyle(fontFamily = pretendard, fontSize = 16.sp, fontWeight = FontWeight.Normal, lineHeight = 24.sp, letterSpacing = (0.001).em),
+            bodyMedium = TextStyle(fontFamily = pretendard, fontSize = 14.sp, fontWeight = FontWeight.Normal, lineHeight = 20.sp,letterSpacing = (0.001).em),
+            labelLarge = TextStyle(fontFamily = pretendard, fontSize = 14.sp, fontWeight = FontWeight.Medium, lineHeight = 20.sp, letterSpacing = (0.001).em),
+            labelMedium = TextStyle(fontFamily = pretendard, fontSize = 12.sp, fontWeight = FontWeight.Medium, lineHeight = 16.sp, letterSpacing = (0.002).em),
             caption = TextStyle(fontFamily = pretendard, fontSize = 12.sp, fontWeight = FontWeight.Normal, lineHeight = 16.sp)
         )
     }

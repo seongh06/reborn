@@ -1,8 +1,12 @@
 package com.reborn.feature.intro
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -14,8 +18,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.reborn.core.designsystem.component.RebornButton
+import com.reborn.core.designsystem.theme.RebornTheme
+import com.reborn.core.ui.RebornLoadingScreen
+import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.model.IntroIntent
+import com.reborn.feature.intro.model.IntroUiState
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -46,24 +56,27 @@ fun IntroRoute(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { _ ->
-        IntroScreen(
-            onNavigateToAdmin = { viewModel.onIntent(IntroIntent.NavigateToAdmin) },
-            onNavigateToAerometer = { viewModel.onIntent(IntroIntent.NavigateToAerometer) }
-        )
+        when(uiState){
+            is IntroUiState.Loading -> RebornLoadingScreen()
+            is IntroUiState.Start -> IntroScreen(
+                onClick = { viewModel.onIntent(IntroIntent.ClickStart) }
+            )
+            is IntroUiState.Term -> {}
+        }
     }
 }
 
 @Composable
 fun IntroScreen(
-    onNavigateToAdmin: () -> Unit,
-    onNavigateToAerometer: () -> Unit,
+    onClick: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        Button(onClick = onNavigateToAdmin) { Text("Admin") }
-        Button(onClick = onNavigateToAerometer) { Text("Aerometer") }
+        Spacer(modifier = Modifier.weight(1f))
+        RebornButton(
+            text = "시작하기",
+            onClick = onClick
+        )
     }
 }
