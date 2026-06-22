@@ -1,15 +1,10 @@
-package com.reborn.core.designsystem
+package com.reborn.core.designsystem.theme
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
-import com.reborn.core.designsystem.theme.LocalColor
-import com.reborn.core.designsystem.theme.LocalTypography
-import com.reborn.core.designsystem.theme.RebornColor
-import com.reborn.core.designsystem.theme.RebornTypography
-import com.reborn.core.designsystem.theme.rebornTypography
 
 @Composable
 fun RebornTheme(

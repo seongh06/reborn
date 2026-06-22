@@ -13,7 +13,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,7 +26,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.reborn.core.designsystem.RebornTheme
+import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.navigation.MainTab
 import com.reborn.core.navigation.Route
 import com.reborn.feature.admin.adjust.navigation.adjustNavGraph
@@ -39,7 +38,6 @@ import com.reborn.feature.aerometer.navigation.aerometerNavGraph
 import com.reborn.feature.intro.navigation.introNavGraph
 import moe.tlaster.precompose.PreComposeApp
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.KoinContext
 
 @Composable
 fun App() {
