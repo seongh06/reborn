@@ -7,9 +7,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.reborn.core.designsystem.*
 import org.jetbrains.compose.resources.Font
-import reborn.core.designsystem.generated.resources.Res
-import reborn.core.designsystem.generated.resources.*
 
 val Pretendard: FontFamily
     @Composable

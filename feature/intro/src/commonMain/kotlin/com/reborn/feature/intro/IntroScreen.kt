@@ -26,6 +26,8 @@ import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
+import com.reborn.feature.intro.screen.IntroPermissionScreen
+import com.reborn.feature.intro.screen.IntroTermScreen
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -59,16 +61,23 @@ fun IntroRoute(
         when(uiState){
             is IntroUiState.Loading -> RebornLoadingScreen()
             is IntroUiState.Start -> IntroScreen(
-                onClick = { viewModel.onIntent(IntroIntent.ClickStart) }
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToTerm) }
             )
-            is IntroUiState.Term -> {}
+            is IntroUiState.Term -> IntroTermScreen(
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToPermission) },
+                onBackClick = { viewModel.onIntent(IntroIntent.LoadInitial) }
+            )
+            is IntroUiState.Permission -> IntroPermissionScreen(
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) },
+                onBackClick = { viewModel.onIntent(IntroIntent.LoadInitial) }
+            )
         }
     }
 }
 
 @Composable
 fun IntroScreen(
-    onClick: () -> Unit = {}
+    onNextClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
@@ -76,7 +85,7 @@ fun IntroScreen(
         Spacer(modifier = Modifier.weight(1f))
         RebornButton(
             text = "시작하기",
-            onClick = onClick
+            onClick = onNextClick
         )
     }
 }

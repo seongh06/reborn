@@ -26,9 +26,8 @@ import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.reborn.core.designsystem.*
 import com.reborn.core.designsystem.theme.RebornTheme
-import reborn.core.designsystem.generated.resources.Res
-import reborn.core.designsystem.generated.resources.ic_check
 
 @Composable
 fun RebornTextField(

@@ -11,11 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.reborn.core.designsystem.*
 import com.reborn.core.designsystem.theme.RebornTheme
-import reborn.core.designsystem.generated.resources.Res
-import reborn.core.designsystem.generated.resources.ic_back
-import reborn.core.designsystem.generated.resources.ic_notification
-import reborn.core.designsystem.generated.resources.ic_setting
 
 @Composable
 fun RebornTopAppBar(
@@ -28,8 +25,7 @@ fun RebornTopAppBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(44.dp)
-            .padding(16.dp, 4.dp)
+            .padding(4.dp, 8.dp)
     ) {
         onBackClick?.let {
             Row(
@@ -41,14 +37,12 @@ fun RebornTopAppBar(
                     icon = Res.drawable.ic_back,
                     onClick = onBackClick
                 )
-
                 title?.let {
                     Text(
                         text = title,
                         style = RebornTheme.typography.titleLarge,
                         color = RebornTheme.color.grayScale900
                     )
-
                 }
             }
         }
@@ -59,7 +53,7 @@ fun RebornTopAppBar(
                     text = title,
                     style = RebornTheme.typography.displayLarge,
                     color = RebornTheme.color.grayScale900,
-                    modifier = Modifier.align(Alignment.CenterStart)
+                    modifier = Modifier.align(Alignment.CenterStart).padding(horizontal = 12.dp)
                 )
             }
         }

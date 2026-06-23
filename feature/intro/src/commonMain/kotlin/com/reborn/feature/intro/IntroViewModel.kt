@@ -26,10 +26,15 @@ class IntroViewModel : ViewModel() {
     private val _event = MutableSharedFlow<IntroEvent>()
     val event = _event.asSharedFlow()
 
+    private var isPermissionGranted = false
+    private var isTermAgreed = false
+
+
     fun onIntent(intent: IntroIntent){
         when(intent){
             is IntroIntent.LoadInitial -> checkInitialState()
-            is IntroIntent.ClickStart -> navTo()
+            is IntroIntent.NavigateToTerm -> navTo()
+            is IntroIntent.NavigateToPermission -> navTo()
             is IntroIntent.NavigateToAdmin -> navigateToAdmin()
             is IntroIntent.NavigateToAerometer -> navigateToAerometer()
         }
@@ -46,7 +51,19 @@ class IntroViewModel : ViewModel() {
 
     private fun navTo() {
         viewModelScope.launch {
-            _uiState.emit(IntroUiState.Start)
+            when {
+                !isPermissionGranted -> {
+                    _uiState.value = IntroUiState.Term
+                }
+
+                !isTermAgreed -> {
+                    _uiState.value = IntroUiState.Permission
+                }
+
+                else -> {
+                    _uiState.value = IntroUiState.Start
+                }
+            }
         }
     }
 
