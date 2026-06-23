@@ -26,15 +26,24 @@ import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
+import com.reborn.feature.intro.screen.IntroModeSelectScreen
 import com.reborn.feature.intro.screen.IntroPermissionScreen
 import com.reborn.feature.intro.screen.IntroTermScreen
+import com.reborn.feature.intro.screen.admin.IntroAdminCodeScreen
+import com.reborn.feature.intro.screen.admin.IntroAdminLoginScreen
+import com.reborn.feature.intro.screen.admin.IntroAdminModeSelectScreen
+import com.reborn.feature.intro.screen.admin.IntroAdminPlaceNameScreen
+import com.reborn.feature.intro.screen.admin.IntroAdminPlaceSelectScreen
+import com.reborn.feature.intro.screen.admin.IntroInviteCodeScreen
+import com.reborn.feature.intro.screen.aerometer.IntroAermeterPairingScreen
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun IntroRoute(
     viewModel: IntroViewModel = koinViewModel(),
     onNavigateToAdmin: () -> Unit,
-    onNavigateToAerometer: () -> Unit
+    onNavigateToAerometer: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -52,6 +61,7 @@ fun IntroRoute(
                 is IntroEvent.NavigateToAdmin -> onNavigateToAdmin()
                 is IntroEvent.NavigateToAerometer -> onNavigateToAerometer()
                 is IntroEvent.PermissionGranted -> {}
+                is IntroEvent.ExitIntro -> onBackClick()
             }
         }
     }
@@ -66,11 +76,42 @@ fun IntroRoute(
             )
             is IntroUiState.Term -> IntroTermScreen(
                 onNextClick = { viewModel.onIntent(IntroIntent.NavigateToPermission) },
-                onBackClick = { viewModel.onIntent(IntroIntent.LoadInitial) }
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.Permission -> IntroPermissionScreen(
-                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) },
-                onBackClick = { viewModel.onIntent(IntroIntent.LoadInitial) }
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToModeSelect) },
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
+            )
+            is IntroUiState.ModeSelect -> IntroModeSelectScreen(
+                onAerometerClick = { viewModel.onIntent(IntroIntent.NavigateToAerometerPairing) },
+                onAdminClick = { viewModel.onIntent(IntroIntent.NavigateToAdminLogin) },
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
+            )
+            is IntroUiState.AerometerPairing -> IntroAermeterPairingScreen(
+                onAerometerClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) },
+                onAdminClick = { viewModel.onIntent(IntroIntent.NavigateToAerometer) },
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
+            )
+            is IntroUiState.AdminLogin -> IntroAdminLoginScreen(
+                onLoginClick = { viewModel.onIntent(IntroIntent.NavigateToAdminModeSelect) }
+            )
+            is IntroUiState.AdminModeSelect -> IntroAdminModeSelectScreen(
+                onInviteCodeClick = { viewModel.onIntent(IntroIntent.NavigateToInviteCode) },
+                onNewClick = { viewModel.onIntent(IntroIntent.NavigateToAdminPlaceName) }
+            )
+            is IntroUiState.InviteCode -> IntroInviteCodeScreen(
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
+            )
+            is IntroUiState.AdminPlaceName -> IntroAdminPlaceNameScreen(
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdminPlaceSelect) },
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
+            )
+            is IntroUiState.AdminPlaceSelect -> IntroAdminPlaceSelectScreen(
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdminCode) },
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
+            )
+            is IntroUiState.AdminCode -> IntroAdminCodeScreen(
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
         }
     }

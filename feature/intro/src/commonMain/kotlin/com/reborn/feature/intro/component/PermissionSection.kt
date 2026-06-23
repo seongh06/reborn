@@ -26,7 +26,7 @@ fun PermissionSection(
     title: String,
     content: String,
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(true) }
     val interactionSource = remember { MutableInteractionSource() }
 
     Column(

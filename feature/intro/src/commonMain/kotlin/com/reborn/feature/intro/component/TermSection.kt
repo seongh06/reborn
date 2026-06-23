@@ -28,7 +28,7 @@ fun TermSection(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(true) }
     val interactionSource = remember { MutableInteractionSource() }
 
     Column(

@@ -1,4 +1,4 @@
-package com.reborn.feature.intro.screen
+package com.reborn.feature.intro.screen.admin
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,7 @@ import com.reborn.core.common.PermissionHandler
 import com.reborn.core.common.PermissionType
 import com.reborn.core.common.rememberPermissionManager
 import com.reborn.core.designsystem.component.RebornButton
+import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
@@ -34,6 +37,7 @@ import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
 import com.reborn.feature.intro.component.PermissionSection
+import com.reborn.feature.intro.component.SocialLoginButton
 import com.reborn.feature.intro.component.TermSection
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
@@ -42,67 +46,28 @@ import com.reborn.feature.intro.model.TermItem
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun IntroPermissionScreen(
+fun IntroAdminPlaceNameScreen(
     onNextClick: () -> Unit,
-    onBackClick: () -> Unit,
+    onBackClick:() -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
-    val permissions = remember {
-        listOf(
-            PermissionItem(1, PermissionType.CAMERA, "카메라 정보", "QR 코드 스캔을 위해 카메라 권한이 필요합니다."),
-            PermissionItem(2, PermissionType.LOCATION, "위치 정보", "주변 장소 인식을 위해 위치 권한이 필요합니다."),
-            PermissionItem(3, PermissionType.GALLERY, "갤러리", "사진 첨부를 위해 갤러리 접근 권한이 필요합니다."),
-            PermissionItem(4, PermissionType.ALARM, "알람", "알람을 설정하기 위해 알람 권한이 필요합니다."),
-        )
-    }
-
-    val grantedStates = remember { mutableStateMapOf<PermissionType, Boolean>() }
-
-    lateinit var permissionHandler: PermissionHandler
-
-    fun requestNextPermission() {
-        val next = permissions.firstOrNull { grantedStates[it.type] != true }
-        if (next != null) {
-            permissionHandler.askPermission(next.type)
-        } else if (permissions.all { grantedStates[it.type] == true }) {
-            viewModel.onIntent(IntroIntent.PermissionsGranted)
-        }
-    }
-
-    permissionHandler = rememberPermissionManager { type, isGranted ->
-        grantedStates[type] = isGranted
-        if (isGranted) {
-            requestNextPermission()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.event.collect { event ->
-            when (event) {
-                is IntroEvent.PermissionGranted -> onNextClick()
-                else -> {}
-            }
-        }
-    }
-
+    var placeName by remember { mutableStateOf("") }
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        RebornTopAppBar(onBackClick = { onBackClick() })
-        RebornTopAppBar(title = "권한 부여")
-        permissions.forEach { permission ->
-            PermissionSection(
-                title = permission.title,
-                content = permission.content,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
+        RebornTopAppBar(onBackClick = { onBackClick() }, title = "New Place")
+        RebornTopAppBar(title = "장소 이름 입력")
+        RebornTextField(
+            value = placeName,
+            onValueChange = { placeName = it },
+            hint = "장소 이름 입력"
+        )
         Spacer(modifier = Modifier.weight(1f))
 
         RebornButton(
-            text = "권한 설정",
-            onClick = { requestNextPermission() }
+            text = "다음",
+            enabled = placeName.isNotBlank(),
+            onClick = { onNextClick() }
         )
     }
 }

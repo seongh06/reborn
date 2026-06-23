@@ -133,6 +133,9 @@ fun App() {
                             navController.navigate(Route.Aerometer) {
                                 popUpTo(Route.Intro) { inclusive = true }
                             }
+                        },
+                        onBackClick = {
+                            navController.popBackStack()
                         }
                     )
                     adminHomeNavGraph()

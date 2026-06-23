@@ -51,7 +51,7 @@ fun RebornTextField(
         override val status: TextToolbarStatus = TextToolbarStatus.Hidden
         override fun hide() {}
         override fun showMenu(
-            rect: Rect,
+                rect: Rect,
             onCopyRequested: (() -> Unit)?,
             onPasteRequested: (() -> Unit)?,
             onCutRequested: (() -> Unit)?,
