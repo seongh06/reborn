@@ -14,6 +14,7 @@ sealed interface IntroIntent{
     data object LoadInitial : IntroIntent
     data object NavigateToTerm : IntroIntent
     data object NavigateToPermission : IntroIntent
+    data object PermissionsGranted : IntroIntent
     data object NavigateToAdmin : IntroIntent
     data object NavigateToAerometer : IntroIntent
 

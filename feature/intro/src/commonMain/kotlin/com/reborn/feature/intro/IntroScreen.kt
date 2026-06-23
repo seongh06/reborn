@@ -51,6 +51,7 @@ fun IntroRoute(
                 }
                 is IntroEvent.NavigateToAdmin -> onNavigateToAdmin()
                 is IntroEvent.NavigateToAerometer -> onNavigateToAerometer()
+                is IntroEvent.PermissionGranted -> {}
             }
         }
     }

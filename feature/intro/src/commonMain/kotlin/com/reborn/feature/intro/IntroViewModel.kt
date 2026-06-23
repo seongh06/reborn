@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import moe.tlaster.precompose.viewmodel.viewModelScope
 
 sealed class IntroEvent {
     data object NavigateToAdmin : IntroEvent()
     data object NavigateToAerometer : IntroEvent()
+    data object PermissionGranted : IntroEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : IntroEvent()
 }
 
@@ -34,7 +34,11 @@ class IntroViewModel : ViewModel() {
         when(intent){
             is IntroIntent.LoadInitial -> checkInitialState()
             is IntroIntent.NavigateToTerm -> navTo()
-            is IntroIntent.NavigateToPermission -> navTo()
+            is IntroIntent.NavigateToPermission ->{
+                isTermAgreed = true
+                navTo()
+            }
+            is IntroIntent.PermissionsGranted -> onPermissionsGranted()
             is IntroIntent.NavigateToAdmin -> navigateToAdmin()
             is IntroIntent.NavigateToAerometer -> navigateToAerometer()
         }
@@ -52,18 +56,17 @@ class IntroViewModel : ViewModel() {
     private fun navTo() {
         viewModelScope.launch {
             when {
-                !isPermissionGranted -> {
-                    _uiState.value = IntroUiState.Term
-                }
-
-                !isTermAgreed -> {
-                    _uiState.value = IntroUiState.Permission
-                }
-
-                else -> {
-                    _uiState.value = IntroUiState.Start
-                }
+                !isTermAgreed -> _uiState.value = IntroUiState.Term
+                !isPermissionGranted -> _uiState.value = IntroUiState.Permission
+                else -> _uiState.value = IntroUiState.Start
             }
+        }
+    }
+
+    private fun onPermissionsGranted() {
+        viewModelScope.launch {
+            isPermissionGranted = true
+            _event.emit(IntroEvent.PermissionGranted)
         }
     }
 
