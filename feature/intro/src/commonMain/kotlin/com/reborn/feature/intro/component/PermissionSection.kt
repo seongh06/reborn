@@ -43,7 +43,7 @@ fun PermissionSection(
                     isExpanded = !isExpanded
                   },
             text = title,
-            style = RebornTheme.typography.titleLarge,
+            style = RebornTheme.typography.titleMedium,
             color = RebornTheme.color.grayScale700
         )
         if (isExpanded) {

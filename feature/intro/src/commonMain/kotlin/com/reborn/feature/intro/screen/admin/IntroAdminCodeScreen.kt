@@ -18,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,7 @@ import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
+import com.reborn.feature.intro.component.PairingCodeIssued
 import com.reborn.feature.intro.component.PermissionSection
 import com.reborn.feature.intro.component.SocialLoginButton
 import com.reborn.feature.intro.component.TermSection
@@ -48,12 +51,35 @@ fun IntroAdminCodeScreen(
     onBackClick:() -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
+    val totalTime = 300
+
+    val waitTime = 60
+
+    var timeLeft by remember { mutableStateOf(totalTime) }
+
+    LaunchedEffect(key1 = timeLeft) {
+        if (timeLeft > 0) {
+            kotlinx.coroutines.delay(1000L)
+            timeLeft -= 1
+        }
+    }
+
+    val canReissue = (totalTime - timeLeft) >= waitTime
 
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
         RebornTopAppBar(onBackClick = { onBackClick() }, title = "New Place")
         RebornTopAppBar(title = "페어링")
+        PairingCodeIssued(123456, timeLeft)
+        Spacer(modifier = Modifier.weight(1f))
 
+        RebornButton(
+            text = "페어링 코드 재발급",
+            enabled = canReissue,
+            onClick = {
+                timeLeft = totalTime
+            }
+        )
     }
 }

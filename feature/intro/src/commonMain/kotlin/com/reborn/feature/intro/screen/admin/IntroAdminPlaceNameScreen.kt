@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Scaffold
@@ -58,6 +59,7 @@ fun IntroAdminPlaceNameScreen(
         RebornTopAppBar(onBackClick = { onBackClick() }, title = "New Place")
         RebornTopAppBar(title = "장소 이름 입력")
         RebornTextField(
+            modifier = Modifier.fillMaxWidth().padding(16.dp,8.dp),
             value = placeName,
             onValueChange = { placeName = it },
             hint = "장소 이름 입력"
