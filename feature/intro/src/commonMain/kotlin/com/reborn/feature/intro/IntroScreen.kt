@@ -100,6 +100,7 @@ fun IntroRoute(
                 onNewClick = { viewModel.onIntent(IntroIntent.NavigateToAdminPlaceName) }
             )
             is IntroUiState.InviteCode -> IntroInviteCodeScreen(
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) },
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.AdminPlaceName -> IntroAdminPlaceNameScreen(

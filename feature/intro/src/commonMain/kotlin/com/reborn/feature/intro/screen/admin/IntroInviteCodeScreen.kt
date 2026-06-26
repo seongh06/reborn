@@ -18,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,7 @@ import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
+import com.reborn.core.ui.component.PairingCodeInput
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
@@ -44,14 +47,36 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun IntroInviteCodeScreen(
+    onNextClick: () -> Unit,
     onBackClick: () -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
+    var inviteCode by remember { mutableStateOf("") }
+    val maxCount = 6
+
+    LaunchedEffect(inviteCode) {
+        if (inviteCode.length == maxCount) {
+            // TODO: viewModel.onIntent(IntroIntent.VerifyInviteCode(inviteCode)) 호출
+            // 임시
+            if (inviteCode == "123456") {
+                onNextClick()
+            } else {
+            }
+        }
+    }
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
         RebornTopAppBar(onBackClick = { onBackClick() }, title = "초대 코드 입력")
         RebornTopAppBar(title = "초대 코드 입력")
-
+        PairingCodeInput(
+            value = inviteCode,
+            onValueChange = {
+                if (it.length <= maxCount) {
+                    inviteCode = it
+                }
+            },
+            maxCount = maxCount
+        )
     }
 }
