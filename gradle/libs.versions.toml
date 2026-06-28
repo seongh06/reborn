@@ -40,9 +40,6 @@ kotlinx-serialization = "1.7.3"
 coil = "3.4.0"
 activityKtx = "1.12.4"
 
-#Moko 권한 허용 라이브러리
-moko-permissions = "0.20.1"
-
 #ktor
 ktor = "3.4.0"
 
@@ -126,9 +123,6 @@ androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navi
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-ktor = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", version.ref = "coil" }
 androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
-
-#moko
-moko-permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "moko-permissions" }
 
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "androidx-datastore-preferences" }
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "androidx-datastore" }

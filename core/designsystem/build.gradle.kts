@@ -11,7 +11,7 @@ setNamespace("core.designsystem")
 kotlin {
     sourceSets {
         commonMain.dependencies {
-
+            implementation(compose.components.resources)
         }
     }
 }

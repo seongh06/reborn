@@ -1,7 +1,6 @@
 package com.reborn.core.navigation
 
 import org.jetbrains.compose.resources.DrawableResource
-import com.reborn.core.navigation.generated.resources.*
 
 enum class MainTab (
     val route: Route,

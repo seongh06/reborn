@@ -15,12 +15,14 @@ fun NavController.navigateIntro(navOptions: NavOptions) {
 
 fun NavGraphBuilder.introNavGraph(
     onNavigateToAdmin: () -> Unit,
-    onNavigateToAerometer: () -> Unit
+    onNavigateToAerometer: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     composable<Route.Intro> {
         IntroRoute(
             onNavigateToAdmin = onNavigateToAdmin,
-            onNavigateToAerometer = onNavigateToAerometer
+            onNavigateToAerometer = onNavigateToAerometer,
+            onBackClick =onBackClick
         )
     }
 }

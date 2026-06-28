@@ -10,10 +10,10 @@ import com.reborn.feature.admin.home.AdminHomeViewModel
 import com.reborn.feature.admin.setting.AdminSettingViewModel
 import com.reborn.feature.aerometer.AerometerViewModel
 import com.reborn.feature.intro.IntroViewModel
+import org.koin.compose.viewmodel.dsl.viewModelOf
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 import org.koin.core.module.Module
-import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
@@ -27,8 +27,6 @@ val appDependenciesModule = module {
     viewModelOf(::AdminSettingViewModel)
     viewModelOf(::AerometerViewModel)
 }
-
-
 fun initKoin(
     appDeclaration: KoinAppDeclaration = {},
     platformModules: List<Module> = emptyList()

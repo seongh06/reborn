@@ -11,7 +11,6 @@ setNamespace("core.common")
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.moko.permissions.compose)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
             implementation(libs.koin.core)
