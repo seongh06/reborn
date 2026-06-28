@@ -42,6 +42,7 @@ class IntroViewModel : ViewModel() {
             is IntroIntent.NavigateToAerometerPairing -> navigateTo(IntroUiState.AerometerPairing)
             is IntroIntent.NavigateToInviteCode -> navigateTo(IntroUiState.InviteCode)
             is IntroIntent.NavigateToAdminCode -> navigateTo(IntroUiState.AdminCode)
+            is IntroIntent.NavigateToAerometerDeviceName -> navigateTo(IntroUiState.AerometerDeviceName)
             is IntroIntent.NavigateBack -> navigateBack()
             is IntroIntent.PermissionsGranted -> onPermissionsGranted()
             is IntroIntent.NavigateToAdmin -> navigateToAdmin()

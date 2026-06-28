@@ -15,6 +15,7 @@ sealed interface IntroUiState{
     data object AdminPlaceSelect: IntroUiState
     data object AdminCode: IntroUiState
     data object AerometerPairing: IntroUiState
+    data object AerometerDeviceName: IntroUiState
     data object InviteCode: IntroUiState
 }
 
@@ -30,6 +31,7 @@ sealed interface IntroIntent{
     data object NavigateToAerometerPairing : IntroIntent
     data object NavigateToInviteCode : IntroIntent
     data object NavigateToAdminCode : IntroIntent
+    data object NavigateToAerometerDeviceName : IntroIntent
     data object NavigateBack : IntroIntent
     data object PermissionsGranted : IntroIntent
     data object NavigateToAdmin : IntroIntent

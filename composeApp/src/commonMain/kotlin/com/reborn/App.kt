@@ -52,12 +52,13 @@ fun App() {
             val surfaceColor = RebornTheme.color.grayScale100
 
             Scaffold(
+
                 containerColor = RebornTheme.color.grayScale100,
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 bottomBar = {
                     val isIntro = currentDestination?.hasRoute<Route.Intro>() == true
-
-                    if (!isIntro) {
+                    val isAerometer = currentDestination?.hasRoute<Route.Aerometer>() == true
+                    if (!isIntro && !isAerometer) {
                         Surface(
                             color = surfaceColor,
                             modifier = Modifier

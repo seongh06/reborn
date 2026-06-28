@@ -36,6 +36,7 @@ import com.reborn.feature.intro.screen.admin.IntroAdminPlaceNameScreen
 import com.reborn.feature.intro.screen.admin.IntroAdminPlaceSelectScreen
 import com.reborn.feature.intro.screen.admin.IntroInviteCodeScreen
 import com.reborn.feature.intro.screen.aerometer.IntroAermeterPairingScreen
+import com.reborn.feature.intro.screen.aerometer.IntroAerometerDeviceNameScreen
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -88,8 +89,11 @@ fun IntroRoute(
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.AerometerPairing -> IntroAermeterPairingScreen(
-                onAerometerClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) },
-                onAdminClick = { viewModel.onIntent(IntroIntent.NavigateToAerometer) },
+                onPairingComplete = { viewModel.onIntent(IntroIntent.NavigateToAerometerDeviceName) },
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
+            )
+            is IntroUiState.AerometerDeviceName -> IntroAerometerDeviceNameScreen(
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAerometer) },
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.AdminLogin -> IntroAdminLoginScreen(

@@ -24,6 +24,8 @@ fun IntroInviteCodeScreen(
     var inviteCode by remember { mutableStateOf("") }
     val maxCount = 6
 
+    var pairingCodeError by remember { mutableStateOf(false) }
+
     LaunchedEffect(inviteCode) {
         if (inviteCode.length == maxCount) {
             // TODO: viewModel.onIntent(IntroIntent.VerifyInviteCode(inviteCode)) 호출
@@ -31,13 +33,15 @@ fun IntroInviteCodeScreen(
             if (inviteCode == "123456") {
                 onNextClick()
             } else {
+                pairingCodeError = true
             }
         }
     }
+
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        RebornTopAppBar(onBackClick = { onBackClick() }, title = "초대 코드 입력")
+        RebornTopAppBar(onBackClick = { onBackClick() })
         RebornTopAppBar(title = "초대 코드 입력")
         PairingCodeInput(
             value = inviteCode,
@@ -46,7 +50,8 @@ fun IntroInviteCodeScreen(
                     inviteCode = it
                 }
             },
-            maxCount = maxCount
+            maxCount = maxCount,
+            isError = pairingCodeError
         )
     }
 }
