@@ -56,7 +56,7 @@ fun IntroAdminPlaceNameScreen(
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        RebornTopAppBar(onBackClick = { onBackClick() }, title = "New Place")
+        RebornTopAppBar(onBackClick = { onBackClick() })
         RebornTopAppBar(title = "장소 이름 입력")
         RebornTextField(
             modifier = Modifier.fillMaxWidth().padding(16.dp,8.dp),

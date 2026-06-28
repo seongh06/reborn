@@ -57,7 +57,7 @@ fun IntroAdminPlaceSelectScreen(
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        RebornTopAppBar(onBackClick = { onBackClick() }, title = "New Place")
+        RebornTopAppBar(onBackClick = { onBackClick() })
         RebornTopAppBar(title = "공간 유형 선택")
 
         LazyColumn(

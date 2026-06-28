@@ -69,7 +69,7 @@ fun IntroAdminCodeScreen(
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        RebornTopAppBar(onBackClick = { onBackClick() }, title = "New Place")
+        RebornTopAppBar(onBackClick = { onBackClick() })
         RebornTopAppBar(title = "페어링")
         PairingCodeIssued(123456, timeLeft)
         Spacer(modifier = Modifier.weight(1f))
