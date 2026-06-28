@@ -35,6 +35,7 @@ import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
 import com.reborn.feature.intro.component.PermissionSection
 import com.reborn.feature.intro.component.SocialLoginButton
+import com.reborn.feature.intro.component.SocialType
 import com.reborn.feature.intro.component.TermSection
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
@@ -53,11 +54,11 @@ fun IntroAdminLoginScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         SocialLoginButton(
-            socialType = "kakao",
+            socialType = SocialType.KAKAO,
             onClick = { onLoginClick() }
         )
         SocialLoginButton(
-            socialType = "google",
+            socialType = SocialType.GOOGLE,
             onClick = { onLoginClick() }
         )
     }

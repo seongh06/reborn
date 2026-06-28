@@ -51,6 +51,7 @@ class IntroViewModel : ViewModel() {
     }
 
     private fun navigateTo(next: IntroUiState) {
+        if (_uiState.value == next) return
         backStack.add(_uiState.value)
         _uiState.value = next
     }

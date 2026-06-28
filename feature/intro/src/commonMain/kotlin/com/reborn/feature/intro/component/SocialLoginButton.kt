@@ -21,20 +21,24 @@ import com.reborn.feature.intro.Res
 import com.reborn.feature.intro.*
 import org.jetbrains.compose.resources.painterResource
 
+enum class SocialType {
+    KAKAO,
+    GOOGLE,
+}
+
 @Composable
 fun SocialLoginButton(
-    socialType: String,
+    socialType: SocialType,
     onClick: () -> Unit
 ) {
 
     val (containerColor, buttonText) = when (socialType) {
-        "kakao" -> Color(0xFFFEE500) to "카카오 로그인"
-        "google" -> RebornTheme.color.grayScale100 to "구글 로그인"
-        else -> RebornTheme.color.grayScale100 to "소셜 로그인"
+        SocialType.KAKAO -> Color(0xFFFEE500) to "카카오 로그인"
+        SocialType.GOOGLE -> RebornTheme.color.grayScale100 to "구글 로그인"
     }
 
     Button(
-        modifier =  Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = RebornTheme.color.grayScale900
@@ -50,9 +54,8 @@ fun SocialLoginButton(
             Icon(
                 painter = painterResource(
                     when (socialType) {
-                        "kakao" -> Res.drawable.ic_kakao
-                        "google" -> Res.drawable.ic_google
-                        else -> Res.drawable.ic_kakao
+                        SocialType.KAKAO -> Res.drawable.ic_kakao
+                        SocialType.GOOGLE -> Res.drawable.ic_google
                     }
                 ),
                 modifier = Modifier.size(20.dp),

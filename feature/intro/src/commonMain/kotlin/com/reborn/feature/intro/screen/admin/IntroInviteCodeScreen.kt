@@ -41,8 +41,7 @@ fun IntroInviteCodeScreen(
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        RebornTopAppBar(onBackClick = { onBackClick() })
-        RebornTopAppBar(title = "초대 코드 입력")
+        RebornTopAppBar(title = "초대 코드 입력", onBackClick = { onBackClick() })
         PairingCodeInput(
             value = inviteCode,
             onValueChange = {
@@ -51,7 +50,8 @@ fun IntroInviteCodeScreen(
                 }
             },
             maxCount = maxCount,
-            isError = pairingCodeError
+            isError = pairingCodeError,
+            onErrorReset = { pairingCodeError = false }
         )
     }
 }

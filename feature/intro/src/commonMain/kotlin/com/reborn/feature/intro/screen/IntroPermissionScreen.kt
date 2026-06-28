@@ -88,8 +88,7 @@ fun IntroPermissionScreen(
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        RebornTopAppBar(onBackClick = { onBackClick() })
-        RebornTopAppBar(title = "권한 부여")
+        RebornTopAppBar(title = "권한 부여", onBackClick = { onBackClick() })
         permissions.forEach { permission ->
             PermissionSection(
                 title = permission.title,
