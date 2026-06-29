@@ -1,9 +1,7 @@
 package com.reborn.feature.aerometer
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -18,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.reborn.core.designsystem.component.RebornButton
+import com.reborn.core.common.rememberToast
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
@@ -35,6 +33,7 @@ fun AeromterRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val showToast = rememberToast()
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(AerometerIntent.LoadInitial)
@@ -46,6 +45,9 @@ fun AeromterRoute(
                         message = event.throwable.message ?: "에러가 발생했습니다."
                     )
                 }
+                is AerometerEvent.ShowSensorResult -> {
+                    showToast("인원: ${event.personCount}명 | 조도: ${event.lux} lux")
+                }
                 is AerometerEvent.Exit -> onBackClick()
             }
         }
@@ -54,7 +56,7 @@ fun AeromterRoute(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { _ ->
-        when(uiState){
+        when (uiState) {
             is AerometerUiState.Loading -> RebornLoadingScreen()
             is AerometerUiState.Home -> AerometerScreen(
                 onSettingClick = { viewModel.onIntent(AerometerIntent.NavigateToSetting) }

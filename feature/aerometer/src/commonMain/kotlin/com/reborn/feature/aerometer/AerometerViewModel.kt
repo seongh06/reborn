@@ -2,6 +2,7 @@ package com.reborn.feature.aerometer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reborn.core.common.SensorAnalyzer
 import com.reborn.feature.aerometer.model.AerometerIntent
 import com.reborn.feature.aerometer.model.AerometerUiState
 import kotlinx.coroutines.delay
@@ -14,10 +15,11 @@ import kotlinx.coroutines.launch
 
 sealed class AerometerEvent {
     data class ShowErrorSnackbar(val throwable: Throwable) : AerometerEvent()
+    data class ShowSensorResult(val personCount: Int, val lux: Int) : AerometerEvent()
     data object Exit : AerometerEvent()
 }
 
-class AerometerViewModel : ViewModel() {
+class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel() {
     private val _uiState = MutableStateFlow<AerometerUiState>(AerometerUiState.Loading)
     val uiState: StateFlow<AerometerUiState> = _uiState.asStateFlow()
 
@@ -26,8 +28,8 @@ class AerometerViewModel : ViewModel() {
 
     private val backStack = mutableListOf<AerometerUiState>()
 
-    fun onIntent(intent: AerometerIntent){
-        when(intent){
+    fun onIntent(intent: AerometerIntent) {
+        when (intent) {
             is AerometerIntent.LoadInitial -> checkInitialState()
             is AerometerIntent.NavigateToSetting -> navigateTo(AerometerUiState.Setting)
             is AerometerIntent.NavigateBack -> navigateBack()
@@ -40,6 +42,21 @@ class AerometerViewModel : ViewModel() {
         viewModelScope.launch {
             delay(1500)
             _uiState.value = AerometerUiState.Home
+            startPeriodicScan()
+        }
+    }
+
+    private fun startPeriodicScan() {
+        viewModelScope.launch {
+            while (true) {
+                delay(60_000)
+                try {
+                    val result = sensorAnalyzer.analyze()
+                    _event.emit(AerometerEvent.ShowSensorResult(result.personCount, result.lux))
+                } catch (e: Exception) {
+                    _event.emit(AerometerEvent.ShowErrorSnackbar(e))
+                }
+            }
         }
     }
 
@@ -54,7 +71,6 @@ class AerometerViewModel : ViewModel() {
         if (previous != null) {
             _uiState.value = previous
         } else {
-            // 더 돌아갈 내부 화면이 없으면 Intro 자체를 빠져나가는 건 호출부(outer onBackClick)에 맡긴다.
             viewModelScope.launch {
                 _event.emit(AerometerEvent.Exit)
             }
