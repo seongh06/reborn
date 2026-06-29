@@ -20,7 +20,8 @@ fun RebornTopAppBar(
     title: String? = null,
     onBackClick: (() -> Unit)? = null,
     onNavigateAlert: (() -> Unit)? = null,
-    onNavigateSetting: (() -> Unit)? = null
+    onNavigateSetting: (() -> Unit)? = null,
+    darkTheme: Boolean = false
 ) {
     Box(
         modifier = modifier
@@ -34,6 +35,7 @@ fun RebornTopAppBar(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 RebornIcon(
+                    color = if(!darkTheme)RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
                     icon = Res.drawable.ic_back,
                     onClick = onBackClick
                 )
@@ -41,7 +43,7 @@ fun RebornTopAppBar(
                     Text(
                         text = title,
                         style = RebornTheme.typography.titleLarge,
-                        color = RebornTheme.color.grayScale900
+                        color = if(!darkTheme)RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100
                     )
                 }
             }
@@ -52,7 +54,7 @@ fun RebornTopAppBar(
                 Text(
                     text = title,
                     style = RebornTheme.typography.displayLarge,
-                    color = RebornTheme.color.grayScale900,
+                    color = if(!darkTheme)RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
                     modifier = Modifier.align(Alignment.CenterStart).padding(horizontal = 12.dp)
                 )
             }
@@ -65,12 +67,14 @@ fun RebornTopAppBar(
             ) {
                 if (onNavigateAlert != null) {
                     RebornIcon(
+                        color = if(!darkTheme)RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
                         icon = Res.drawable.ic_notification,
                         onClick = onNavigateAlert
                     )
                 }
                 if (onNavigateSetting != null) {
                     RebornIcon(
+                        color = if(!darkTheme)RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
                         icon = Res.drawable.ic_setting,
                         onClick = onNavigateSetting
                     )

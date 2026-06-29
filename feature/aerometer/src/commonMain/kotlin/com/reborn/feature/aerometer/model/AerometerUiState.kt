@@ -1,6 +1,16 @@
 package com.reborn.feature.aerometer.model
 
-data class AerometerUiState(
-    val isLoading: Boolean = false,
-    val isAirGappedDevice: Boolean = false
-)
+import androidx.compose.runtime.Immutable
+
+@Immutable
+sealed interface AerometerUiState {
+    data object Loading : AerometerUiState
+    data object Home: AerometerUiState
+    data object Setting: AerometerUiState
+}
+
+sealed interface AerometerIntent{
+    data object LoadInitial : AerometerIntent
+    data object NavigateToSetting : AerometerIntent
+    data object NavigateBack : AerometerIntent
+}
