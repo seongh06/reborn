@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.SensorAnalyzer
 import com.reborn.feature.aerometer.model.AerometerIntent
 import com.reborn.feature.aerometer.model.AerometerUiState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,7 @@ class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel
     val isSaveImageEnabled: StateFlow<Boolean> = _isSaveImageEnabled.asStateFlow()
 
     private val backStack = mutableListOf<AerometerUiState>()
+    private var scanJob: Job? = null
 
     fun onIntent(intent: AerometerIntent) {
         when (intent) {
@@ -43,17 +45,12 @@ class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel
     }
 
     private fun checkInitialState() {
+        scanJob?.cancel()
         backStack.clear()
         _uiState.value = AerometerUiState.Loading
-        viewModelScope.launch {
+        scanJob = viewModelScope.launch {
             delay(1500)
             _uiState.value = AerometerUiState.Home
-            startPeriodicScan()
-        }
-    }
-
-    private fun startPeriodicScan() {
-        viewModelScope.launch {
             while (true) {
                 delay(60_000)
                 try {

@@ -24,6 +24,7 @@ import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.aerometer.model.AerometerIntent
 import com.reborn.feature.aerometer.model.AerometerUiState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -37,24 +38,25 @@ fun AeromterRoute(
     val showToast = rememberToast()
 
     LaunchedEffect(Unit) {
-        viewModel.onIntent(AerometerIntent.LoadInitial)
-
-        viewModel.event.collect { event ->
-            when (event) {
-                is AerometerEvent.ShowErrorSnackbar -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.throwable.message ?: "에러가 발생했습니다."
-                    )
+        launch {
+            viewModel.event.collect { event ->
+                when (event) {
+                    is AerometerEvent.ShowErrorSnackbar -> {
+                        snackbarHostState.showSnackbar(
+                            message = event.throwable.message ?: "에러가 발생했습니다."
+                        )
+                    }
+                    is AerometerEvent.ShowSensorResult -> {
+                        showToast("인원: ${event.personCount}명 | 조도: ${event.lux} lux")
+                    }
+                    is AerometerEvent.ShowImageSaved -> {
+                        showToast("이미지 저장됨: ${event.path}")
+                    }
+                    is AerometerEvent.Exit -> onBackClick()
                 }
-                is AerometerEvent.ShowSensorResult -> {
-                    showToast("인원: ${event.personCount}명 | 조도: ${event.lux} lux")
-                }
-                is AerometerEvent.ShowImageSaved -> {
-                    showToast("이미지 저장됨: ${event.path}")
-                }
-                is AerometerEvent.Exit -> onBackClick()
             }
         }
+        viewModel.onIntent(AerometerIntent.LoadInitial)
     }
 
     Scaffold(

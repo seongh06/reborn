@@ -13,7 +13,9 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -24,7 +26,17 @@ import kotlin.coroutines.resumeWithException
 
 actual class SensorAnalyzer(private val context: Context) {
 
-    actual suspend fun analyze(saveImage: Boolean): AnalysisResult = suspendCancellableCoroutine { cont ->
+    actual suspend fun analyze(saveImage: Boolean): AnalysisResult {
+        val bitmap = captureImage()
+        val savedPath = withContext(Dispatchers.IO) {
+            if (saveImage) saveImageToStorage(bitmap) else null
+        }
+        val lux = withContext(Dispatchers.Default) { calculateLux(bitmap) }
+        val count = countFaces(bitmap)
+        return AnalysisResult(count, lux, savedPath)
+    }
+
+    private suspend fun captureImage(): Bitmap = suspendCancellableCoroutine { cont ->
         val executor = ContextCompat.getMainExecutor(context)
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
@@ -44,15 +56,9 @@ actual class SensorAnalyzer(private val context: Context) {
 
                 imageCapture.takePicture(executor, object : ImageCapture.OnImageCapturedCallback() {
                     override fun onCaptureSuccess(image: ImageProxy) {
-                        val bitmap = image.toBitmap()
-                        image.close()
+                        val bitmap = image.use { it.toBitmap() }
                         cameraProvider.unbindAll()
-
-                        val savedPath = if (saveImage) saveImageToStorage(bitmap) else null
-                        val lux = calculateLux(bitmap)
-                        countFaces(bitmap) { count ->
-                            cont.resume(AnalysisResult(count, lux, savedPath))
-                        }
+                        cont.resume(bitmap)
                     }
 
                     override fun onError(exception: ImageCaptureException) {
@@ -99,15 +105,21 @@ actual class SensorAnalyzer(private val context: Context) {
         return (avgBrightness / 255.0 * 10000.0).toInt()
     }
 
-    private fun countFaces(bitmap: Bitmap, onResult: (Int) -> Unit) {
+    private suspend fun countFaces(bitmap: Bitmap): Int = suspendCancellableCoroutine { cont ->
         val image = InputImage.fromBitmap(bitmap, 0)
         val options = FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
             .setMinFaceSize(0.1f)
             .build()
-        FaceDetection.getClient(options)
-            .process(image)
-            .addOnSuccessListener { faces -> onResult(faces.size) }
-            .addOnFailureListener { onResult(0) }
+        val detector = FaceDetection.getClient(options)
+        detector.process(image)
+            .addOnSuccessListener { faces ->
+                detector.close()
+                cont.resume(faces.size)
+            }
+            .addOnFailureListener {
+                detector.close()
+                cont.resume(0)
+            }
     }
 }
