@@ -139,12 +139,16 @@ fun App() {
                             navController.popBackStack()
                         }
                     )
+                    aerometerNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
+                    )
                     adminHomeNavGraph()
                     adjustNavGraph()
                     adminFeedbackNavGraph()
                     adminDataNavGraph()
                     adminSettingNavGraph()
-                    aerometerNavGraph()
                 }
             }
         }

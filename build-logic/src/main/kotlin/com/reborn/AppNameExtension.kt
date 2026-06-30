@@ -3,7 +3,7 @@ package com.reborn
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import com.android.build.api.dsl.CommonExtension
-import gradle.kotlin.dsl.accessors._659f28ada5b3cbfd2719111534f74c17.androidLibrary
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.resources.ResourcesExtension
@@ -11,16 +11,15 @@ import org.jetbrains.compose.resources.ResourcesExtension
 fun Project.setNamespace(name: String) {
     val namespaceValue = "com.reborn.$name"
 
-    (extensions.findByName("android") as? CommonExtension<*, *, *, *, *, *>)?.namespace = namespaceValue
+    // Standard Android module (com.android.application / com.android.library)
+    (extensions.findByName("android") as? CommonExtension)?.namespace = namespaceValue
 
+    // KMP module (com.android.kotlin.multiplatform.library)
+    // namespace is also auto-set in reborn.library.gradle.kts; this is a best-effort backup
+    // "android" accessor replaced "androidLibrary" as of AGP 9.x
     extensions.findByType(KotlinMultiplatformExtension::class.java)?.let { kmp ->
-        try {
-            kmp.androidLibrary {
-                namespace = namespaceValue
-            }
-        } catch (e: Exception) {
-
-        }
+        (kmp.extensions.findByName("android") as? KotlinMultiplatformAndroidLibraryExtension)
+            ?.apply { namespace = namespaceValue }
     }
 
     val composeExtension = extensions.findByType(ComposeExtension::class.java)

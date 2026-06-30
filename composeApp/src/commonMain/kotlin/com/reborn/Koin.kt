@@ -1,5 +1,6 @@
 package com.reborn
 
+import com.reborn.core.common.platformSensorModule
 import com.reborn.core.data.di.repositoryModule
 import com.reborn.core.network.di.dataSourceModule
 import com.reborn.core.network.di.networkModule
@@ -39,6 +40,7 @@ fun initKoin(
             dataSourceModule,
             repositoryModule,
             appDependenciesModule,
+            platformSensorModule,
             *platformModules.toTypedArray()
         )
     }
