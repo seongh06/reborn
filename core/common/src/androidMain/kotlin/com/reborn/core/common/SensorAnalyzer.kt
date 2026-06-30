@@ -2,6 +2,7 @@ package com.reborn.core.common
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Environment
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -13,12 +14,17 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 actual class SensorAnalyzer(private val context: Context) {
 
-    actual suspend fun analyze(): AnalysisResult = suspendCancellableCoroutine { cont ->
+    actual suspend fun analyze(saveImage: Boolean): AnalysisResult = suspendCancellableCoroutine { cont ->
         val executor = ContextCompat.getMainExecutor(context)
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
@@ -42,9 +48,10 @@ actual class SensorAnalyzer(private val context: Context) {
                         image.close()
                         cameraProvider.unbindAll()
 
+                        val savedPath = if (saveImage) saveImageToStorage(bitmap) else null
                         val lux = calculateLux(bitmap)
                         countFaces(bitmap) { count ->
-                            cont.resume(AnalysisResult(count, lux))
+                            cont.resume(AnalysisResult(count, lux, savedPath))
                         }
                     }
 
@@ -59,6 +66,21 @@ actual class SensorAnalyzer(private val context: Context) {
                 cont.resumeWithException(e)
             }
         }, executor)
+    }
+
+    private fun saveImageToStorage(bitmap: Bitmap): String? {
+        return try {
+            val dir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                ?: return null
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val file = File(dir, "aerometer_$timestamp.jpg")
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            file.absolutePath
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun calculateLux(bitmap: Bitmap): Int {

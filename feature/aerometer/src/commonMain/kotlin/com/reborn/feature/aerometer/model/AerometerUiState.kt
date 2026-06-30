@@ -13,4 +13,5 @@ sealed interface AerometerIntent{
     data object LoadInitial : AerometerIntent
     data object NavigateToSetting : AerometerIntent
     data object NavigateBack : AerometerIntent
+    data object ToggleSaveImage : AerometerIntent
 }

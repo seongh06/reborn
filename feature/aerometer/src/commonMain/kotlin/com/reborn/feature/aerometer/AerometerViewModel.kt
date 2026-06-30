@@ -11,11 +11,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed class AerometerEvent {
     data class ShowErrorSnackbar(val throwable: Throwable) : AerometerEvent()
     data class ShowSensorResult(val personCount: Int, val lux: Int) : AerometerEvent()
+    data class ShowImageSaved(val path: String) : AerometerEvent()
     data object Exit : AerometerEvent()
 }
 
@@ -26,6 +28,9 @@ class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel
     private val _event = MutableSharedFlow<AerometerEvent>()
     val event = _event.asSharedFlow()
 
+    private val _isSaveImageEnabled = MutableStateFlow(false)
+    val isSaveImageEnabled: StateFlow<Boolean> = _isSaveImageEnabled.asStateFlow()
+
     private val backStack = mutableListOf<AerometerUiState>()
 
     fun onIntent(intent: AerometerIntent) {
@@ -33,6 +38,7 @@ class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel
             is AerometerIntent.LoadInitial -> checkInitialState()
             is AerometerIntent.NavigateToSetting -> navigateTo(AerometerUiState.Setting)
             is AerometerIntent.NavigateBack -> navigateBack()
+            is AerometerIntent.ToggleSaveImage -> _isSaveImageEnabled.update { !it }
         }
     }
 
@@ -51,8 +57,11 @@ class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel
             while (true) {
                 delay(60_000)
                 try {
-                    val result = sensorAnalyzer.analyze()
+                    val result = sensorAnalyzer.analyze(saveImage = _isSaveImageEnabled.value)
                     _event.emit(AerometerEvent.ShowSensorResult(result.personCount, result.lux))
+                    result.savedImagePath?.let { path ->
+                        _event.emit(AerometerEvent.ShowImageSaved(path))
+                    }
                 } catch (e: Exception) {
                     _event.emit(AerometerEvent.ShowErrorSnackbar(e))
                 }

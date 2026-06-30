@@ -32,6 +32,7 @@ fun AeromterRoute(
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isSaveImageEnabled by viewModel.isSaveImageEnabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val showToast = rememberToast()
 
@@ -48,6 +49,9 @@ fun AeromterRoute(
                 is AerometerEvent.ShowSensorResult -> {
                     showToast("인원: ${event.personCount}명 | 조도: ${event.lux} lux")
                 }
+                is AerometerEvent.ShowImageSaved -> {
+                    showToast("이미지 저장됨: ${event.path}")
+                }
                 is AerometerEvent.Exit -> onBackClick()
             }
         }
@@ -62,6 +66,8 @@ fun AeromterRoute(
                 onSettingClick = { viewModel.onIntent(AerometerIntent.NavigateToSetting) }
             )
             is AerometerUiState.Setting -> AerometerSettingScreen(
+                isSaveImageEnabled = isSaveImageEnabled,
+                onToggleSaveImage = { viewModel.onIntent(AerometerIntent.ToggleSaveImage) },
                 onBackClick = { viewModel.onIntent(AerometerIntent.NavigateBack) }
             )
         }
