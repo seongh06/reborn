@@ -1,12 +1,47 @@
 package com.reborn.feature.admin.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.reborn.core.common.NavigationManager
+import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+sealed class AdminHomeEvent {
+    data object Exit : AdminHomeEvent()
+    data class ShowErrorSnackbar(val throwable: Throwable) : AdminHomeEvent()
+}
 
 class AdminHomeViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(AdminHomeUiState())
-    val uiState: StateFlow<AdminHomeUiState> = _uiState.asStateFlow()
+    private val navController = NavigationManager<AdminHomeUiState, AdminHomeEvent>(
+        initialState = AdminHomeUiState.Home,
+        exitEvent = AdminHomeEvent.Exit,
+        scope = viewModelScope
+    )
+
+    val uiState = navController.uiState
+    val event = navController.event
+
+    fun onIntent(intent: AdminHomeIntent) {
+        when (intent) {
+            is AdminHomeIntent.LoadInitial -> checkInitialState()
+            is AdminHomeIntent.NavigateToAlarm ->navController.navigateTo(AdminHomeUiState.Alarm)
+            is AdminHomeIntent.NavigateToSetting -> navController.navigateTo(AdminHomeUiState.Setting)
+            is AdminHomeIntent.NavigateBack -> navController.navigateBack()
+        }
+    }
+
+    private fun checkInitialState() {
+        navController.clearAndReset(AdminHomeUiState.Loading)
+        viewModelScope.launch {
+            delay(1500)
+            navController.navigateTo(AdminHomeUiState.Home)
+        }
+    }
 }

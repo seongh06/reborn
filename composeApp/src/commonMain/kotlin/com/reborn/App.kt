@@ -144,7 +144,11 @@ fun App() {
                             navController.popBackStack()
                         }
                     )
-                    adminHomeNavGraph()
+                    adminHomeNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
+                    )
                     adjustNavGraph()
                     adminFeedbackNavGraph()
                     adminDataNavGraph()
