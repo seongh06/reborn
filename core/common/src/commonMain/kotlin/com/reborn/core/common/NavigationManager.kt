@@ -41,4 +41,10 @@ class NavigationManager<S, E>(
         backStack.clear()
         _uiState.value = state
     }
+
+    fun emitEvent(event: E) {
+        scope.launch {
+            _event.emit(event)
+        }
+    }
 }

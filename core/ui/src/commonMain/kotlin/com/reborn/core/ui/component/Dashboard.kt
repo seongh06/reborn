@@ -120,7 +120,7 @@ fun DashboardItem(
         Icon(
             painterResource(style.icon),
             modifier = Modifier.size(32.dp),
-            contentDescription = style.toString(),
+            contentDescription = null,
             tint = style.color
         )
         Column(

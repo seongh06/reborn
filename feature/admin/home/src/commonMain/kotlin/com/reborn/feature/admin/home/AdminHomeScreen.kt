@@ -1,19 +1,26 @@
 package com.reborn.feature.admin.home
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.designsystem.component.RebornTopAppBar
+import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.Dashboard
+import com.reborn.core.ui.component.FeedbackItem
+import com.reborn.core.ui.component.FeedbackType
+import com.reborn.core.ui.component.State
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
@@ -22,7 +29,8 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun AdminHomeRoute(
     viewModel: AdminHomeViewModel = koinViewModel(),
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    navigateToFeedbackDetail: (Int) -> Unit
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -38,6 +46,7 @@ fun AdminHomeRoute(
                     )
                 }
                 is AdminHomeEvent.Exit -> onBackClick()
+                is AdminHomeEvent.NavigateToFeedbackDetail -> navigateToFeedbackDetail(event.feedbackId)
             }
         }
     }
@@ -49,7 +58,8 @@ fun AdminHomeRoute(
             is AdminHomeUiState.Loading -> RebornLoadingScreen()
             is AdminHomeUiState.Home -> AdminHomeScreen(
                 onAlarmClick = {viewModel.onIntent(AdminHomeIntent.NavigateToAlarm)},
-                onSettingClick = {viewModel.onIntent(AdminHomeIntent.NavigateToSetting)}
+                onSettingClick = {viewModel.onIntent(AdminHomeIntent.NavigateToSetting)},
+                onFeedbackClick = {viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(1))}
             )
             is AdminHomeUiState.Alarm -> {}
             is AdminHomeUiState.Setting -> {}
@@ -61,12 +71,26 @@ fun AdminHomeRoute(
 fun AdminHomeScreen(
     onAlarmClick: () -> Unit,
     onSettingClick: () -> Unit,
-    viewModel: AdminHomeViewModel = koinViewModel()
+    viewModel: AdminHomeViewModel = koinViewModel(),
+    onFeedbackClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ){
         RebornTopAppBar(title = "HOME", onNavigateAlert = onAlarmClick, onNavigateSetting = onSettingClick)
         Dashboard("거실",20,20,20,20)
+        Text("실시간 피드백",modifier = Modifier.padding(16.dp), style = RebornTheme.typography.titleSmall, color = RebornTheme.color.grayScale900)
+        Column(
+            modifier = Modifier.padding(16.dp,12.dp)
+        ){
+            FeedbackItem(
+                id = 1,
+                state = State.APPROVE,
+                time = "5분전",
+                title = "피드백 제목",
+                type = FeedbackType.AIR,
+                onClick = onFeedbackClick
+            )
+        }
     }
 }

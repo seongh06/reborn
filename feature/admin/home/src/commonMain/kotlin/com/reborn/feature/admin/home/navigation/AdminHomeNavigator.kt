@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import com.reborn.core.navigation.Route
+import com.reborn.feature.admin.home.AdminHomeEvent
 import com.reborn.feature.admin.home.AdminHomeRoute
 import com.reborn.feature.admin.home.AdminHomeScreen
 
@@ -13,11 +14,13 @@ fun NavController.navigateAdminHome(navOptions: NavOptions) {
 }
 
 fun NavGraphBuilder.adminHomeNavGraph(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    navigateToFeedbackDetail: (Int) -> Unit
 ) {
     composable<Route.Admin.Home> {
         AdminHomeRoute(
-            onBackClick = onBackClick
+            onBackClick = onBackClick,
+            navigateToFeedbackDetail = navigateToFeedbackDetail
         )
     }
 }

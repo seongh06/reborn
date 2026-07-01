@@ -25,13 +25,15 @@ interface RebornColors{
     val feedbackHot: Color
     val feedbackSmell: Color
     val feedbackLight: Color
-    val feedbackAirQuality: Color
+    val feedbackAir: Color
     val feedbackMusic: Color
     val feedbackNoise: Color
     val feedbackCold: Color
-    val feedbackAir: Color
+    val feedbackWind: Color
     val feedbackDirt: Color
     val feedbackDark: Color
+    val approve: Color
+    val reject: Color
 }
 
 @Stable
@@ -64,11 +66,13 @@ object RebornColor : RebornColors{
     override val feedbackHot = Color(0xFFBF4040)
     override val feedbackSmell = Color(0xFFBF8040)
     override val feedbackLight = Color(0xFFBFBF40)
-    override val feedbackAirQuality = Color(0xFF80BF40)
+    override val feedbackAir = Color(0xFF80BF40)
     override val feedbackMusic = Color(0xFF40BF40)
     override val feedbackNoise = Color(0xFF40BF80)
     override val feedbackCold = Color(0xFF40BFBF)
-    override val feedbackAir = Color(0xFF406ABF)
+    override val feedbackWind = Color(0xFF406ABF)
     override val feedbackDirt = Color(0xFFBF40BF)
     override val feedbackDark = Color(0xFF808080)
+    override val approve = Color(0xFF54B547)
+    override val reject = Color(0xFFCE2B2B)
 }

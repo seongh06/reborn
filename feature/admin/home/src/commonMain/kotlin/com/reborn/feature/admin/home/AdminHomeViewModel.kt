@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 sealed class AdminHomeEvent {
     data object Exit : AdminHomeEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminHomeEvent()
+    data class NavigateToFeedbackDetail(val feedbackId: Int) : AdminHomeEvent()
 }
 
 class AdminHomeViewModel : ViewModel() {
@@ -34,6 +35,7 @@ class AdminHomeViewModel : ViewModel() {
             is AdminHomeIntent.NavigateToAlarm ->navController.navigateTo(AdminHomeUiState.Alarm)
             is AdminHomeIntent.NavigateToSetting -> navController.navigateTo(AdminHomeUiState.Setting)
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
+            is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
         }
     }
 
@@ -42,6 +44,12 @@ class AdminHomeViewModel : ViewModel() {
         viewModelScope.launch {
             delay(1500)
             navController.navigateTo(AdminHomeUiState.Home)
+        }
+    }
+
+    private fun navigateToFeedbackDetail(feedbackId: Int) {
+        viewModelScope.launch {
+            navController.emitEvent(AdminHomeEvent.NavigateToFeedbackDetail(feedbackId))
         }
     }
 }

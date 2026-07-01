@@ -147,6 +147,9 @@ fun App() {
                     adminHomeNavGraph(
                         onBackClick = {
                             navController.popBackStack()
+                        },
+                        navigateToFeedbackDetail = { feedbackId ->
+                            //navController.navigate(Route.FeedbackDetail(feedbackId))
                         }
                     )
                     adjustNavGraph()
