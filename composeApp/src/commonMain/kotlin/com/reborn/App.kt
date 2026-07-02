@@ -15,6 +15,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -48,6 +51,8 @@ fun App() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
 
+            var isAdminHomeBottomBarVisible by remember { mutableStateOf(true) }
+
             val lineColor = RebornTheme.color.grayScale700
             val surfaceColor = RebornTheme.color.grayScale100
 
@@ -58,7 +63,8 @@ fun App() {
                 bottomBar = {
                     val isIntro = currentDestination?.hasRoute<Route.Intro>() == true
                     val isAerometer = currentDestination?.hasRoute<Route.Aerometer>() == true
-                    if (!isIntro && !isAerometer) {
+                    val isAdminHome = currentDestination?.hasRoute<Route.Admin.Home>() == true
+                    if (!isIntro && !isAerometer && (!isAdminHome || isAdminHomeBottomBarVisible)) {
                         Surface(
                             color = surfaceColor,
                             modifier = Modifier
@@ -144,7 +150,17 @@ fun App() {
                             navController.popBackStack()
                         }
                     )
-                    adminHomeNavGraph()
+                    adminHomeNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        navigateToFeedbackDetail = { feedbackId ->
+                            //navController.navigate(Route.FeedbackDetail(feedbackId))
+                        },
+                        onBottomBarVisibilityChange = { visible ->
+                            isAdminHomeBottomBarVisible = visible
+                        }
+                    )
                     adjustNavGraph()
                     adminFeedbackNavGraph()
                     adminDataNavGraph()
