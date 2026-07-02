@@ -20,6 +20,7 @@ fun RebornTopAppBar(
     onBackClick: (() -> Unit)? = null,
     onNavigateAlert: (() -> Unit)? = null,
     onNavigateSetting: (() -> Unit)? = null,
+    onNavigateAddDevice: (() -> Unit)? = null,
     darkTheme: Boolean = false
 ) {
     Box(
@@ -59,7 +60,7 @@ fun RebornTopAppBar(
             }
         }
 
-        if (onNavigateAlert != null || onNavigateSetting != null) {
+        if (onNavigateAlert != null || onNavigateSetting != null || onNavigateAddDevice != null) {
             Row(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 verticalAlignment = Alignment.CenterVertically
@@ -77,6 +78,14 @@ fun RebornTopAppBar(
                         icon = Res.drawable.ic_setting,
                         onClick = onNavigateSetting
                     )
+                }
+                if (onNavigateAddDevice != null) {
+                    RebornIcon(
+                        color = if(!darkTheme)RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
+                        icon = Res.drawable.ic_plus,
+                        onClick = onNavigateAddDevice
+                    )
+
                 }
             }
         }
