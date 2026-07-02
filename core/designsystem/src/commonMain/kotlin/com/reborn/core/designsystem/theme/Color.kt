@@ -15,13 +15,13 @@ interface RebornColors{
     val grayScale800: Color
     val grayScale900: Color
     val temperature: Color
-    val temperatureRadial: Brush
+    val temperatureGradient: Brush
     val humidity: Color
-    val humidityRadial: Brush
+    val humidityGradient: Brush
     val illuminance: Color
-    val illuminanceRadial: Brush
+    val illuminanceGradient: Brush
     val peopleCount: Color
-    val peopleCountRadial: Brush
+    val peopleCountGradient: Brush
     val feedbackHot: Color
     val feedbackSmell: Color
     val feedbackLight: Color
@@ -48,20 +48,20 @@ object RebornColor : RebornColors{
     override val grayScale800 = Color(0xFF4A4A4A)
     override val grayScale900 = Color(0xFF121212)
     override val temperature = Color(0xFFD65C5C)
-    override val temperatureRadial: Brush = Brush.horizontalGradient(
+    override val temperatureGradient: Brush = Brush.horizontalGradient(
         colors = listOf(Color(0x47B60000), Color(0x1A000000))
     )
     override val humidity = Color(0xFF5CADD6)
-    override val humidityRadial: Brush = Brush.horizontalGradient(
+    override val humidityGradient: Brush = Brush.horizontalGradient(
         colors = listOf(Color(0x475CADD6), Color(0x1A000000))
     )
     override val illuminance = Color(0xFFD6C25C)
-    override val illuminanceRadial: Brush = Brush.horizontalGradient(
+    override val illuminanceGradient: Brush = Brush.horizontalGradient(
         colors = listOf(Color(0x47F7F7F7), Color(0x1A000000))
     )
     override val peopleCount = Color(0xFF5CD65C)
-    override val peopleCountRadial: Brush = Brush.horizontalGradient(
-        colors = listOf(Color(0x47F7F7F7), Color(0x1A000000))
+    override val peopleCountGradient: Brush = Brush.horizontalGradient(
+        colors = listOf(Color(0x475CD65C), Color(0x1A000000))
     )
     override val feedbackHot = Color(0xFFBF4040)
     override val feedbackSmell = Color(0xFFBF8040)

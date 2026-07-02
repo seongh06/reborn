@@ -115,8 +115,8 @@ fun getFeedbackIcon(type: FeedbackType): FeedbackUiStyle {
             RebornTheme.color.feedbackLight
         )
         FeedbackType.AIR -> FeedbackUiStyle(
-            Res.drawable.ic_feedback_hot,
-            RebornTheme.color.feedbackHot
+            Res.drawable.ic_feedback_air,
+            RebornTheme.color.feedbackAir
         )
         FeedbackType.MUSIC ->  FeedbackUiStyle(
             Res.drawable.ic_feedback_music,

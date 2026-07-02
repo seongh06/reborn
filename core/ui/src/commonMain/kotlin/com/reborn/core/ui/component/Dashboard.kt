@@ -80,22 +80,22 @@ fun getUiStyleForType(type: DataType): UiStyle {
         DataType.Temperature -> UiStyle(
             icon = Res.drawable.ic_temperature,
             color = RebornTheme.color.temperature,
-            gradient = RebornTheme.color.temperatureRadial
+            gradient = RebornTheme.color.temperatureGradient
         )
         DataType.Humidity -> UiStyle(
             icon = Res.drawable.ic_humidity,
             color = RebornTheme.color.humidity,
-            gradient = RebornTheme.color.humidityRadial
+            gradient = RebornTheme.color.humidityGradient
         )
         DataType.Illuminance -> UiStyle(
             icon = Res.drawable.ic_illuminance,
             color = RebornTheme.color.illuminance,
-            gradient = RebornTheme.color.illuminanceRadial
+            gradient = RebornTheme.color.illuminanceGradient
         )
         DataType.PeopleCount -> UiStyle(
             icon = Res.drawable.ic_people,
             color = RebornTheme.color.peopleCount,
-            gradient = RebornTheme.color.peopleCountRadial
+            gradient = RebornTheme.color.peopleCountGradient
         )
     }
 }

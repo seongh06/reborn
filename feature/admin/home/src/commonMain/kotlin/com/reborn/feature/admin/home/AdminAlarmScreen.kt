@@ -2,6 +2,7 @@ package com.reborn.feature.admin.home
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.SwipeToDismissBox
@@ -23,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.component.RebornButton
@@ -33,13 +36,11 @@ import com.reborn.feature.admin.home.model.AdminHomeUiState
 
 @Composable
 fun AdminAlarmScreen(
-    state: AdminHomeUiState,
+    state: AdminHomeUiState.Alarm,
     onBackClick: () -> Unit,
     onAlarmDelete: (Int) -> Unit,
     onAlarmAllDelete: () -> Unit
 ) {
-    val alarmState = state as? AdminHomeUiState.Alarm
-
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
@@ -51,28 +52,26 @@ fun AdminAlarmScreen(
                 .fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            alarmState?.let { s ->
-                if (s.alarm.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillParentMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "알람이 없습니다",
-                                style = RebornTheme.typography.bodyMedium,
-                                color = RebornTheme.color.grayScale500
-                            )
-                        }
-                    }
-                } else {
-                    items(items = s.alarm, key = { it.id }) { alarm ->
-                        SwipeToDeleteAlarmItem(
-                            alarm = alarm,
-                            onDelete = { onAlarmDelete(alarm.id) }
+            if (state.alarm.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillParentMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "알람이 없습니다",
+                            style = RebornTheme.typography.bodyMedium,
+                            color = RebornTheme.color.grayScale500
                         )
-                        HorizontalDivider(color = RebornTheme.color.grayScale300)
                     }
+                }
+            } else {
+                items(items = state.alarm, key = { it.id }) { alarm ->
+                    SwipeToDeleteAlarmItem(
+                        alarm = alarm,
+                        onDelete = { onAlarmDelete(alarm.id) }
+                    )
+                    HorizontalDivider(color = RebornTheme.color.grayScale300)
                 }
             }
         }
@@ -127,13 +126,14 @@ private fun SwipeToDeleteAlarmItem(
             }
         }
     ) {
-        AlarmItem(alarm = alarm)
+        AlarmItem(alarm = alarm, onDelete = onDelete)
     }
 }
 
 @Composable
 private fun AlarmItem(
-    alarm: AdminHomeUiState.AlarmItem
+    alarm: AdminHomeUiState.AlarmItem,
+    onDelete: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -155,5 +155,14 @@ private fun AlarmItem(
                 color = RebornTheme.color.grayScale500
             )
         }
+        Text(
+            text = "삭제",
+            style = RebornTheme.typography.labelMedium,
+            color = RebornTheme.color.reject,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onDelete)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        )
     }
 }

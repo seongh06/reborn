@@ -24,10 +24,12 @@ class AdminHomeViewModel : ViewModel() {
     val uiState = navController.uiState
     val event = navController.event
 
+    private var alarmItems: List<AdminHomeUiState.AlarmItem> = emptyList()
+
     fun onIntent(intent: AdminHomeIntent) {
         when (intent) {
             is AdminHomeIntent.LoadInitial -> checkInitialState()
-            is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm())
+            is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm(alarm = alarmItems))
             is AdminHomeIntent.NavigateToSetting -> navController.navigateTo(AdminHomeUiState.Setting)
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
             is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
@@ -40,7 +42,7 @@ class AdminHomeViewModel : ViewModel() {
         navController.clearAndReset(AdminHomeUiState.Loading)
         viewModelScope.launch {
             delay(1500)
-            navController.navigateTo(AdminHomeUiState.Home)
+            navController.clearAndReset(AdminHomeUiState.Home)
         }
     }
 
@@ -51,17 +53,19 @@ class AdminHomeViewModel : ViewModel() {
     }
 
     private fun deleteAlarm(alarmId: Int) {
+        alarmItems = alarmItems.filter { it.id != alarmId }
         navController.updateCurrentState { state ->
             (state as? AdminHomeUiState.Alarm)
-                ?.copy(alarm = state.alarm.filter { it.id != alarmId })
+                ?.copy(alarm = alarmItems)
                 ?: state
         }
     }
 
     private fun deleteAllAlarms() {
+        alarmItems = emptyList()
         navController.updateCurrentState { state ->
             (state as? AdminHomeUiState.Alarm)
-                ?.copy(alarm = emptyList())
+                ?.copy(alarm = alarmItems)
                 ?: state
         }
     }

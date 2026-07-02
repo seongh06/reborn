@@ -59,7 +59,7 @@ fun AdminHomeRoute(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState)}
     ){_ ->
-        when(uiState) {
+        when(val state = uiState) {
             is AdminHomeUiState.Loading -> RebornLoadingScreen()
             is AdminHomeUiState.Home -> AdminHomeScreen(
                 onAlarmClick = {viewModel.onIntent(AdminHomeIntent.NavigateToAlarm)},
@@ -67,7 +67,7 @@ fun AdminHomeRoute(
                 onFeedbackClick = {viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(1))}
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
-                state = uiState,
+                state = state,
                 onBackClick = { viewModel.onIntent(AdminHomeIntent.NavigateBack) },
                 onAlarmDelete = { id -> viewModel.onIntent(AdminHomeIntent.DeleteAlarm(id)) },
                 onAlarmAllDelete = { viewModel.onIntent(AdminHomeIntent.DeleteAllAlarms) }
@@ -81,7 +81,6 @@ fun AdminHomeRoute(
 fun AdminHomeScreen(
     onAlarmClick: () -> Unit,
     onSettingClick: () -> Unit,
-    viewModel: AdminHomeViewModel = koinViewModel(),
     onFeedbackClick: () -> Unit
 ) {
     Column(
