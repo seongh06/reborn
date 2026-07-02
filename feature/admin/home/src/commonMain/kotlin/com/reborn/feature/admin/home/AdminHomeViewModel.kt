@@ -6,11 +6,6 @@ import com.reborn.core.common.NavigationManager
 import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 sealed class AdminHomeEvent {
@@ -32,10 +27,12 @@ class AdminHomeViewModel : ViewModel() {
     fun onIntent(intent: AdminHomeIntent) {
         when (intent) {
             is AdminHomeIntent.LoadInitial -> checkInitialState()
-            is AdminHomeIntent.NavigateToAlarm ->navController.navigateTo(AdminHomeUiState.Alarm)
+            is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm())
             is AdminHomeIntent.NavigateToSetting -> navController.navigateTo(AdminHomeUiState.Setting)
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
             is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
+            is AdminHomeIntent.DeleteAlarm -> deleteAlarm(intent.alarmId)
+            is AdminHomeIntent.DeleteAllAlarms -> deleteAllAlarms()
         }
     }
 
@@ -50,6 +47,22 @@ class AdminHomeViewModel : ViewModel() {
     private fun navigateToFeedbackDetail(feedbackId: Int) {
         viewModelScope.launch {
             navController.emitEvent(AdminHomeEvent.NavigateToFeedbackDetail(feedbackId))
+        }
+    }
+
+    private fun deleteAlarm(alarmId: Int) {
+        navController.updateCurrentState { state ->
+            (state as? AdminHomeUiState.Alarm)
+                ?.copy(alarm = state.alarm.filter { it.id != alarmId })
+                ?: state
+        }
+    }
+
+    private fun deleteAllAlarms() {
+        navController.updateCurrentState { state ->
+            (state as? AdminHomeUiState.Alarm)
+                ?.copy(alarm = emptyList())
+                ?: state
         }
     }
 }

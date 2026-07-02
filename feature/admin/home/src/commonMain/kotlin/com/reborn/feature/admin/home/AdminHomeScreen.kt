@@ -30,10 +30,15 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AdminHomeRoute(
     viewModel: AdminHomeViewModel = koinViewModel(),
     onBackClick: () -> Unit,
-    navigateToFeedbackDetail: (Int) -> Unit
+    navigateToFeedbackDetail: (Int) -> Unit,
+    onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState) {
+        onBottomBarVisibilityChange(uiState !is AdminHomeUiState.Alarm)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(AdminHomeIntent.LoadInitial)
@@ -61,7 +66,12 @@ fun AdminHomeRoute(
                 onSettingClick = {viewModel.onIntent(AdminHomeIntent.NavigateToSetting)},
                 onFeedbackClick = {viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(1))}
             )
-            is AdminHomeUiState.Alarm -> {}
+            is AdminHomeUiState.Alarm -> AdminAlarmScreen(
+                state = uiState,
+                onBackClick = { viewModel.onIntent(AdminHomeIntent.NavigateBack) },
+                onAlarmDelete = { id -> viewModel.onIntent(AdminHomeIntent.DeleteAlarm(id)) },
+                onAlarmAllDelete = { viewModel.onIntent(AdminHomeIntent.DeleteAllAlarms) }
+            )
             is AdminHomeUiState.Setting -> {}
         }
     }

@@ -42,6 +42,10 @@ class NavigationManager<S, E>(
         _uiState.value = state
     }
 
+    fun updateCurrentState(update: (S) -> S) {
+        _uiState.value = update(_uiState.value)
+    }
+
     fun emitEvent(event: E) {
         scope.launch {
             _event.emit(event)
