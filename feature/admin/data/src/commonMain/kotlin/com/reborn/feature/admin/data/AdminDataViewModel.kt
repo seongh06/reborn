@@ -221,10 +221,15 @@ class AdminDataViewModel : ViewModel() {
     // 모든 기간이 실제 달력 개념(시각/날짜/월)으로 통일된 라벨을 쓰도록 함, 자연스러운 개수만큼만 표시(억지로 채우지 않음)
     private fun chartLabelsFor(period: AdminDataUiState.Period): List<String> {
         return when (period) {
-            AdminDataUiState.Period.HOUR -> (0..23).map { hour -> "${hour.pad2()}:00" } // 1시간 간격 · 최근 24시간
-            AdminDataUiState.Period.DAY -> (13 downTo 0).map { daysAgo ->               // 1일 간격 · 최근 14일
+            // 1시간 간격 · 목업 전체 기간(14일)을 이어서 표시. 자정(0시)엔 "HH:00" 대신 그날 날짜(ex. "3일")로 표시해 날짜가 바뀌었음을 알림
+            AdminDataUiState.Period.HOUR -> (13 downTo 0).flatMap { daysAgo ->
                 val date = today.minusDays(daysAgo)
-                "${date.month.pad2()}/${date.day.pad2()}"
+                (0..23).map { hour -> if (hour == 0) "${date.day}일" else "${hour.pad2()}:00" }
+            }
+            // 1일 간격 · 최근 14일. 평소엔 날짜만(ex. "4일"), 월이 바뀌는 지점만 월로 표시(ex. "7월")
+            AdminDataUiState.Period.DAY -> (13 downTo 0).map { daysAgo ->
+                val date = today.minusDays(daysAgo)
+                if (date.day == 1) "${date.month}월" else "${date.day}일"
             }
             AdminDataUiState.Period.WEEK -> (7 downTo 0).map { weeksAgo ->              // 1주 간격 · 최근 8주(달로 표시)
                 "${today.minusDays(weeksAgo * 7).month}월"
@@ -250,12 +255,11 @@ class AdminDataViewModel : ViewModel() {
     }
 
     // TODO: 서버 sensorLogs 히스토리 조회 API 연동 전까지의 목업. 실제 연동 시 SensorHistoryApi의 Ktor 구현체로 대체 예정
+    // 오늘 하루로 제한하지 않고 목업 전체 기간(14일치)을 이어서 반환 — 축소하면 여러 날짜가 쭉 이어져 보이도록 함
     private suspend fun hourlyValues(category: AdminDataUiState.Category): List<Float> {
-        val points = sensorHistoryApi.getSensorHistory(MOCK_DEVICE_ID, category.name).toSensorPoints()
-        val todayKey = today.toDateKey()
-        return points.filter { it.date == todayKey }
-            .sortedBy { it.hour }
-            .map { it.value.toFloat() }
+        // toSensorPoints()가 이미 날짜 오름차순 → 하루 내 시간 오름차순으로 정렬해서 반환하므로 그대로 사용
+        return sensorHistoryApi.getSensorHistory(MOCK_DEVICE_ID, category.name).toSensorPoints()
+            .map { point -> point.value.toFloat() }
     }
 
     private suspend fun dailyAverageValues(category: AdminDataUiState.Category): List<Float> {
