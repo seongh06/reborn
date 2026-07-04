@@ -65,7 +65,8 @@ fun App() {
                     val isAerometer = currentDestination?.hasRoute<Route.Aerometer>() == true
                     val isAdminHome = currentDestination?.hasRoute<Route.Admin.Home>() == true
                     val isAdminAdjust = currentDestination?.hasRoute<Route.Admin.Adjust>() == true
-                    if (!isIntro && !isAerometer && (!(isAdminHome || isAdminAdjust) || isAdminHomeBottomBarVisible)) {
+                    val isAdminFeedback = currentDestination?.hasRoute<Route.Admin.Feedback>() == true
+                    if (!isIntro && !isAerometer && (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)) {
                         Surface(
                             color = surfaceColor,
                             modifier = Modifier
@@ -170,7 +171,14 @@ fun App() {
                             isAdminHomeBottomBarVisible = visible
                         }
                     )
-                    adminFeedbackNavGraph()
+                    adminFeedbackNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onBottomBarVisibilityChange = { visible ->
+                            isAdminHomeBottomBarVisible = visible
+                        }
+                    )
                     adminDataNavGraph()
                     adminSettingNavGraph()
                 }

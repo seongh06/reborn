@@ -22,9 +22,9 @@ import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.component.DataType
 import com.reborn.core.ui.component.SensorChip
+import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.adjust.component.DeviceSection
-import com.reborn.feature.admin.adjust.component.TabBar
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
 import com.reborn.feature.admin.adjust.model.AutoControlUiState
 import com.reborn.feature.admin.adjust.model.Device
