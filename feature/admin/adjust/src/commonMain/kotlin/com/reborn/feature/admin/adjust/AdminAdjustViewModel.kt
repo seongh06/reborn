@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 sealed class AdminAdjustEvent {
     data object Exit : AdminAdjustEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminAdjustEvent()
+    data class ShowSnackbar(val message: String) : AdminAdjustEvent()
 }
 
 class AdminAdjustViewModel : ViewModel() {
@@ -36,9 +37,11 @@ class AdminAdjustViewModel : ViewModel() {
             is AdminAdjustIntent.LoadInitial -> checkInitialState()
             is AdminAdjustIntent.NavigateBack -> navController.navigateBack()
             is AdminAdjustIntent.NavigateToAddDevice -> navController.navigateTo(AdminAdjustUiState.AddDevice)
-            is AdminAdjustIntent.NavigateToDeviceDetail -> navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.deviceId))
+            is AdminAdjustIntent.NavigateToDeviceDetail -> navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.controlMethod, intent.deviceId))
             is AdminAdjustIntent.TogglePower -> togglePower(intent.deviceId)
             is AdminAdjustIntent.AddDevice -> addDevice(intent.place, intent.name)
+            is AdminAdjustIntent.ClickTab -> handleTabClick(intent.tab)
+            is AdminAdjustIntent.SendRemoteControl -> sendRemoteControl(intent)
         }
     }
 
@@ -69,5 +72,29 @@ class AdminAdjustViewModel : ViewModel() {
         )
         devices = devices + newDevice
         navController.clearAndReset(AdminAdjustUiState.Adjust(devices))
+    }
+
+    fun handleTabClick(tab: AdminAdjustUiState.ControlMethod) {
+        navController.updateCurrentState { state ->
+            if (state is AdminAdjustUiState.DeviceDetail) {
+                state.copy(selectedTab = tab)
+            } else state
+        }
+
+        loadData(tab)
+    }
+
+    private fun loadData(
+        tab: AdminAdjustUiState.ControlMethod?=null
+    ){
+
+    }
+
+    // TODO: 서버 기기 제어 명령 API 연동 전까지의 목업. 실제 연동 시 UseCase/Repository로 대체 예정
+    private fun sendRemoteControl(intent: AdminAdjustIntent.SendRemoteControl) {
+        viewModelScope.launch {
+            delay(500)
+            navController.emitEvent(AdminAdjustEvent.ShowSnackbar("제어 명령을 전송했습니다."))
+        }
     }
 }

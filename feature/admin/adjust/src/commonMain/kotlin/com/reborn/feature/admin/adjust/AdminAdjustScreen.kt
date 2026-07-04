@@ -63,6 +63,9 @@ fun AdminAdjustRoute(
                         message = event.throwable.message ?: "에러가 발생했습니다."
                     )
                 }
+                is AdminAdjustEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(message = event.message)
+                }
                 is AdminAdjustEvent.Exit -> onBackClick()
             }
         }
@@ -77,7 +80,7 @@ fun AdminAdjustRoute(
                 state = state,
                 onAddDeviceClick = { viewModel.onIntent(AdminAdjustIntent.NavigateToAddDevice) },
                 onPowerToggle = { id -> viewModel.onIntent(AdminAdjustIntent.TogglePower(id)) },
-                navToDeviceDetail = { id -> viewModel.onIntent(AdminAdjustIntent.NavigateToDeviceDetail(id))}
+                navToDeviceDetail = { id -> viewModel.onIntent(AdminAdjustIntent.NavigateToDeviceDetail(deviceId = id))}
             )
             is AdminAdjustUiState.AddDevice -> AdminAddDeviceScreen(
                 onBackClick = { viewModel.onIntent(AdminAdjustIntent.NavigateBack) },
@@ -85,7 +88,19 @@ fun AdminAdjustRoute(
             )
             is AdminAdjustUiState.DeviceDetail -> AdminDeviceDetailScreen(
                 state = state,
-                onBackClick = { viewModel.onIntent(AdminAdjustIntent.NavigateBack)}
+                onBackClick = { viewModel.onIntent(AdminAdjustIntent.NavigateBack)},
+                onTabClick = { tab -> viewModel.onIntent(AdminAdjustIntent.ClickTab(tab)) },
+                onSendControlClick = { temperature, operationMode, windSpeed, isPowerOn ->
+                    viewModel.onIntent(
+                        AdminAdjustIntent.SendRemoteControl(
+                            deviceId = state.deviceId,
+                            temperature = temperature,
+                            operationMode = operationMode,
+                            windSpeed = windSpeed,
+                            isPowerOn = isPowerOn
+                        )
+                    )
+                }
             )
         }
     }
