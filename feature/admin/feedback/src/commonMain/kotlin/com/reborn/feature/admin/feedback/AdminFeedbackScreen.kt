@@ -71,7 +71,7 @@ fun AdminFeedbackRoute(
             is AdminFeedbackUiState.Loading -> RebornLoadingScreen()
             is AdminFeedbackUiState.Feedback -> AdminFeedbackScreen(
                 state = state,
-                navToFeedbackQR = {},
+                navToFeedbackQR = { id -> viewModel.onIntent(AdminFeedbackIntent.NavigateToQR(id))},
                 navToFeedbackDetail = { id -> viewModel.onIntent(AdminFeedbackIntent.NavigateToFeedbackDetail(id)) },
                 onTabClick = { tab -> viewModel.onIntent(AdminFeedbackIntent.ClickTab(tab))}
             )
