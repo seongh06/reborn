@@ -148,14 +148,14 @@ fun AdminDeviceDetailScreen(
                     modifier = Modifier.weight(1f),
                     text = "기본 값으로 초기화",
                     enabled = isAutoControlChanged,
-                    backgroundColor = RebornTheme.color.grayScale100,
+                    backgroundColor = if (isAutoControlChanged) RebornTheme.color.grayScale100 else RebornTheme.color.grayScale600,
                     onClick = { autoControlState = initialAutoControlState }
                 )
                 RebornButton(
                     modifier = Modifier.weight(1f),
                     text = "저장",
                     enabled = isAutoControlChanged,
-                    backgroundColor = RebornTheme.color.grayScale400,
+                    backgroundColor = if (isAutoControlChanged) RebornTheme.color.grayScale400 else RebornTheme.color.grayScale600,
                     onClick = { onSendAutoControlClick(autoControlState) }
                 )
 

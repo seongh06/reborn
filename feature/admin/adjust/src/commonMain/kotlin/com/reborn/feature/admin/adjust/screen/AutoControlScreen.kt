@@ -19,6 +19,12 @@ import com.reborn.feature.admin.adjust.model.RuleData
 import com.reborn.feature.admin.adjust.model.ToggleOptionData
 import com.reborn.feature.admin.adjust.model.applyAction
 
+private val NonNumericThresholdChars = Regex("[^0-9.%°C명]")
+private val NonDigitChars = Regex("[^0-9]")
+
+private fun sanitizeThreshold(value: String): String = value.replace(NonNumericThresholdChars, "")
+private fun sanitizeMinutes(value: String): String = value.replace(NonDigitChars, "")
+
 @Composable
 fun AutoControlScreen(
     state: AutoControlUiState,
@@ -50,7 +56,7 @@ fun AutoControlScreen(
                 RuleData(
                     id = "humidityHigh",
                     inputValue = state.humidityHighThreshold,
-                    onInputValueChange = { onStateChange(state.copy(humidityHighThreshold = it)) },
+                    onInputValueChange = { onStateChange(state.copy(humidityHighThreshold = sanitizeThreshold(it))) },
                     conditionLabel = "이상 ➔",
                     actionText = state.humidityHighAction,
                     onActionClick = { editingField = AutoControlField.HumidityHigh },
@@ -59,7 +65,7 @@ fun AutoControlScreen(
                 RuleData(
                     id = "humidityLow",
                     inputValue = state.humidityLowThreshold,
-                    onInputValueChange = { onStateChange(state.copy(humidityLowThreshold = it)) },
+                    onInputValueChange = { onStateChange(state.copy(humidityLowThreshold = sanitizeThreshold(it))) },
                     conditionLabel = "이하 ➔",
                     actionText = state.humidityLowAction,
                     onActionClick = { editingField = AutoControlField.HumidityLow },
@@ -73,7 +79,7 @@ fun AutoControlScreen(
                 RuleData(
                     id = "temperatureHigh",
                     inputValue = state.temperatureHighThreshold,
-                    onInputValueChange = { onStateChange(state.copy(temperatureHighThreshold = it)) },
+                    onInputValueChange = { onStateChange(state.copy(temperatureHighThreshold = sanitizeThreshold(it))) },
                     conditionLabel = "이상 ➔",
                     actionText = state.temperatureHighAction,
                     onActionClick = { editingField = AutoControlField.TemperatureHigh },
@@ -82,7 +88,7 @@ fun AutoControlScreen(
                 RuleData(
                     id = "temperatureLow",
                     inputValue = state.temperatureLowThreshold,
-                    onInputValueChange = { onStateChange(state.copy(temperatureLowThreshold = it)) },
+                    onInputValueChange = { onStateChange(state.copy(temperatureLowThreshold = sanitizeThreshold(it))) },
                     conditionLabel = "이하 ➔",
                     actionText = state.temperatureLowAction,
                     onActionClick = { editingField = AutoControlField.TemperatureLow },
@@ -96,7 +102,7 @@ fun AutoControlScreen(
                 RuleData(
                     id = "occupancy",
                     inputValue = state.occupancyThreshold,
-                    onInputValueChange = { onStateChange(state.copy(occupancyThreshold = it)) },
+                    onInputValueChange = { onStateChange(state.copy(occupancyThreshold = sanitizeThreshold(it))) },
                     conditionLabel = "이상 ➔",
                     actionText = state.occupancyAction,
                     onActionClick = { editingField = AutoControlField.Occupancy },
@@ -107,7 +113,7 @@ fun AutoControlScreen(
                 isChecked = state.isAutoOffEnabled,
                 onCheckedChange = { onStateChange(state.copy(isAutoOffEnabled = it)) },
                 minutesValue = state.autoOffMinutes,
-                onMinutesValueChange = { onStateChange(state.copy(autoOffMinutes = it)) }
+                onMinutesValueChange = { onStateChange(state.copy(autoOffMinutes = sanitizeMinutes(it))) }
             )
         )
     }
