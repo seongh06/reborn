@@ -177,8 +177,10 @@ fun DataLineChartSection(
                 val label = labels.getOrNull(index) ?: return@forEach
                 val x = points[index].x
                 val measuredLabel = textMeasurer.measure(label, axisTextStyle)
+                val maxLabelX = (size.width - textHorizontalPaddingPx - measuredLabel.size.width)
+                    .coerceAtLeast(textHorizontalPaddingPx)
                 val textX = (x - measuredLabel.size.width / 2f)
-                    .coerceIn(textHorizontalPaddingPx, (size.width - textHorizontalPaddingPx - measuredLabel.size.width).coerceAtLeast(textHorizontalPaddingPx))
+                    .coerceIn(textHorizontalPaddingPx, maxLabelX)
                 drawText(
                     textLayoutResult = measuredLabel,
                     topLeft = Offset(textX, size.height - bottomAxisHeight)
@@ -198,9 +200,10 @@ fun DataLineChartSection(
         )
         measuredValues.forEachIndexed { i, measuredValue ->
             val y = topPadding + drawableHeight * i / gridLineCount
+            val valueX = size.width - textHorizontalPaddingPx - measuredValue.size.width
             drawText(
                 textLayoutResult = measuredValue,
-                topLeft = Offset(size.width - textHorizontalPaddingPx - measuredValue.size.width, y - measuredValue.size.height / 2f)
+                topLeft = Offset(valueX, y - measuredValue.size.height / 2f)
             )
         }
     }

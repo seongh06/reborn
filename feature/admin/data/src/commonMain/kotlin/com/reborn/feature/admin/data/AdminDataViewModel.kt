@@ -3,12 +3,17 @@ package com.reborn.feature.admin.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
-import com.reborn.core.data.mapper.toSensorPoints
+import com.reborn.core.data.repository.SensorHistoryRepositoryImpl
+import com.reborn.core.domain.usecase.GetSensorHistoryParams
+import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
 import com.reborn.core.network.model.SensorHistoryResponse
 import com.reborn.core.network.service.SensorHistoryApi
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private const val MOCK_DEVICE_ID = 1
@@ -67,24 +72,64 @@ private fun MockDate.minusMonths(months: Int): MockDate {
 // 날마다 완전히 똑같지 않도록 카테고리당 2개 패턴을 두고 번갈아 사용
 private fun hourlyDayPatternsFor(category: AdminDataUiState.Category): List<List<Double>> = when (category) {
     AdminDataUiState.Category.TEMPERATURE -> listOf(
-        listOf(18.0, 17.5, 17.0, 17.0, 17.5, 18.0, 19.0, 20.5, 22.0, 23.5, 24.5, 25.0, 25.5, 26.0, 25.5, 25.0, 24.0, 23.0, 22.0, 21.0, 20.0, 19.5, 19.0, 18.5),
-        listOf(19.0, 18.5, 18.0, 18.5, 19.5, 21.0, 22.5, 24.0, 25.5, 26.5, 27.0, 27.5, 28.0, 27.5, 27.0, 26.0, 25.0, 23.5, 22.0, 21.0, 20.5, 20.0, 19.5, 19.0)
+        listOf(
+            18.0, 17.5, 17.0, 17.0, 17.5, 18.0, 19.0, 20.5,
+            22.0, 23.5, 24.5, 25.0, 25.5, 26.0, 25.5, 25.0,
+            24.0, 23.0, 22.0, 21.0, 20.0, 19.5, 19.0, 18.5
+        ),
+        listOf(
+            19.0, 18.5, 18.0, 18.5, 19.5, 21.0, 22.5, 24.0,
+            25.5, 26.5, 27.0, 27.5, 28.0, 27.5, 27.0, 26.0,
+            25.0, 23.5, 22.0, 21.0, 20.5, 20.0, 19.5, 19.0
+        )
     )
     AdminDataUiState.Category.HUMIDITY -> listOf(
-        listOf(68.0, 69.0, 70.0, 71.0, 70.0, 68.0, 65.0, 60.0, 55.0, 50.0, 47.0, 45.0, 44.0, 43.0, 45.0, 47.0, 50.0, 54.0, 58.0, 61.0, 64.0, 66.0, 67.0, 68.0),
-        listOf(60.0, 61.0, 62.0, 63.0, 62.0, 60.0, 57.0, 53.0, 49.0, 45.0, 42.0, 40.0, 39.0, 39.0, 41.0, 43.0, 46.0, 50.0, 54.0, 57.0, 58.0, 59.0, 60.0, 60.0)
+        listOf(
+            68.0, 69.0, 70.0, 71.0, 70.0, 68.0, 65.0, 60.0,
+            55.0, 50.0, 47.0, 45.0, 44.0, 43.0, 45.0, 47.0,
+            50.0, 54.0, 58.0, 61.0, 64.0, 66.0, 67.0, 68.0
+        ),
+        listOf(
+            60.0, 61.0, 62.0, 63.0, 62.0, 60.0, 57.0, 53.0,
+            49.0, 45.0, 42.0, 40.0, 39.0, 39.0, 41.0, 43.0,
+            46.0, 50.0, 54.0, 57.0, 58.0, 59.0, 60.0, 60.0
+        )
     )
     AdminDataUiState.Category.ILLUMINANCE -> listOf(
-        listOf(0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 80.0, 200.0, 350.0, 500.0, 620.0, 700.0, 720.0, 700.0, 650.0, 560.0, 420.0, 280.0, 120.0, 40.0, 5.0, 0.0, 0.0, 0.0),
-        listOf(0.0, 0.0, 0.0, 0.0, 10.0, 40.0, 120.0, 260.0, 400.0, 540.0, 650.0, 730.0, 750.0, 730.0, 680.0, 590.0, 450.0, 300.0, 140.0, 50.0, 10.0, 0.0, 0.0, 0.0)
+        listOf(
+            0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 80.0, 200.0,
+            350.0, 500.0, 620.0, 700.0, 720.0, 700.0, 650.0, 560.0,
+            420.0, 280.0, 120.0, 40.0, 5.0, 0.0, 0.0, 0.0
+        ),
+        listOf(
+            0.0, 0.0, 0.0, 0.0, 10.0, 40.0, 120.0, 260.0,
+            400.0, 540.0, 650.0, 730.0, 750.0, 730.0, 680.0, 590.0,
+            450.0, 300.0, 140.0, 50.0, 10.0, 0.0, 0.0, 0.0
+        )
     )
     AdminDataUiState.Category.PEOPLE_COUNT -> listOf(
-        listOf(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, 5.0, 4.0, 4.0, 3.0, 3.0, 4.0, 5.0, 6.0, 4.0, 2.0, 1.0, 0.0),
-        listOf(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 3.0, 4.0, 4.0, 5.0, 5.0, 4.0, 3.0, 3.0, 4.0, 6.0, 7.0, 5.0, 3.0, 1.0, 1.0)
+        listOf(
+            0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 2.0,
+            3.0, 4.0, 4.0, 5.0, 5.0, 4.0, 4.0, 3.0,
+            3.0, 4.0, 5.0, 6.0, 4.0, 2.0, 1.0, 0.0
+        ),
+        listOf(
+            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0,
+            3.0, 3.0, 4.0, 4.0, 5.0, 5.0, 4.0, 3.0,
+            3.0, 4.0, 6.0, 7.0, 5.0, 3.0, 1.0, 1.0
+        )
     )
     AdminDataUiState.Category.DISCOMFORT -> listOf(
-        listOf(58.0, 57.0, 56.0, 56.0, 57.0, 59.0, 62.0, 66.0, 70.0, 74.0, 77.0, 79.0, 80.0, 81.0, 80.0, 78.0, 75.0, 71.0, 68.0, 65.0, 63.0, 61.0, 60.0, 59.0),
-        listOf(60.0, 59.0, 58.0, 58.0, 59.0, 61.0, 64.0, 68.0, 72.0, 76.0, 79.0, 81.0, 82.0, 83.0, 82.0, 80.0, 77.0, 73.0, 70.0, 67.0, 65.0, 63.0, 62.0, 61.0)
+        listOf(
+            58.0, 57.0, 56.0, 56.0, 57.0, 59.0, 62.0, 66.0,
+            70.0, 74.0, 77.0, 79.0, 80.0, 81.0, 80.0, 78.0,
+            75.0, 71.0, 68.0, 65.0, 63.0, 61.0, 60.0, 59.0
+        ),
+        listOf(
+            60.0, 59.0, 58.0, 58.0, 59.0, 61.0, 64.0, 68.0,
+            72.0, 76.0, 79.0, 81.0, 82.0, 83.0, 82.0, 80.0,
+            77.0, 73.0, 70.0, 67.0, 65.0, 63.0, 62.0, 61.0
+        )
     )
 }
 
@@ -142,7 +187,13 @@ class AdminDataViewModel : ViewModel() {
         scope = viewModelScope
     )
 
-    private val sensorHistoryApi: SensorHistoryApi = MockSensorHistoryApi()
+    // TODO: Koin으로 실제 SensorHistoryApi 구현체를 주입받도록 교체 예정. ViewModel은 core:domain UseCase만 알고
+    // core:network/core:data 구현 세부사항(Repository, Api)에는 의존하지 않도록 경계를 지킴
+    private val getSensorHistoryUseCase = GetSensorHistoryUseCase(
+        SensorHistoryRepositoryImpl(MockSensorHistoryApi())
+    )
+
+    private var loadJob: Job? = null
 
     val uiState = navigationManager.uiState
     val event = navigationManager.event
@@ -158,52 +209,73 @@ class AdminDataViewModel : ViewModel() {
 
     private fun checkInitialState() {
         navigationManager.clearAndReset(AdminDataUiState.Loading)
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             delay(1500)
             val category = AdminDataUiState.Category.TEMPERATURE
             val period = AdminDataUiState.Period.DAY
-            navigationManager.clearAndReset(
-                AdminDataUiState.Data(
-                    selectedCategory = category,
-                    selectedPeriod = period,
-                    chartLabels = chartLabelsFor(period),
-                    chartValues = mockChartValues(category, period),
-                    hasEnoughData = hasEnoughDataFor(period),
-                    analysisText = mockAnalysisText(category)
+            try {
+                navigationManager.clearAndReset(
+                    AdminDataUiState.Data(
+                        selectedCategory = category,
+                        selectedPeriod = period,
+                        chartLabels = chartLabelsFor(period),
+                        chartValues = mockChartValues(category, period),
+                        hasEnoughData = hasEnoughDataFor(period),
+                        analysisText = mockAnalysisText(category)
+                    )
                 )
-            )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(e))
+            }
         }
     }
 
     private fun handleCategoryClick(category: AdminDataUiState.Category) {
         val current = navigationManager.uiState.value as? AdminDataUiState.Data ?: return
-        viewModelScope.launch {
-            val chartValues = mockChartValues(category, current.selectedPeriod)
-            navigationManager.updateCurrentState { state ->
-                if (state is AdminDataUiState.Data) {
-                    state.copy(
-                        selectedCategory = category,
-                        chartValues = chartValues,
-                        analysisText = mockAnalysisText(category)
-                    )
-                } else state
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            try {
+                val chartValues = mockChartValues(category, current.selectedPeriod)
+                navigationManager.updateCurrentState { state ->
+                    if (state is AdminDataUiState.Data) {
+                        state.copy(
+                            selectedCategory = category,
+                            chartValues = chartValues,
+                            analysisText = mockAnalysisText(category)
+                        )
+                    } else state
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(e))
             }
         }
     }
 
     private fun handlePeriodClick(period: AdminDataUiState.Period) {
         val current = navigationManager.uiState.value as? AdminDataUiState.Data ?: return
-        viewModelScope.launch {
-            val chartValues = mockChartValues(current.selectedCategory, period)
-            navigationManager.updateCurrentState { state ->
-                if (state is AdminDataUiState.Data) {
-                    state.copy(
-                        selectedPeriod = period,
-                        chartLabels = chartLabelsFor(period),
-                        chartValues = chartValues,
-                        hasEnoughData = hasEnoughDataFor(period)
-                    )
-                } else state
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            try {
+                val chartValues = mockChartValues(current.selectedCategory, period)
+                navigationManager.updateCurrentState { state ->
+                    if (state is AdminDataUiState.Data) {
+                        state.copy(
+                            selectedPeriod = period,
+                            chartLabels = chartLabelsFor(period),
+                            chartValues = chartValues,
+                            hasEnoughData = hasEnoughDataFor(period)
+                        )
+                    } else state
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(e))
             }
         }
     }
@@ -211,6 +283,11 @@ class AdminDataViewModel : ViewModel() {
     // 기기가 등록된 지 얼마 안 돼서 해당 기간 단위로 충분한 데이터가 쌓이지 않았으면 그래프 대신 안내 문구를 보여주기 위한 판단
     // (1시간은 오늘 하루치라 항상 표시, 일/주/월/년은 각각 최소 6개 단위만큼 쌓였을 때만 표시)
     // 일(DAY)은 실제 목업 히스토리 일수(MOCK_HISTORY_DAY_COUNT)로, 주/월/년은 데이터 수집 시작일로부터 경과한 시간으로 판단
+    //
+    // 주의: 지금 목업 상수(MOCK_HISTORY_DAY_COUNT=2, 경과일=약 33일)로는 HOUR를 제외한 나머지가 전부
+    // "데이터 없음" 상태가 되도록 의도된 것 — 갓 등록된 기기가 아직 장기 데이터를 못 쌓은 상황을 보여주기 위함.
+    // 사용자 요청으로 명시적으로 이렇게 맞춘 것이라 CodeRabbit이 제안한 "임계값 완화"는 적용하지 않음.
+    // 목업 "오늘" 날짜가 이후 세션에서 전진하면 자연스럽게 WEEK(6주)/MONTH(6개월)/YEAR(6년) 순으로 열리게 됨
     private fun hasEnoughDataFor(period: AdminDataUiState.Period): Boolean {
         val elapsedDays = elapsedDaysSinceDataCollectionStart()
         return when (period) {
@@ -260,15 +337,16 @@ class AdminDataViewModel : ViewModel() {
     }
 
     // TODO: 서버 sensorLogs 히스토리 조회 API 연동 전까지의 목업. 실제 연동 시 SensorHistoryApi의 Ktor 구현체로 대체 예정
-    // 오늘 하루로 제한하지 않고 목업 전체 기간(14일치)을 이어서 반환 — 축소하면 여러 날짜가 쭉 이어져 보이도록 함
+    // 오늘 하루로 제한하지 않고 목업 전체 기간을 이어서 반환 — 축소하면 여러 날짜가 쭉 이어져 보이도록 함
     private suspend fun hourlyValues(category: AdminDataUiState.Category): List<Float> {
         // toSensorPoints()가 이미 날짜 오름차순 → 하루 내 시간 오름차순으로 정렬해서 반환하므로 그대로 사용
-        return sensorHistoryApi.getSensorHistory(MOCK_DEVICE_ID, category.name).toSensorPoints()
-            .map { point -> point.value.toFloat() }
+        val params = GetSensorHistoryParams(MOCK_DEVICE_ID, category.name)
+        return getSensorHistoryUseCase(params).first().map { point -> point.value.toFloat() }
     }
 
     private suspend fun dailyAverageValues(category: AdminDataUiState.Category): List<Float> {
-        val points = sensorHistoryApi.getSensorHistory(MOCK_DEVICE_ID, category.name).toSensorPoints()
+        val params = GetSensorHistoryParams(MOCK_DEVICE_ID, category.name)
+        val points = getSensorHistoryUseCase(params).first()
         return points.groupBy { it.date }
             .toList()
             .sortedBy { (date, _) -> date }
