@@ -48,4 +48,8 @@ sealed interface AdminAdjustIntent {
         val windSpeed: WindSpeed,
         val isPowerOn: Boolean
     ) : AdminAdjustIntent
+    data class SendAutoControl(
+        val deviceId: Int,
+        val autoControlState: AutoControlUiState
+    ) : AdminAdjustIntent
 }

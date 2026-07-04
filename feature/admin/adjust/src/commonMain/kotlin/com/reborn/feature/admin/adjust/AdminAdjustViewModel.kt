@@ -42,6 +42,7 @@ class AdminAdjustViewModel : ViewModel() {
             is AdminAdjustIntent.AddDevice -> addDevice(intent.place, intent.name)
             is AdminAdjustIntent.ClickTab -> handleTabClick(intent.tab)
             is AdminAdjustIntent.SendRemoteControl -> sendRemoteControl(intent)
+            is AdminAdjustIntent.SendAutoControl -> sendAutoControl(intent)
         }
     }
 
@@ -100,6 +101,14 @@ class AdminAdjustViewModel : ViewModel() {
         viewModelScope.launch {
             delay(500)
             navController.emitEvent(AdminAdjustEvent.ShowSnackbar("제어 명령을 전송했습니다."))
+        }
+    }
+
+    // TODO: 서버 자동제어 규칙 API 연동 전까지의 목업. 실제 연동 시 UseCase/Repository로 대체 예정
+    private fun sendAutoControl(intent: AdminAdjustIntent.SendAutoControl) {
+        viewModelScope.launch {
+            delay(500)
+            navController.emitEvent(AdminAdjustEvent.ShowSnackbar("자동 제어 규칙을 저장했습니다."))
         }
     }
 }

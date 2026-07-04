@@ -1,7 +1,6 @@
 package com.reborn.feature.admin.adjust
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +14,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -27,13 +25,13 @@ import com.reborn.core.ui.component.SensorChip
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.adjust.component.DeviceSection
 import com.reborn.feature.admin.adjust.component.TabBar
-import com.reborn.feature.admin.adjust.component.remote.RulerPickerSection
-import com.reborn.feature.admin.adjust.component.remote.SelectPickerSection
-import com.reborn.feature.admin.adjust.component.remote.SwitchSection
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
+import com.reborn.feature.admin.adjust.model.AutoControlUiState
 import com.reborn.feature.admin.adjust.model.Device
 import com.reborn.feature.admin.adjust.model.OperationMode
 import com.reborn.feature.admin.adjust.model.WindSpeed
+import com.reborn.feature.admin.adjust.screen.AutoControlScreen
+import com.reborn.feature.admin.adjust.screen.RemoteControlScreen
 
 @Composable
 fun AdminDeviceDetailScreen(
@@ -46,6 +44,7 @@ fun AdminDeviceDetailScreen(
         windSpeed: WindSpeed,
         isPowerOn: Boolean
     ) -> Unit = { _, _, _, _ -> },
+    onSendAutoControlClick: (AutoControlUiState) -> Unit = {},
 ) {
 
     val currentTab = state.selectedTab
@@ -64,6 +63,11 @@ fun AdminDeviceDetailScreen(
         operationMode != initialOperationMode ||
         windSpeed != initialWindSpeed ||
         isPowerOn != initialPowerOn
+
+    val initialAutoControlState = remember { AutoControlUiState() }
+    var autoControlState by remember { mutableStateOf(initialAutoControlState) }
+
+    val isAutoControlChanged = autoControlState != initialAutoControlState
 
     Column(
         modifier = Modifier.rebornDefault(Color.White)
@@ -111,7 +115,7 @@ fun AdminDeviceDetailScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             when (currentTab) {
-                AdminAdjustUiState.ControlMethod.Remote -> RemoteControlSections(
+                AdminAdjustUiState.ControlMethod.Remote -> RemoteControlScreen(
                     temperature = temperature,
                     onTemperatureChange = { temperature = it },
                     operationMode = operationMode,
@@ -121,7 +125,10 @@ fun AdminDeviceDetailScreen(
                     isPowerOn = isPowerOn,
                     onPowerChange = { isPowerOn = it }
                 )
-                AdminAdjustUiState.ControlMethod.MANUALEdit -> AutoControlContent()
+                AdminAdjustUiState.ControlMethod.MANUALEdit -> AutoControlScreen(
+                    state = autoControlState,
+                    onStateChange = { autoControlState = it }
+                )
             }
         }
 
@@ -132,62 +139,27 @@ fun AdminDeviceDetailScreen(
                 onClick = { onSendControlClick(temperature, operationMode, windSpeed, isPowerOn) }
             )
         }
-    }
-}
+        if (currentTab == AdminAdjustUiState.ControlMethod.MANUALEdit) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ){
+                RebornButton(
+                    modifier = Modifier.weight(1f),
+                    text = "기본 값으로 초기화",
+                    enabled = isAutoControlChanged,
+                    backgroundColor = if (isAutoControlChanged) RebornTheme.color.grayScale100 else RebornTheme.color.grayScale600,
+                    onClick = { autoControlState = initialAutoControlState }
+                )
+                RebornButton(
+                    modifier = Modifier.weight(1f),
+                    text = "저장",
+                    enabled = isAutoControlChanged,
+                    backgroundColor = if (isAutoControlChanged) RebornTheme.color.grayScale400 else RebornTheme.color.grayScale600,
+                    onClick = { onSendAutoControlClick(autoControlState) }
+                )
 
-@Composable
-private fun RemoteControlSections(
-    temperature: Float,
-    onTemperatureChange: (Float) -> Unit,
-    operationMode: OperationMode,
-    onOperationModeChange: (OperationMode) -> Unit,
-    windSpeed: WindSpeed,
-    onWindSpeedChange: (WindSpeed) -> Unit,
-    isPowerOn: Boolean,
-    onPowerChange: (Boolean) -> Unit,
-) {
-    Column(
-        modifier = Modifier.padding(12.dp, 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        SwitchSection(
-            isPower = isPowerOn,
-            onPowerChange = onPowerChange
-        )
-        RulerPickerSection(
-            title = "희망 온도",
-            value = temperature,
-            onValueChange = onTemperatureChange
-        )
-        SelectPickerSection(
-            title = "운전모드",
-            options = OperationMode.entries,
-            selectedOption = operationMode,
-            onOptionSelected = onOperationModeChange,
-            optionToString = { it.label }
-        )
-        SelectPickerSection(
-            title = "바람세기",
-            options = WindSpeed.entries,
-            selectedOption = windSpeed,
-            onOptionSelected = onWindSpeedChange,
-            optionToString = { it.label }
-        )
-    }
-}
-
-@Composable
-private fun AutoControlContent() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 48.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "준비 중인 기능입니다",
-            style = RebornTheme.typography.bodyMedium,
-            color = RebornTheme.color.grayScale500
-        )
+            }
+        }
     }
 }
