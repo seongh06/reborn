@@ -1,21 +1,19 @@
 package com.reborn.feature.admin.data.component.section
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -65,8 +63,6 @@ fun DataLineChartSection(
         modifier = modifier
             .fillMaxWidth()
             .height(220.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(RebornTheme.color.grayScale100)
             .padding(vertical = 12.dp)
             .clipToBounds()
             .onSizeChanged { plotWidthPx = (it.width.toFloat() - rightAxisWidthPx).coerceAtLeast(0f) }
@@ -89,7 +85,6 @@ fun DataLineChartSection(
         val stepX = contentWidth / (values.size - 1)
         val pointsX = values.indices.map { index -> offsetX + stepX * index }
 
-        // 화면에 실제로 보이는 구간만으로 Y축 범위를 다시 계산 (확대/이동하면 값도 그 구간 기준으로 갱신)
         val visibleValues = values.filterIndexed { index, _ ->
             pointsX[index] in -stepX..(plotWidth + stepX)
         }.ifEmpty { values }
@@ -112,13 +107,6 @@ fun DataLineChartSection(
                 start = Offset(0f, y),
                 end = Offset(plotWidth, y),
                 strokeWidth = 1f
-            )
-
-            val axisValue = maxValue - range * i / gridLineCount
-            val measuredValue = textMeasurer.measure(axisValue.roundToInt().toString(), axisTextStyle)
-            drawText(
-                textLayoutResult = measuredValue,
-                topLeft = Offset(plotWidth + 4f, y - measuredValue.size.height / 2f)
             )
         }
 
@@ -153,7 +141,22 @@ fun DataLineChartSection(
             style = Stroke(width = 5f, cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
 
-        // X축 라벨: 확대/이동 상태와 무관하게 "현재 화면에 보이는 포인트" 중 최대 6개만 균등하게 골라 표시 (글자 겹침 방지)
+        // 확대해서 옆으로 밀었을 때 선/채우기가 오른쪽 축 영역까지 넘어와도 값이 안 가리도록, 라벨 뒤에 배경을 깔고 그 위에 그림
+        drawRect(
+            color = Color.White,
+            topLeft = Offset(plotWidth, 0f),
+            size = Size(rightAxisWidthPx, size.height)
+        )
+        for (i in 0..gridLineCount) {
+            val y = topPadding + drawableHeight * i / gridLineCount
+            val axisValue = maxValue - range * i / gridLineCount
+            val measuredValue = textMeasurer.measure(axisValue.roundToInt().toString(), axisTextStyle)
+            drawText(
+                textLayoutResult = measuredValue,
+                topLeft = Offset(size.width - measuredValue.size.width, y - measuredValue.size.height / 2f)
+            )
+        }
+
         val maxLabelCount = 6
         val visibleIndices = points.indices.filter { index -> points[index].x in 0f..plotWidth }
         if (visibleIndices.isNotEmpty()) {
