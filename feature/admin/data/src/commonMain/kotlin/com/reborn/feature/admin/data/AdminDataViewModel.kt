@@ -10,6 +10,40 @@ import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.sin
 
+private val DAYS_IN_MONTH = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
+private data class MockDate(val year: Int, val month: Int, val day: Int)
+
+// TODO: 실제 날짜/시간대 연동 전까지 "오늘"을 고정값으로 사용하는 목업. 실제 연동 시 kotlinx-datetime의 현재 시각으로 대체 예정
+private val today = MockDate(2026, 7, 4)
+
+private fun Int.pad2(): String = toString().padStart(2, '0')
+
+private fun MockDate.minusDays(days: Int): MockDate {
+    var y = year
+    var m = month
+    var d = day - days
+    while (d <= 0) {
+        m -= 1
+        if (m == 0) {
+            m = 12
+            y -= 1
+        }
+        d += DAYS_IN_MONTH[m - 1]
+    }
+    return MockDate(y, m, d)
+}
+
+private fun MockDate.minusMonths(months: Int): MockDate {
+    var total = month - 1 - months
+    var y = year
+    while (total < 0) {
+        total += 12
+        y -= 1
+    }
+    return MockDate(y, total % 12 + 1, day)
+}
+
 sealed class AdminDataEvent {
     data object Exit : AdminDataEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminDataEvent()
@@ -79,14 +113,21 @@ class AdminDataViewModel : ViewModel() {
 
     // TODO: 서버 sensorLogs 히스토리 조회 API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
     // Period는 "총 조회 범위"가 아니라 "점 사이의 간격"을 의미함 (1시간 = 점 하나가 1시간 간격, 일 = 점 하나가 하루 간격 ...)
-    // 각 간격마다 자연스러운 개수만큼만 표시 (주/년처럼 실제 개수가 적으면 억지로 채우지 않음)
+    // 모든 기간이 실제 달력 개념(시각/날짜/월)으로 통일된 라벨을 쓰도록 함, 자연스러운 개수만큼만 표시(억지로 채우지 않음)
     private fun chartLabelsFor(period: AdminDataUiState.Period): List<String> {
         return when (period) {
-            AdminDataUiState.Period.HOUR -> (0..23).map { "${it}시" }       // 1시간 간격 · 최근 24시간
-            AdminDataUiState.Period.DAY -> (1..14).map { "${it}일" }        // 1일 간격 · 최근 14일
-            AdminDataUiState.Period.WEEK -> (1..8).map { "${it}주" }        // 1주 간격 · 최근 8주
-            AdminDataUiState.Period.MONTH -> (1..12).map { "${it}월" }      // 1개월 간격 · 최근 12개월
-            AdminDataUiState.Period.YEAR -> (1..5).map { "${it}년차" }      // 1년 간격 · 최근 5년
+            AdminDataUiState.Period.HOUR -> (0..23).map { hour -> "${hour.pad2()}:00" } // 1시간 간격 · 최근 24시간
+            AdminDataUiState.Period.DAY -> (13 downTo 0).map { daysAgo ->               // 1일 간격 · 최근 14일
+                val date = today.minusDays(daysAgo)
+                "${date.month.pad2()}/${date.day.pad2()}"
+            }
+            AdminDataUiState.Period.WEEK -> (7 downTo 0).map { weeksAgo ->              // 1주 간격 · 최근 8주(달로 표시)
+                "${today.minusDays(weeksAgo * 7).month}월"
+            }
+            AdminDataUiState.Period.MONTH -> (11 downTo 0).map { monthsAgo ->           // 1개월 간격 · 최근 12개월
+                "${today.minusMonths(monthsAgo).month}월"
+            }
+            AdminDataUiState.Period.YEAR -> (4 downTo 0).map { yearsAgo -> "${today.year - yearsAgo}년" } // 1년 간격 · 최근 5년
         }
     }
 
