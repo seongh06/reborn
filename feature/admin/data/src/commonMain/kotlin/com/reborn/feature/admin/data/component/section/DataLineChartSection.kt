@@ -66,7 +66,7 @@ fun DataLineChartSection(
 
     val lineColor = RebornTheme.color.grayScale800
     val gridColor = RebornTheme.color.grayScale300
-    val axisLabelMaskColor = RebornTheme.color.grayScale100
+    val axisLabelMaskColor = Color.White
     val axisTextStyle = RebornTheme.typography.caption.copy(color = RebornTheme.color.grayScale500)
 
     val textMeasurer = rememberTextMeasurer()
