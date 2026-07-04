@@ -10,7 +10,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.reborn.core.designsystem.*
+import com.reborn.core.designsystem.Res
+import com.reborn.core.designsystem.ic_back
+import com.reborn.core.designsystem.ic_notification
+import com.reborn.core.designsystem.ic_plus
+import com.reborn.core.designsystem.ic_qr
+import com.reborn.core.designsystem.ic_setting
 import com.reborn.core.designsystem.theme.RebornTheme
 
 @Composable
@@ -21,6 +26,7 @@ fun RebornTopAppBar(
     onNavigateAlert: (() -> Unit)? = null,
     onNavigateSetting: (() -> Unit)? = null,
     onNavigateAddDevice: (() -> Unit)? = null,
+    onNavigateFeedbackQR: (() -> Unit)? = null,
     darkTheme: Boolean = false
 ) {
     Box(
@@ -85,7 +91,13 @@ fun RebornTopAppBar(
                         icon = Res.drawable.ic_plus,
                         onClick = onNavigateAddDevice
                     )
-
+                }
+                if (onNavigateFeedbackQR != null) {
+                    RebornIcon(
+                        color = if (!darkTheme) RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
+                        icon = Res.drawable.ic_qr,
+                        onClick = onNavigateFeedbackQR
+                    )
                 }
             }
         }

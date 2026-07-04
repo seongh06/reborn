@@ -170,7 +170,14 @@ fun App() {
                             isAdminHomeBottomBarVisible = visible
                         }
                     )
-                    adminFeedbackNavGraph()
+                    adminFeedbackNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onBottomBarVisibilityChange = { visible ->
+                            isAdminHomeBottomBarVisible = visible
+                        }
+                    )
                     adminDataNavGraph()
                     adminSettingNavGraph()
                 }

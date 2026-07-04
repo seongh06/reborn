@@ -85,13 +85,22 @@ fun AdminHomeScreen(
 ) {
     Column(
         modifier = Modifier.rebornDefault(Color.White)
-    ){
-        RebornTopAppBar(title = "HOME", onNavigateAlert = onAlarmClick, onNavigateSetting = onSettingClick)
-        Dashboard("거실",20,20,20,20)
-        Text("실시간 피드백",modifier = Modifier.padding(16.dp), style = RebornTheme.typography.titleSmall, color = RebornTheme.color.grayScale900)
+    ) {
+        RebornTopAppBar(
+            title = "HOME",
+            onNavigateAlert = onAlarmClick,
+            onNavigateSetting = onSettingClick
+        )
+        Dashboard("거실", 20, 20, 20, 20)
+        Text(
+            "실시간 피드백",
+            modifier = Modifier.padding(16.dp),
+            style = RebornTheme.typography.titleSmall,
+            color = RebornTheme.color.grayScale900
+        )
         Column(
-            modifier = Modifier.padding(16.dp,12.dp)
-        ){
+            modifier = Modifier.padding(16.dp, 12.dp)
+        ) {
             FeedbackItem(
                 id = 1,
                 state = State.APPROVE,

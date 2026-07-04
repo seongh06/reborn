@@ -1,4 +1,4 @@
-package com.reborn.feature.admin.adjust.component
+package com.reborn.core.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column

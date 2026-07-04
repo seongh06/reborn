@@ -21,7 +21,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.Res
-import com.reborn.core.ui.*
+import com.reborn.core.ui.ic_feedback_air
+import com.reborn.core.ui.ic_feedback_cold
+import com.reborn.core.ui.ic_feedback_dark
+import com.reborn.core.ui.ic_feedback_dirt
+import com.reborn.core.ui.ic_feedback_hot
+import com.reborn.core.ui.ic_feedback_light
+import com.reborn.core.ui.ic_feedback_music
+import com.reborn.core.ui.ic_feedback_noise
+import com.reborn.core.ui.ic_feedback_smell
+import com.reborn.core.ui.ic_feedback_wind
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -62,7 +71,7 @@ fun FeedbackItem(
                 tint = icon.color
             )
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
+                verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
             ) {
                 Text(
                     title,
@@ -167,6 +176,6 @@ fun stateChip(
             .padding(12.dp,4.dp),
         text = style.text,
         style = RebornTheme.typography.labelMedium,
-        color = RebornTheme.color.grayScale100
+        color = Color.White
     )
 }
