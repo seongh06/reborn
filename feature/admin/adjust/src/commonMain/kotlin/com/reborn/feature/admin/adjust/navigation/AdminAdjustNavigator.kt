@@ -11,8 +11,14 @@ fun NavController.navigateAdminAdjust(navOptions: NavOptions) {
     navigate(route = Route.Admin.Adjust, navOptions = navOptions)
 }
 
-fun NavGraphBuilder.adjustNavGraph() {
+fun NavGraphBuilder.adjustNavGraph(
+    onBackClick: () -> Unit,
+    onBottomBarVisibilityChange: (Boolean) -> Unit = {}
+) {
     composable<Route.Admin.Adjust> {
-        AdminAdjustRoute()
+        AdminAdjustRoute(
+            onBackClick = onBackClick,
+            onBottomBarVisibilityChange = onBottomBarVisibilityChange
+        )
     }
 }
