@@ -35,4 +35,5 @@ sealed interface AdminDataIntent {
     data object LoadInitial : AdminDataIntent
     data class ClickCategoryTab(val category: AdminDataUiState.Category) : AdminDataIntent
     data class ClickPeriod(val period: AdminDataUiState.Period) : AdminDataIntent
+    data object ClickExport : AdminDataIntent
 }

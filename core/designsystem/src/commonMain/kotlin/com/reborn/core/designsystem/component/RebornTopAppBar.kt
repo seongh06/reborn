@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.Res
 import com.reborn.core.designsystem.ic_back
+import com.reborn.core.designsystem.ic_download
 import com.reborn.core.designsystem.ic_notification
 import com.reborn.core.designsystem.ic_plus
 import com.reborn.core.designsystem.ic_qr
@@ -27,6 +28,7 @@ fun RebornTopAppBar(
     onNavigateSetting: (() -> Unit)? = null,
     onNavigateAddDevice: (() -> Unit)? = null,
     onNavigateFeedbackQR: (() -> Unit)? = null,
+    onNavigateDataExport: (() -> Unit)? = null,
     darkTheme: Boolean = false
 ) {
     Box(
@@ -66,7 +68,7 @@ fun RebornTopAppBar(
             }
         }
 
-        if (onNavigateAlert != null || onNavigateSetting != null || onNavigateAddDevice != null || onNavigateFeedbackQR != null) {
+        if (onNavigateAlert != null || onNavigateSetting != null || onNavigateAddDevice != null || onNavigateFeedbackQR != null || onNavigateDataExport != null) {
             Row(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 verticalAlignment = Alignment.CenterVertically
@@ -97,6 +99,13 @@ fun RebornTopAppBar(
                         color = if (!darkTheme) RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
                         icon = Res.drawable.ic_qr,
                         onClick = onNavigateFeedbackQR
+                    )
+                }
+                if (onNavigateDataExport != null) {
+                    RebornIcon(
+                        color = if (!darkTheme) RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
+                        icon = Res.drawable.ic_download,
+                        onClick = onNavigateDataExport
                     )
                 }
             }

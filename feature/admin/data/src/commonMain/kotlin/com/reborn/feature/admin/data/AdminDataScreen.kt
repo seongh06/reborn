@@ -45,6 +45,9 @@ fun AdminDataRoute(
                         message = event.throwable.message ?: "에러가 발생했습니다."
                     )
                 }
+                is AdminDataEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(message = event.message)
+                }
                 is AdminDataEvent.Exit -> onBackClick()
             }
         }
@@ -58,7 +61,8 @@ fun AdminDataRoute(
             is AdminDataUiState.Data -> AdminDataScreen(
                 state = state,
                 onCategoryClick = { category -> viewModel.onIntent(AdminDataIntent.ClickCategoryTab(category)) },
-                onPeriodClick = { period -> viewModel.onIntent(AdminDataIntent.ClickPeriod(period)) }
+                onPeriodClick = { period -> viewModel.onIntent(AdminDataIntent.ClickPeriod(period)) },
+                onExportClick = { viewModel.onIntent(AdminDataIntent.ClickExport) }
             )
         }
     }
@@ -68,14 +72,15 @@ fun AdminDataRoute(
 fun AdminDataScreen(
     state: AdminDataUiState.Data,
     onCategoryClick: (AdminDataUiState.Category) -> Unit,
-    onPeriodClick: (AdminDataUiState.Period) -> Unit
+    onPeriodClick: (AdminDataUiState.Period) -> Unit,
+    onExportClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .rebornDefault(Color.White)
             .verticalScroll(rememberScrollState())
     ) {
-        RebornTopAppBar(title = "${state.place} 보고서")
+        RebornTopAppBar(title = "${state.place} 보고서", onNavigateDataExport = onExportClick)
         TabBar(
             tabItems = AdminDataUiState.Category.entries,
             selectedTab = state.selectedCategory,

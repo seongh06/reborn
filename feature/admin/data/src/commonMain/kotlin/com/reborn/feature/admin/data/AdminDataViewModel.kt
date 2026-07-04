@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 sealed class AdminDataEvent {
     data object Exit : AdminDataEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminDataEvent()
+    data class ShowSnackbar(val message: String) : AdminDataEvent()
 }
 
 class AdminDataViewModel : ViewModel() {
@@ -28,6 +29,7 @@ class AdminDataViewModel : ViewModel() {
             is AdminDataIntent.LoadInitial -> checkInitialState()
             is AdminDataIntent.ClickCategoryTab -> handleCategoryClick(intent.category)
             is AdminDataIntent.ClickPeriod -> handlePeriodClick(intent.period)
+            is AdminDataIntent.ClickExport -> exportToGoogleSheets()
         }
     }
 
@@ -94,6 +96,14 @@ class AdminDataViewModel : ViewModel() {
         }
         val size = chartLabelsFor(period).size
         return List(size) { index -> base + (index % 3 - 1) * (base * 0.05f) }
+    }
+
+    // TODO: 서버 Google Sheets 내보내기 API 연동 전까지의 목업. 실제 연동 시 UseCase/Repository로 대체 예정
+    private fun exportToGoogleSheets() {
+        viewModelScope.launch {
+            delay(500)
+            navigationManager.emitEvent(AdminDataEvent.ShowSnackbar("Google Sheets로 내보냈습니다."))
+        }
     }
 
     // TODO: AI 분석 응답 데이터 연동 전까지의 목업 텍스트. 실제 연동 시 서버 응답으로 대체 예정
