@@ -66,7 +66,7 @@ fun RebornTopAppBar(
             }
         }
 
-        if (onNavigateAlert != null || onNavigateSetting != null || onNavigateAddDevice != null) {
+        if (onNavigateAlert != null || onNavigateSetting != null || onNavigateAddDevice != null || onNavigateFeedbackQR != null) {
             Row(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 verticalAlignment = Alignment.CenterVertically

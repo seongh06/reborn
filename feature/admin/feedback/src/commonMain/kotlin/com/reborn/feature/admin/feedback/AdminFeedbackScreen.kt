@@ -44,7 +44,9 @@ fun AdminFeedbackRoute(
 
 
     LaunchedEffect(uiState) {
-        onBottomBarVisibilityChange(uiState !is AdminFeedbackUiState.FeedbackQR)
+        onBottomBarVisibilityChange(
+            uiState !is AdminFeedbackUiState.FeedbackQR && uiState !is AdminFeedbackUiState.FeedbackDetail
+        )
     }
 
     LaunchedEffect(Unit) {
@@ -73,12 +75,17 @@ fun AdminFeedbackRoute(
                 navToFeedbackDetail = { id -> viewModel.onIntent(AdminFeedbackIntent.NavigateToFeedbackDetail(id)) },
                 onTabClick = { tab -> viewModel.onIntent(AdminFeedbackIntent.ClickTab(tab))}
             )
-            is AdminFeedbackUiState.FeedbackQR -> {
-
-            }
-            is AdminFeedbackUiState.FeedbackDetail -> {
-
-            }
+            is AdminFeedbackUiState.FeedbackQR -> AdminFeedbackQRScreen(
+                state = state,
+                onBackClick = onBackClick,
+                onDownloadClick = {}
+            )
+            is AdminFeedbackUiState.FeedbackDetail -> AdminFeedbackDetailScreen(
+                state = state,
+                onBackClick = onBackClick,
+                onRejectClick = {},
+                onApproveClick = {}
+            )
         }
     }
 }
