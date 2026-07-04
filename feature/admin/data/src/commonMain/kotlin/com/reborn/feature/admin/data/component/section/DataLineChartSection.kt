@@ -28,8 +28,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
+import kotlin.math.roundToInt
 
 private const val MIN_SCALE = 1f
 private const val MAX_SCALE = 4f
@@ -42,14 +46,19 @@ fun DataLineChartSection(
 ) {
     val lineColor = RebornTheme.color.grayScale800
     val gridColor = RebornTheme.color.grayScale300
+    val axisTextColor = RebornTheme.color.grayScale500
+    val axisTextStyle = RebornTheme.typography.caption
+
+    val textMeasurer = rememberTextMeasurer()
+    val labelAreaWidthPx = with(LocalDensity.current) { 36.dp.toPx() }
 
     var scale by remember { mutableFloatStateOf(MIN_SCALE) }
     var offsetX by remember { mutableFloatStateOf(0f) }
-    var canvasWidthPx by remember { mutableFloatStateOf(0f) }
+    var plotWidthPx by remember { mutableFloatStateOf(0f) }
 
     fun clampOffset(currentScale: Float, currentOffset: Float): Float {
-        val contentWidth = canvasWidthPx * currentScale
-        val minOffset = (canvasWidthPx - contentWidth).coerceAtMost(0f)
+        val contentWidth = plotWidthPx * currentScale
+        val minOffset = (plotWidthPx - contentWidth).coerceAtMost(0f)
         return currentOffset.coerceIn(minOffset, 0f)
     }
 
@@ -66,7 +75,7 @@ fun DataLineChartSection(
                 .fillMaxWidth()
                 .height(180.dp)
                 .clipToBounds()
-                .onSizeChanged { canvasWidthPx = it.width.toFloat() }
+                .onSizeChanged { plotWidthPx = (it.width.toFloat() - labelAreaWidthPx).coerceAtLeast(0f) }
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         val newScale = (scale * zoom).coerceIn(MIN_SCALE, MAX_SCALE)
@@ -83,7 +92,8 @@ fun DataLineChartSection(
 
             val verticalPadding = 12f
             val drawableHeight = size.height - verticalPadding * 2
-            val contentWidth = size.width * scale
+            val plotWidth = (size.width - labelAreaWidthPx).coerceAtLeast(0f)
+            val contentWidth = plotWidth * scale
             val stepX = contentWidth / (values.size - 1)
 
             val points = values.mapIndexed { index, value ->
@@ -99,8 +109,18 @@ fun DataLineChartSection(
                 drawLine(
                     color = gridColor,
                     start = Offset(0f, y),
-                    end = Offset(size.width, y),
+                    end = Offset(plotWidth, y),
                     strokeWidth = 1f
+                )
+
+                val axisValue = maxValue - range * i / gridLineCount
+                val measuredText = textMeasurer.measure(
+                    text = axisValue.roundToInt().toString(),
+                    style = axisTextStyle.copy(color = axisTextColor)
+                )
+                drawText(
+                    textLayoutResult = measuredText,
+                    topLeft = Offset(plotWidth + 4f, y - measuredText.size.height / 2f)
                 )
             }
 
