@@ -5,14 +5,16 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import com.reborn.core.navigation.Route
-import com.reborn.feature.admin.data.AdminDataScreen
+import com.reborn.feature.admin.data.AdminDataRoute
 
 fun NavController.navigateAdminData(navOptions: NavOptions) {
     navigate(route = Route.Admin.Data, navOptions = navOptions)
 }
 
-fun NavGraphBuilder.adminDataNavGraph() {
+fun NavGraphBuilder.adminDataNavGraph(
+    onBackClick: () -> Unit = {}
+) {
     composable<Route.Admin.Data> {
-        AdminDataScreen()
+        AdminDataRoute(onBackClick = onBackClick)
     }
 }
