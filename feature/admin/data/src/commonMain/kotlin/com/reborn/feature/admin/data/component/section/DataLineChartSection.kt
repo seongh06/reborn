@@ -1,6 +1,7 @@
 package com.reborn.feature.admin.data.component.section
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,21 +42,22 @@ fun DataLineChartSection(
 ) {
     val lineColor = RebornTheme.color.grayScale800
     val gridColor = RebornTheme.color.grayScale300
+    val axisLabelMaskColor = RebornTheme.color.grayScale200
     val axisTextStyle = RebornTheme.typography.caption.copy(color = RebornTheme.color.grayScale500)
 
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val rightAxisWidthPx = with(density) { 36.dp.toPx() }
+    val textHorizontalPaddingPx = with(density) { 12.dp.toPx() }
     val topPaddingPx = with(density) { 8.dp.toPx() }
     val bottomAxisHeightPx = with(density) { 24.dp.toPx() }
 
     var scale by remember { mutableFloatStateOf(MIN_SCALE) }
     var offsetX by remember { mutableFloatStateOf(0f) }
-    var plotWidthPx by remember { mutableFloatStateOf(0f) }
+    var canvasWidthPx by remember { mutableFloatStateOf(0f) }
 
     fun clampOffset(currentScale: Float, currentOffset: Float): Float {
-        val contentWidth = plotWidthPx * currentScale
-        val minOffset = (plotWidthPx - contentWidth).coerceAtMost(0f)
+        val contentWidth = canvasWidthPx * currentScale
+        val minOffset = (canvasWidthPx - contentWidth).coerceAtMost(0f)
         return currentOffset.coerceIn(minOffset, 0f)
     }
 
@@ -63,9 +65,10 @@ fun DataLineChartSection(
         modifier = modifier
             .fillMaxWidth()
             .height(220.dp)
+            .background(RebornTheme.color.grayScale200)
             .padding(vertical = 12.dp)
             .clipToBounds()
-            .onSizeChanged { plotWidthPx = (it.width.toFloat() - rightAxisWidthPx).coerceAtLeast(0f) }
+            .onSizeChanged { canvasWidthPx = it.width.toFloat() }
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     val newScale = (scale * zoom).coerceIn(MIN_SCALE, MAX_SCALE)
@@ -76,9 +79,10 @@ fun DataLineChartSection(
     ) {
         if (values.size < 2) return@Canvas
 
+        // 그래프(선/그리드)는 끝에서 끝까지 꽉 채우고, 글자(축 라벨)만 좌우 12dp 안쪽으로 들어가서 표시
         val topPadding = topPaddingPx
         val bottomAxisHeight = bottomAxisHeightPx
-        val plotWidth = (size.width - rightAxisWidthPx).coerceAtLeast(0f)
+        val plotWidth = size.width
         val drawableHeight = size.height - topPadding - bottomAxisHeight
 
         val contentWidth = plotWidth * scale
@@ -141,22 +145,26 @@ fun DataLineChartSection(
             style = Stroke(width = 5f, cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
 
-        // 확대해서 옆으로 밀었을 때 선/채우기가 오른쪽 축 영역까지 넘어와도 값이 안 가리도록, 라벨 뒤에 배경을 깔고 그 위에 그림
-        drawRect(
-            color = Color.White,
-            topLeft = Offset(plotWidth, 0f),
-            size = Size(rightAxisWidthPx, size.height)
-        )
-        for (i in 0..gridLineCount) {
-            val y = topPadding + drawableHeight * i / gridLineCount
+        // Y축 값 라벨: 오른쪽 끝 기준 정렬 + 좌우 12dp 패딩. 선이 뒤로 지나가도 안 가리도록 배경을 먼저 깔고 그 위에 그림
+        val measuredValues = (0..gridLineCount).map { i ->
             val axisValue = maxValue - range * i / gridLineCount
-            val measuredValue = textMeasurer.measure(axisValue.roundToInt().toString(), axisTextStyle)
+            textMeasurer.measure(axisValue.roundToInt().toString(), axisTextStyle)
+        }
+        val axisLabelAreaWidth = (measuredValues.maxOfOrNull { it.size.width } ?: 0) + textHorizontalPaddingPx
+        drawRect(
+            color = axisLabelMaskColor,
+            topLeft = Offset(size.width - axisLabelAreaWidth, 0f),
+            size = Size(axisLabelAreaWidth, size.height)
+        )
+        measuredValues.forEachIndexed { i, measuredValue ->
+            val y = topPadding + drawableHeight * i / gridLineCount
             drawText(
                 textLayoutResult = measuredValue,
-                topLeft = Offset(size.width - measuredValue.size.width, y - measuredValue.size.height / 2f)
+                topLeft = Offset(size.width - textHorizontalPaddingPx - measuredValue.size.width, y - measuredValue.size.height / 2f)
             )
         }
 
+        // X축 라벨: 확대/이동 상태와 무관하게 현재 보이는 포인트 중 최대 6개만 균등하게 골라 표시, 좌우 12dp 패딩 적용
         val maxLabelCount = 6
         val visibleIndices = points.indices.filter { index -> points[index].x in 0f..plotWidth }
         if (visibleIndices.isNotEmpty()) {
@@ -165,7 +173,8 @@ fun DataLineChartSection(
                 val label = labels.getOrNull(index) ?: return@forEach
                 val x = points[index].x
                 val measuredLabel = textMeasurer.measure(label, axisTextStyle)
-                val textX = (x - measuredLabel.size.width / 2f).coerceIn(0f, (plotWidth - measuredLabel.size.width).coerceAtLeast(0f))
+                val textX = (x - measuredLabel.size.width / 2f)
+                    .coerceIn(textHorizontalPaddingPx, (size.width - textHorizontalPaddingPx - measuredLabel.size.width).coerceAtLeast(textHorizontalPaddingPx))
                 drawText(
                     textLayoutResult = measuredLabel,
                     topLeft = Offset(textX, size.height - bottomAxisHeight)
