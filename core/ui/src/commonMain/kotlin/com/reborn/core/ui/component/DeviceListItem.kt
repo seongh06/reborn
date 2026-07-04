@@ -38,7 +38,7 @@ enum class DeviceType {
     OTHER
 }
 
-private val DeviceType.icon
+val DeviceType.icon
     get() = when (this) {
         DeviceType.LAMP -> Res.drawable.ic_kamp
         DeviceType.PLUG -> Res.drawable.ic_plug
