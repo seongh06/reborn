@@ -29,6 +29,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 private const val MIN_SCALE = 1f
@@ -45,7 +46,10 @@ fun DataLineChartSection(
     val axisTextStyle = RebornTheme.typography.caption.copy(color = RebornTheme.color.grayScale500)
 
     val textMeasurer = rememberTextMeasurer()
-    val rightAxisWidthPx = with(LocalDensity.current) { 36.dp.toPx() }
+    val density = LocalDensity.current
+    val rightAxisWidthPx = with(density) { 36.dp.toPx() }
+    val topPaddingPx = with(density) { 8.dp.toPx() }
+    val bottomAxisHeightPx = with(density) { 24.dp.toPx() }
 
     var scale by remember { mutableFloatStateOf(MIN_SCALE) }
     var offsetX by remember { mutableFloatStateOf(0f) }
@@ -63,7 +67,7 @@ fun DataLineChartSection(
             .height(220.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(RebornTheme.color.grayScale100)
-            .padding(12.dp)
+            .padding(vertical = 12.dp)
             .clipToBounds()
             .onSizeChanged { plotWidthPx = (it.width.toFloat() - rightAxisWidthPx).coerceAtLeast(0f) }
             .pointerInput(Unit) {
@@ -76,8 +80,8 @@ fun DataLineChartSection(
     ) {
         if (values.size < 2) return@Canvas
 
-        val topPadding = 12f
-        val bottomAxisHeight = 20f
+        val topPadding = topPaddingPx
+        val bottomAxisHeight = bottomAxisHeightPx
         val plotWidth = (size.width - rightAxisWidthPx).coerceAtLeast(0f)
         val drawableHeight = size.height - topPadding - bottomAxisHeight
 
@@ -149,22 +153,21 @@ fun DataLineChartSection(
             style = Stroke(width = 5f, cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
 
-        // X축 라벨: 포인트 위치에 맞춰 그리되, 확대 정도에 따라 겹치지 않을 만큼만 솎아서 표시
-        val minLabelSpacingPx = 48f
-        var lastLabelX = Float.NEGATIVE_INFINITY
-        labels.forEachIndexed { index, label ->
-            if (index >= points.size) return@forEachIndexed
-            val x = points[index].x
-            if (x < -minLabelSpacingPx || x > plotWidth + minLabelSpacingPx) return@forEachIndexed
-            if (x - lastLabelX < minLabelSpacingPx) return@forEachIndexed
-
-            val measuredLabel = textMeasurer.measure(label, axisTextStyle)
-            val textX = (x - measuredLabel.size.width / 2f).coerceIn(0f, (plotWidth - measuredLabel.size.width).coerceAtLeast(0f))
-            drawText(
-                textLayoutResult = measuredLabel,
-                topLeft = Offset(textX, size.height - bottomAxisHeight + 2f)
-            )
-            lastLabelX = x
+        // X축 라벨: 확대/이동 상태와 무관하게 "현재 화면에 보이는 포인트" 중 최대 6개만 균등하게 골라 표시 (글자 겹침 방지)
+        val maxLabelCount = 6
+        val visibleIndices = points.indices.filter { index -> points[index].x in 0f..plotWidth }
+        if (visibleIndices.isNotEmpty()) {
+            val stride = ceil(visibleIndices.size / maxLabelCount.toFloat()).toInt().coerceAtLeast(1)
+            visibleIndices.filterIndexed { i, _ -> i % stride == 0 }.forEach { index ->
+                val label = labels.getOrNull(index) ?: return@forEach
+                val x = points[index].x
+                val measuredLabel = textMeasurer.measure(label, axisTextStyle)
+                val textX = (x - measuredLabel.size.width / 2f).coerceIn(0f, (plotWidth - measuredLabel.size.width).coerceAtLeast(0f))
+                drawText(
+                    textLayoutResult = measuredLabel,
+                    topLeft = Offset(textX, size.height - bottomAxisHeight)
+                )
+            }
         }
     }
 }

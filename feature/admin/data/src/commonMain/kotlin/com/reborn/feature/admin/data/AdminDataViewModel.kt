@@ -201,8 +201,9 @@ class AdminDataViewModel : ViewModel() {
     private suspend fun dailyAverageValues(category: AdminDataUiState.Category): List<Float> {
         val points = sensorHistoryApi.getSensorHistory(MOCK_DEVICE_ID, category.name).toSensorPoints()
         return points.groupBy { it.date }
-            .toSortedMap()
-            .map { (_, dayPoints) -> dayPoints.map { it.value }.average().toFloat() }
+            .toList()
+            .sortedBy { (date, _) -> date }
+            .map { (_, dayPoints) -> dayPoints.map { point -> point.value }.average().toFloat() }
     }
 
     private fun longRangeValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
