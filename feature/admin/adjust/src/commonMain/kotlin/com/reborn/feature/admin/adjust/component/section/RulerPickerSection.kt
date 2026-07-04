@@ -1,4 +1,4 @@
-package com.reborn.feature.admin.adjust.component.remote
+package com.reborn.feature.admin.adjust.component.section
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

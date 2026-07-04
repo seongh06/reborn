@@ -100,6 +100,14 @@ fun AdminAdjustRoute(
                             isPowerOn = isPowerOn
                         )
                     )
+                },
+                onSendAutoControlClick = { autoControlState ->
+                    viewModel.onIntent(
+                        AdminAdjustIntent.SendAutoControl(
+                            deviceId = state.deviceId,
+                            autoControlState = autoControlState
+                        )
+                    )
                 }
             )
         }
