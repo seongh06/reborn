@@ -10,8 +10,6 @@ import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.sin
 
 private const val MOCK_DEVICE_ID = 1
 
@@ -51,15 +49,54 @@ private fun MockDate.minusMonths(months: Int): MockDate {
     return MockDate(y, total % 12 + 1, day)
 }
 
-private data class ChartShape(val base: Float, val amplitudeRatio: Float, val frequency: Float, val phase: Float)
+// 카테고리별 하루치(0시~23시, 1시간 단위) 목업 값을 계산식이 아니라 실제 값처럼 보이는 숫자로 직접 나열.
+// 날마다 완전히 똑같지 않도록 카테고리당 2개 패턴을 두고 번갈아 사용
+private fun hourlyDayPatternsFor(category: AdminDataUiState.Category): List<List<Double>> = when (category) {
+    AdminDataUiState.Category.TEMPERATURE -> listOf(
+        listOf(18.0, 17.5, 17.0, 17.0, 17.5, 18.0, 19.0, 20.5, 22.0, 23.5, 24.5, 25.0, 25.5, 26.0, 25.5, 25.0, 24.0, 23.0, 22.0, 21.0, 20.0, 19.5, 19.0, 18.5),
+        listOf(19.0, 18.5, 18.0, 18.5, 19.5, 21.0, 22.5, 24.0, 25.5, 26.5, 27.0, 27.5, 28.0, 27.5, 27.0, 26.0, 25.0, 23.5, 22.0, 21.0, 20.5, 20.0, 19.5, 19.0)
+    )
+    AdminDataUiState.Category.HUMIDITY -> listOf(
+        listOf(68.0, 69.0, 70.0, 71.0, 70.0, 68.0, 65.0, 60.0, 55.0, 50.0, 47.0, 45.0, 44.0, 43.0, 45.0, 47.0, 50.0, 54.0, 58.0, 61.0, 64.0, 66.0, 67.0, 68.0),
+        listOf(60.0, 61.0, 62.0, 63.0, 62.0, 60.0, 57.0, 53.0, 49.0, 45.0, 42.0, 40.0, 39.0, 39.0, 41.0, 43.0, 46.0, 50.0, 54.0, 57.0, 58.0, 59.0, 60.0, 60.0)
+    )
+    AdminDataUiState.Category.ILLUMINANCE -> listOf(
+        listOf(0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 80.0, 200.0, 350.0, 500.0, 620.0, 700.0, 720.0, 700.0, 650.0, 560.0, 420.0, 280.0, 120.0, 40.0, 5.0, 0.0, 0.0, 0.0),
+        listOf(0.0, 0.0, 0.0, 0.0, 10.0, 40.0, 120.0, 260.0, 400.0, 540.0, 650.0, 730.0, 750.0, 730.0, 680.0, 590.0, 450.0, 300.0, 140.0, 50.0, 10.0, 0.0, 0.0, 0.0)
+    )
+    AdminDataUiState.Category.PEOPLE_COUNT -> listOf(
+        listOf(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, 5.0, 4.0, 4.0, 3.0, 3.0, 4.0, 5.0, 6.0, 4.0, 2.0, 1.0, 0.0),
+        listOf(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 3.0, 4.0, 4.0, 5.0, 5.0, 4.0, 3.0, 3.0, 4.0, 6.0, 7.0, 5.0, 3.0, 1.0, 1.0)
+    )
+    AdminDataUiState.Category.DISCOMFORT -> listOf(
+        listOf(58.0, 57.0, 56.0, 56.0, 57.0, 59.0, 62.0, 66.0, 70.0, 74.0, 77.0, 79.0, 80.0, 81.0, 80.0, 78.0, 75.0, 71.0, 68.0, 65.0, 63.0, 61.0, 60.0, 59.0),
+        listOf(60.0, 59.0, 58.0, 58.0, 59.0, 61.0, 64.0, 68.0, 72.0, 76.0, 79.0, 81.0, 82.0, 83.0, 82.0, 80.0, 77.0, 73.0, 70.0, 67.0, 65.0, 63.0, 62.0, 61.0)
+    )
+}
 
-// 카테고리마다 진폭·주기·위상을 다르게 줘서 탭 전환 시 그래프 모양이 실제로 달라지도록 함
-private fun chartShapeFor(category: AdminDataUiState.Category): ChartShape = when (category) {
-    AdminDataUiState.Category.TEMPERATURE -> ChartShape(24f, 0.15f, 1f, -PI.toFloat() / 2f)
-    AdminDataUiState.Category.HUMIDITY -> ChartShape(55f, 0.2f, 1f, PI.toFloat() / 2f)
-    AdminDataUiState.Category.ILLUMINANCE -> ChartShape(300f, 0.6f, 1f, -PI.toFloat() / 2f)
-    AdminDataUiState.Category.PEOPLE_COUNT -> ChartShape(3f, 0.8f, 1.5f, 0f)
-    AdminDataUiState.Category.DISCOMFORT -> ChartShape(70f, 0.25f, 2f, 0f)
+// 카테고리별 목업(주/월/년) — 자연스러운 값처럼 보이는 숫자를 그대로 나열 (계산식으로 만들지 않음)
+private fun weeklyMockValues(category: AdminDataUiState.Category): List<Double> = when (category) { // 8개
+    AdminDataUiState.Category.TEMPERATURE -> listOf(23.0, 24.0, 22.0, 25.0, 26.0, 24.0, 23.0, 25.0)
+    AdminDataUiState.Category.HUMIDITY -> listOf(55.0, 58.0, 60.0, 52.0, 50.0, 57.0, 62.0, 54.0)
+    AdminDataUiState.Category.ILLUMINANCE -> listOf(280.0, 300.0, 260.0, 320.0, 310.0, 290.0, 270.0, 305.0)
+    AdminDataUiState.Category.PEOPLE_COUNT -> listOf(2.0, 3.0, 4.0, 3.0, 5.0, 4.0, 3.0, 2.0)
+    AdminDataUiState.Category.DISCOMFORT -> listOf(68.0, 70.0, 72.0, 66.0, 64.0, 71.0, 74.0, 69.0)
+}
+
+private fun monthlyMockValues(category: AdminDataUiState.Category): List<Double> = when (category) { // 12개
+    AdminDataUiState.Category.TEMPERATURE -> listOf(20.0, 21.0, 23.0, 25.0, 27.0, 29.0, 30.0, 29.0, 26.0, 23.0, 21.0, 19.0)
+    AdminDataUiState.Category.HUMIDITY -> listOf(65.0, 60.0, 55.0, 50.0, 48.0, 52.0, 60.0, 68.0, 72.0, 66.0, 60.0, 58.0)
+    AdminDataUiState.Category.ILLUMINANCE -> listOf(200.0, 240.0, 280.0, 320.0, 360.0, 380.0, 370.0, 340.0, 300.0, 260.0, 220.0, 190.0)
+    AdminDataUiState.Category.PEOPLE_COUNT -> listOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0)
+    AdminDataUiState.Category.DISCOMFORT -> listOf(55.0, 58.0, 62.0, 68.0, 74.0, 80.0, 83.0, 81.0, 75.0, 68.0, 60.0, 56.0)
+}
+
+private fun yearlyMockValues(category: AdminDataUiState.Category): List<Double> = when (category) { // 5개
+    AdminDataUiState.Category.TEMPERATURE -> listOf(22.0, 23.0, 24.0, 24.0, 25.0)
+    AdminDataUiState.Category.HUMIDITY -> listOf(58.0, 60.0, 57.0, 59.0, 61.0)
+    AdminDataUiState.Category.ILLUMINANCE -> listOf(290.0, 300.0, 310.0, 295.0, 305.0)
+    AdminDataUiState.Category.PEOPLE_COUNT -> listOf(3.0, 4.0, 3.0, 4.0, 3.0)
+    AdminDataUiState.Category.DISCOMFORT -> listOf(70.0, 72.0, 69.0, 71.0, 73.0)
 }
 
 // TODO: 서버 /api/data/history 연동 확정 후 실제 Ktor 구현체로 교체하고 Koin으로 주입받도록 변경 예정.
@@ -67,15 +104,11 @@ private fun chartShapeFor(category: AdminDataUiState.Category): ChartShape = whe
 private class MockSensorHistoryApi : SensorHistoryApi {
     override suspend fun getSensorHistory(deviceId: Int, sensorType: String): SensorHistoryResponse {
         val category = AdminDataUiState.Category.entries.first { it.name == sensorType }
-        val shape = chartShapeFor(category)
-        val amplitude = shape.base * shape.amplitudeRatio
+        val patterns = hourlyDayPatternsFor(category)
 
         val dailyData = (13 downTo 0).associate { daysAgo ->
             val date = today.minusDays(daysAgo)
-            date.toDateKey() to (0..23).map { hour ->
-                val angle = (2f * PI.toFloat() * shape.frequency * hour / 24f) + shape.phase
-                (shape.base + amplitude * sin(angle)).toDouble()
-            }
+            date.toDateKey() to patterns[daysAgo % patterns.size]
         }
         return SensorHistoryResponse(deviceId = deviceId, sensorType = sensorType, dailyData = dailyData)
     }
@@ -206,14 +239,15 @@ class AdminDataViewModel : ViewModel() {
             .map { (_, dayPoints) -> dayPoints.map { point -> point.value }.average().toFloat() }
     }
 
+    // 주/월/년 목업도 계산식이 아니라 리터럴 숫자 배열을 그대로 사용
     private fun longRangeValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
-        val shape = chartShapeFor(category)
-        val amplitude = shape.base * shape.amplitudeRatio
-        val size = chartLabelsFor(period).size
-        return List(size) { index ->
-            val angle = (2f * PI.toFloat() * shape.frequency * index / size) + shape.phase
-            shape.base + amplitude * sin(angle)
+        val values = when (period) {
+            AdminDataUiState.Period.WEEK -> weeklyMockValues(category)
+            AdminDataUiState.Period.MONTH -> monthlyMockValues(category)
+            AdminDataUiState.Period.YEAR -> yearlyMockValues(category)
+            else -> emptyList()
         }
+        return values.map { it.toFloat() }
     }
 
     // TODO: 서버 Google Sheets 내보내기 API 연동 전까지의 목업. 실제 연동 시 UseCase/Repository로 대체 예정
