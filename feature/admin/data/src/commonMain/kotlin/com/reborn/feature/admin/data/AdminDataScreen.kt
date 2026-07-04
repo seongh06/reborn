@@ -2,26 +2,26 @@ package com.reborn.feature.admin.data
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.designsystem.component.RebornTopAppBar
-import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
+import com.reborn.core.ui.component.SelectPickerSection
 import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
+import com.reborn.feature.admin.data.component.section.DataLineChartSection
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
 import org.koin.compose.viewmodel.koinViewModel
@@ -56,7 +56,8 @@ fun AdminDataRoute(
             is AdminDataUiState.Loading -> RebornLoadingScreen()
             is AdminDataUiState.Data -> AdminDataScreen(
                 state = state,
-                onCategoryClick = { category -> viewModel.onIntent(AdminDataIntent.ClickCategoryTab(category)) }
+                onCategoryClick = { category -> viewModel.onIntent(AdminDataIntent.ClickCategoryTab(category)) },
+                onPeriodClick = { period -> viewModel.onIntent(AdminDataIntent.ClickPeriod(period)) }
             )
         }
     }
@@ -65,10 +66,13 @@ fun AdminDataRoute(
 @Composable
 fun AdminDataScreen(
     state: AdminDataUiState.Data,
-    onCategoryClick: (AdminDataUiState.Category) -> Unit
+    onCategoryClick: (AdminDataUiState.Category) -> Unit,
+    onPeriodClick: (AdminDataUiState.Period) -> Unit
 ) {
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier
+            .rebornDefault(Color.White)
+            .verticalScroll(rememberScrollState())
     ) {
         RebornTopAppBar(title = "${state.place} 보고서")
         TabBar(
@@ -77,24 +81,21 @@ fun AdminDataScreen(
             onTabSelected = onCategoryClick,
             getDisplayName = { it.label }
         )
-        Row(
+        Column(
             modifier = Modifier.padding(16.dp, 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            state.chartLabels.forEachIndexed { index, label ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = state.chartValues.getOrNull(index)?.toInt()?.toString() ?: "-",
-                        style = RebornTheme.typography.bodyMedium,
-                        color = RebornTheme.color.grayScale900
-                    )
-                    Text(
-                        text = label,
-                        style = RebornTheme.typography.caption,
-                        color = RebornTheme.color.grayScale500
-                    )
-                }
-            }
+            SelectPickerSection(
+                title = "기간",
+                options = AdminDataUiState.Period.entries,
+                selectedOption = state.selectedPeriod,
+                onOptionSelected = onPeriodClick,
+                optionToString = { it.label }
+            )
+            DataLineChartSection(
+                labels = state.chartLabels,
+                values = state.chartValues
+            )
         }
     }
 }

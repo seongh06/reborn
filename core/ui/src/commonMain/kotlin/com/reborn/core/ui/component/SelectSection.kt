@@ -1,4 +1,4 @@
-package com.reborn.feature.admin.adjust.component.section
+package com.reborn.core.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background

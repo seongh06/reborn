@@ -27,6 +27,7 @@ class AdminDataViewModel : ViewModel() {
         when (intent) {
             is AdminDataIntent.LoadInitial -> checkInitialState()
             is AdminDataIntent.ClickCategoryTab -> handleCategoryClick(intent.category)
+            is AdminDataIntent.ClickPeriod -> handlePeriodClick(intent.period)
         }
     }
 
@@ -35,11 +36,13 @@ class AdminDataViewModel : ViewModel() {
         viewModelScope.launch {
             delay(1500)
             val category = AdminDataUiState.Category.TEMPERATURE
+            val period = AdminDataUiState.Period.DAY
             navigationManager.clearAndReset(
                 AdminDataUiState.Data(
                     selectedCategory = category,
-                    chartLabels = chartLabelsFor(category),
-                    chartValues = mockChartValues(category)
+                    selectedPeriod = period,
+                    chartLabels = chartLabelsFor(period),
+                    chartValues = mockChartValues(category, period)
                 )
             )
         }
@@ -50,19 +53,36 @@ class AdminDataViewModel : ViewModel() {
             if (state is AdminDataUiState.Data) {
                 state.copy(
                     selectedCategory = category,
-                    chartLabels = chartLabelsFor(category),
-                    chartValues = mockChartValues(category)
+                    chartValues = mockChartValues(category, state.selectedPeriod)
+                )
+            } else state
+        }
+    }
+
+    private fun handlePeriodClick(period: AdminDataUiState.Period) {
+        navigationManager.updateCurrentState { state ->
+            if (state is AdminDataUiState.Data) {
+                state.copy(
+                    selectedPeriod = period,
+                    chartLabels = chartLabelsFor(period),
+                    chartValues = mockChartValues(state.selectedCategory, period)
                 )
             } else state
         }
     }
 
     // TODO: 서버 sensorLogs 히스토리 조회 API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
-    private fun chartLabelsFor(category: AdminDataUiState.Category): List<String> {
-        return listOf("0시", "4시", "8시", "12시", "16시", "20시")
+    private fun chartLabelsFor(period: AdminDataUiState.Period): List<String> {
+        return when (period) {
+            AdminDataUiState.Period.HOUR -> listOf("0분", "10분", "20분", "30분", "40분", "50분")
+            AdminDataUiState.Period.DAY -> listOf("0시", "4시", "8시", "12시", "16시", "20시")
+            AdminDataUiState.Period.WEEK -> listOf("월", "화", "수", "목", "금", "토", "일")
+            AdminDataUiState.Period.MONTH -> listOf("1주", "2주", "3주", "4주")
+            AdminDataUiState.Period.YEAR -> listOf("1월", "4월", "7월", "10월")
+        }
     }
 
-    private fun mockChartValues(category: AdminDataUiState.Category): List<Float> {
+    private fun mockChartValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
         val base = when (category) {
             AdminDataUiState.Category.TEMPERATURE -> 24f
             AdminDataUiState.Category.HUMIDITY -> 55f
@@ -70,6 +90,7 @@ class AdminDataViewModel : ViewModel() {
             AdminDataUiState.Category.PEOPLE_COUNT -> 3f
             AdminDataUiState.Category.DISCOMFORT -> 70f
         }
-        return List(6) { index -> base + (index % 3 - 1) * (base * 0.05f) }
+        val size = chartLabelsFor(period).size
+        return List(size) { index -> base + (index % 3 - 1) * (base * 0.05f) }
     }
 }

@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.reborn.core.ui.component.SelectPickerSection
 import com.reborn.feature.admin.adjust.component.section.RulerPickerSection
-import com.reborn.feature.admin.adjust.component.section.SelectPickerSection
 import com.reborn.feature.admin.adjust.component.section.SwitchSection
 import com.reborn.feature.admin.adjust.model.OperationMode
 import com.reborn.feature.admin.adjust.model.WindSpeed
