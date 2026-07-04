@@ -111,15 +111,16 @@ private fun yearlyMockValues(category: AdminDataUiState.Category): List<Double> 
 }
 
 // TODO: 서버 /api/data/history 연동 확정 후 실제 Ktor 구현체로 교체하고 Koin으로 주입받도록 변경 예정.
-// 최근 14일치를 "날짜별 1시간 단위 값" 형태로 생성 — 실제 API가 최적화된 형태(Map<날짜, 시간별 값>)로 내려주는 것을 가정한 목업
+// 카테고리당 리터럴 패턴 2개 = 딱 2일치("어제", "오늘")만 생성 — 반복/순환 없이 그대로 사용
 private class MockSensorHistoryApi : SensorHistoryApi {
     override suspend fun getSensorHistory(deviceId: Int, sensorType: String): SensorHistoryResponse {
         val category = AdminDataUiState.Category.entries.first { it.name == sensorType }
         val patterns = hourlyDayPatternsFor(category)
 
-        val dailyData = (13 downTo 0).associate { daysAgo ->
+        val dailyData = patterns.indices.associate { index ->
+            val daysAgo = patterns.size - 1 - index
             val date = today.minusDays(daysAgo)
-            date.toDateKey() to patterns[daysAgo % patterns.size]
+            date.toDateKey() to patterns[index]
         }
         return SensorHistoryResponse(deviceId = deviceId, sensorType = sensorType, dailyData = dailyData)
     }
@@ -221,13 +222,13 @@ class AdminDataViewModel : ViewModel() {
     // 모든 기간이 실제 달력 개념(시각/날짜/월)으로 통일된 라벨을 쓰도록 함, 자연스러운 개수만큼만 표시(억지로 채우지 않음)
     private fun chartLabelsFor(period: AdminDataUiState.Period): List<String> {
         return when (period) {
-            // 1시간 간격 · 목업 전체 기간(14일)을 이어서 표시. 자정(0시)엔 "HH:00" 대신 그날 날짜(ex. "3일")로 표시해 날짜가 바뀌었음을 알림
-            AdminDataUiState.Period.HOUR -> (13 downTo 0).flatMap { daysAgo ->
+            // 1시간 간격 · 목업이 딱 2일치(어제/오늘)라 그 2일을 이어서 표시. 자정(0시)엔 "HH:00" 대신 그날 날짜(ex. "3일")로 표시해 날짜가 바뀌었음을 알림
+            AdminDataUiState.Period.HOUR -> (1 downTo 0).flatMap { daysAgo ->
                 val date = today.minusDays(daysAgo)
                 (0..23).map { hour -> if (hour == 0) "${date.day}일" else "${hour.pad2()}:00" }
             }
-            // 1일 간격 · 최근 14일. 평소엔 날짜만(ex. "4일"), 월이 바뀌는 지점만 월로 표시(ex. "7월")
-            AdminDataUiState.Period.DAY -> (13 downTo 0).map { daysAgo ->
+            // 1일 간격 · 목업 2일치(어제/오늘). 평소엔 날짜만(ex. "4일"), 월이 바뀌는 지점만 월로 표시(ex. "7월")
+            AdminDataUiState.Period.DAY -> (1 downTo 0).map { daysAgo ->
                 val date = today.minusDays(daysAgo)
                 if (date.day == 1) "${date.month}월" else "${date.day}일"
             }
