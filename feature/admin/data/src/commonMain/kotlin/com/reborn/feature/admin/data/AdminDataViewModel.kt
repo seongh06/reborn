@@ -13,6 +13,9 @@ import kotlinx.coroutines.launch
 
 private const val MOCK_DEVICE_ID = 1
 
+// 목업 시간별 히스토리("어제"/"오늘")의 실제 일수. hourlyDayPatternsFor의 패턴 개수와 항상 같이 맞춰서 사용
+private const val MOCK_HISTORY_DAY_COUNT = 2
+
 private val DAYS_IN_MONTH = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 private data class MockDate(val year: Int, val month: Int, val day: Int)
@@ -207,11 +210,12 @@ class AdminDataViewModel : ViewModel() {
 
     // 기기가 등록된 지 얼마 안 돼서 해당 기간 단위로 충분한 데이터가 쌓이지 않았으면 그래프 대신 안내 문구를 보여주기 위한 판단
     // (1시간은 오늘 하루치라 항상 표시, 일/주/월/년은 각각 최소 6개 단위만큼 쌓였을 때만 표시)
+    // 일(DAY)은 실제 목업 히스토리 일수(MOCK_HISTORY_DAY_COUNT)로, 주/월/년은 데이터 수집 시작일로부터 경과한 시간으로 판단
     private fun hasEnoughDataFor(period: AdminDataUiState.Period): Boolean {
         val elapsedDays = elapsedDaysSinceDataCollectionStart()
         return when (period) {
             AdminDataUiState.Period.HOUR -> true
-            AdminDataUiState.Period.DAY -> elapsedDays >= 6
+            AdminDataUiState.Period.DAY -> MOCK_HISTORY_DAY_COUNT >= 6
             AdminDataUiState.Period.WEEK -> elapsedDays / 7 >= 6
             AdminDataUiState.Period.MONTH -> elapsedDays / 30 >= 6
             AdminDataUiState.Period.YEAR -> elapsedDays / 365 >= 6
@@ -223,12 +227,12 @@ class AdminDataViewModel : ViewModel() {
     private fun chartLabelsFor(period: AdminDataUiState.Period): List<String> {
         return when (period) {
             // 1시간 간격 · 목업이 딱 2일치(어제/오늘)라 그 2일을 이어서 표시. 자정(0시)엔 "HH:00" 대신 그날 날짜(ex. "3일")로 표시해 날짜가 바뀌었음을 알림
-            AdminDataUiState.Period.HOUR -> (1 downTo 0).flatMap { daysAgo ->
+            AdminDataUiState.Period.HOUR -> (MOCK_HISTORY_DAY_COUNT - 1 downTo 0).flatMap { daysAgo ->
                 val date = today.minusDays(daysAgo)
                 (0..23).map { hour -> if (hour == 0) "${date.day}일" else "${hour.pad2()}:00" }
             }
             // 1일 간격 · 목업 2일치(어제/오늘). 평소엔 날짜만(ex. "4일"), 월이 바뀌는 지점만 월로 표시(ex. "7월")
-            AdminDataUiState.Period.DAY -> (1 downTo 0).map { daysAgo ->
+            AdminDataUiState.Period.DAY -> (MOCK_HISTORY_DAY_COUNT - 1 downTo 0).map { daysAgo ->
                 val date = today.minusDays(daysAgo)
                 if (date.day == 1) "${date.month}월" else "${date.day}일"
             }
