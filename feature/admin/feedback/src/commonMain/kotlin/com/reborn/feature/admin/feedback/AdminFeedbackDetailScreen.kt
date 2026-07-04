@@ -32,7 +32,7 @@ fun AdminFeedbackDetailScreen(
     onRejectClick: () -> Unit,
     onApproveClick: () -> Unit
 ){
-    val feedbackDetail = AdminFeedbackUiState.FeedbackItem(1, FeedbackType.AIR, State.APPROVE, "너무 바람이 강해요", "2026.06.11 10:24", "오늘 소나기가 오는데 창문이 열려있어서 너무 춥습니다. 창문을 닫거나 에어컨 온도를 올리면 좋을거같아요.")
+    val feedbackDetail = state.feedback
 
     Column(
         modifier = Modifier.rebornDefault(Color.White)
@@ -48,11 +48,11 @@ fun AdminFeedbackDetailScreen(
                 modifier = Modifier.padding(16.dp, 8.dp)
             ) {
                 FeedbackItem(
-                    id = 1,
-                    state = State.APPROVE,
-                    time = "5분전",
-                    title = "피드백 제목",
-                    type = FeedbackType.AIR,
+                    id = feedbackDetail.id,
+                    state = feedbackDetail.state,
+                    time = feedbackDetail.time,
+                    title = feedbackDetail.title,
+                    type = feedbackDetail.type,
                     onClick = { /*onFeedbackClick*/ }
                 )
             }

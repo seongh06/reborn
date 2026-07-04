@@ -17,14 +17,14 @@ sealed class AdminFeedbackEvent {
 }
 
 class AdminFeedbackViewModel : ViewModel() {
-    private val navController = NavigationManager<AdminFeedbackUiState, AdminFeedbackEvent>(
+    private val navigationManager = NavigationManager<AdminFeedbackUiState, AdminFeedbackEvent>(
         initialState = AdminFeedbackUiState.Loading,
         exitEvent = AdminFeedbackEvent.Exit,
         scope = viewModelScope
     )
 
-    val uiState = navController.uiState
-    val event = navController.event
+    val uiState = navigationManager.uiState
+    val event = navigationManager.event
 
     // TODO: 서버 feedback API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
     private var feedbacks: List<AdminFeedbackUiState.FeedbackItem> = listOf(
@@ -38,29 +38,34 @@ class AdminFeedbackViewModel : ViewModel() {
     fun onIntent(intent: AdminFeedbackIntent) {
         when (intent) {
             is AdminFeedbackIntent.LoadInitial -> checkInitialState()
-            is AdminFeedbackIntent.NavigateBack -> navController.navigateBack()
+            is AdminFeedbackIntent.NavigateBack -> navigationManager.navigateBack()
             is AdminFeedbackIntent.NavigateToFeedbackDetail -> navigateToFeedbackDetail(intent)
-            is AdminFeedbackIntent.NavigateToQR -> navController.navigateTo(AdminFeedbackUiState.FeedbackQR(intent.placeId))
+            is AdminFeedbackIntent.NavigateToQR -> navigationManager.navigateTo(AdminFeedbackUiState.FeedbackQR(intent.placeId))
             is AdminFeedbackIntent.ClickTab -> handleTabClick(intent.tab)
         }
     }
 
     private fun checkInitialState() {
-        navController.clearAndReset(AdminFeedbackUiState.Loading)
+        navigationManager.clearAndReset(AdminFeedbackUiState.Loading)
         viewModelScope.launch {
             delay(1500)
-            navController.clearAndReset(AdminFeedbackUiState.Feedback(feedbacks))
+            navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(feedbacks))
         }
     }
 
     private fun navigateToFeedbackDetail(intent: AdminFeedbackIntent.NavigateToFeedbackDetail) {
-        val feedback = feedbacks.find { it.id == intent.feedbackId } ?: return
-        navController.navigateTo(AdminFeedbackUiState.FeedbackDetail(intent.feedbackId, feedback,))
+        val feedback = feedbacks.find { it.id == intent.feedbackId }
+            ?: return navigationManager.emitEvent(
+                AdminFeedbackEvent.ShowErrorSnackbar(
+                    IllegalArgumentException("피드백을 찾을 수 없습니다.")
+                )
+            )
+        navigationManager.navigateTo(AdminFeedbackUiState.FeedbackDetail(intent.feedbackId, feedback))
     }
 
 
-    fun handleTabClick(tab: AdminFeedbackUiState.FeedbackFiltering) {
-        navController.updateCurrentState { state ->
+    private fun handleTabClick(tab: AdminFeedbackUiState.FeedbackFiltering) {
+        navigationManager.updateCurrentState { state ->
             if (state is AdminFeedbackUiState.Feedback) {
                 state.copy(feedbackFiltering = tab)
             } else state
