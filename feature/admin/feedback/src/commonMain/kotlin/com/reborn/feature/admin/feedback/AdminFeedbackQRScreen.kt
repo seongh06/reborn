@@ -30,6 +30,7 @@ fun AdminFeedbackQRScreen(
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ){
+            // TODO: QR 코드 이미지 생성/표시 및 "이미지 다운로드" 저장 로직은 후속 이슈에서 구현 예정
             Box(
                 modifier = Modifier.padding(40.dp)
             ){
