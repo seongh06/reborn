@@ -21,8 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -64,7 +64,8 @@ fun App() {
                     val isIntro = currentDestination?.hasRoute<Route.Intro>() == true
                     val isAerometer = currentDestination?.hasRoute<Route.Aerometer>() == true
                     val isAdminHome = currentDestination?.hasRoute<Route.Admin.Home>() == true
-                    if (!isIntro && !isAerometer && (!isAdminHome || isAdminHomeBottomBarVisible)) {
+                    val isAdminAdjust = currentDestination?.hasRoute<Route.Admin.Adjust>() == true
+                    if (!isIntro && !isAerometer && (!(isAdminHome || isAdminAdjust) || isAdminHomeBottomBarVisible)) {
                         Surface(
                             color = surfaceColor,
                             modifier = Modifier
@@ -164,6 +165,9 @@ fun App() {
                     adjustNavGraph(
                         onBackClick = {
                             navController.popBackStack()
+                        },
+                        onBottomBarVisibilityChange = { visible ->
+                            isAdminHomeBottomBarVisible = visible
                         }
                     )
                     adminFeedbackNavGraph()

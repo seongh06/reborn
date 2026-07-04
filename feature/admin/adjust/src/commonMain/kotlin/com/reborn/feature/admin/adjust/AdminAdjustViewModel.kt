@@ -3,6 +3,7 @@ package com.reborn.feature.admin.adjust
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.ui.component.DeviceType
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
 import kotlinx.coroutines.delay
@@ -25,9 +26,9 @@ class AdminAdjustViewModel : ViewModel() {
 
     // TODO: 서버 device API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
     private var devices: List<AdminAdjustUiState.DeviceItem> = listOf(
-        AdminAdjustUiState.DeviceItem(1, "거실", "거실 조명", isOnline = true, isPowerOn = true),
-        AdminAdjustUiState.DeviceItem(2, "거실", "거실 공기청정기", isOnline = true, isPowerOn = false),
-        AdminAdjustUiState.DeviceItem(3, "안방", "안방 가습기", isOnline = false, isPowerOn = false)
+        AdminAdjustUiState.DeviceItem(1, "거실", "거실 조명", isOnline = true, isPowerOn = true, deviceType = DeviceType.LAMP),
+        AdminAdjustUiState.DeviceItem(2, "거실", "거실 공기청정기", isOnline = true, isPowerOn = false, deviceType = DeviceType.AIR_CONDITIONER),
+        AdminAdjustUiState.DeviceItem(3, "안방", "안방 가습기", isOnline = false, isPowerOn = false, deviceType = DeviceType.OTHER)
     )
 
     fun onIntent(intent: AdminAdjustIntent) {
@@ -35,6 +36,7 @@ class AdminAdjustViewModel : ViewModel() {
             is AdminAdjustIntent.LoadInitial -> checkInitialState()
             is AdminAdjustIntent.NavigateBack -> navController.navigateBack()
             is AdminAdjustIntent.NavigateToAddDevice -> navController.navigateTo(AdminAdjustUiState.AddDevice)
+            is AdminAdjustIntent.NavigateToDeviceDetail -> navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.deviceId))
             is AdminAdjustIntent.TogglePower -> togglePower(intent.deviceId)
             is AdminAdjustIntent.AddDevice -> addDevice(intent.place, intent.name)
         }

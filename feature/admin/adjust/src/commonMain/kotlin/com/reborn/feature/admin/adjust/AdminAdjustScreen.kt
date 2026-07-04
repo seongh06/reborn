@@ -41,9 +41,17 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AdminAdjustRoute(
     viewModel: AdminAdjustViewModel = koinViewModel(),
     onBackClick: () -> Unit,
+    onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+
+    LaunchedEffect(uiState) {
+        onBottomBarVisibilityChange(
+            uiState !is AdminAdjustUiState.AddDevice && uiState !is AdminAdjustUiState.DeviceDetail
+        )
+    }
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(AdminAdjustIntent.LoadInitial)
@@ -68,11 +76,16 @@ fun AdminAdjustRoute(
             is AdminAdjustUiState.Adjust -> AdminAdjustScreen(
                 state = state,
                 onAddDeviceClick = { viewModel.onIntent(AdminAdjustIntent.NavigateToAddDevice) },
-                onPowerToggle = { id -> viewModel.onIntent(AdminAdjustIntent.TogglePower(id)) }
+                onPowerToggle = { id -> viewModel.onIntent(AdminAdjustIntent.TogglePower(id)) },
+                navToDeviceDetail = { id -> viewModel.onIntent(AdminAdjustIntent.NavigateToDeviceDetail(id))}
             )
             is AdminAdjustUiState.AddDevice -> AdminAddDeviceScreen(
                 onBackClick = { viewModel.onIntent(AdminAdjustIntent.NavigateBack) },
                 onSubmit = { place, name -> viewModel.onIntent(AdminAdjustIntent.AddDevice(place, name)) }
+            )
+            is AdminAdjustUiState.DeviceDetail -> AdminDeviceDetailScreen(
+                state = state,
+                onBackClick = { viewModel.onIntent(AdminAdjustIntent.NavigateBack)}
             )
         }
     }
@@ -82,7 +95,8 @@ fun AdminAdjustRoute(
 fun AdminAdjustScreen(
     state: AdminAdjustUiState.Adjust,
     onAddDeviceClick: () -> Unit,
-    onPowerToggle: (Int) -> Unit
+    onPowerToggle: (Int) -> Unit,
+    navToDeviceDetail: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier.rebornDefault(Color.White)
@@ -122,7 +136,9 @@ fun AdminAdjustScreen(
                         name = device.name,
                         isOnline = device.isOnline,
                         isPowerOn = device.isPowerOn,
-                        onPowerToggle = { onPowerToggle(device.id) }
+                        deviceType = device.deviceType,
+                        onPowerToggle = { onPowerToggle(device.id) },
+                        onClick = {navToDeviceDetail(device.id)}
                     )
                 }
             }
