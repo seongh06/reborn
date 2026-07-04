@@ -7,6 +7,8 @@ import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.sin
 
 sealed class AdminDataEvent {
     data object Exit : AdminDataEvent()
@@ -76,26 +78,34 @@ class AdminDataViewModel : ViewModel() {
     }
 
     // TODO: 서버 sensorLogs 히스토리 조회 API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
+    // 기간별로 자연스러운 개수만큼만 라벨을 생성 (주/월처럼 실제 단위 개수가 적으면 억지로 채우지 않음)
     private fun chartLabelsFor(period: AdminDataUiState.Period): List<String> {
         return when (period) {
-            AdminDataUiState.Period.HOUR -> listOf("0분", "10분", "20분", "30분", "40분", "50분")
-            AdminDataUiState.Period.DAY -> listOf("0시", "4시", "8시", "12시", "16시", "20시")
+            AdminDataUiState.Period.HOUR -> (0 until 60 step 5).map { "${it}분" }
+            AdminDataUiState.Period.DAY -> (0 until 24 step 2).map { "${it}시" }
             AdminDataUiState.Period.WEEK -> listOf("월", "화", "수", "목", "금", "토", "일")
             AdminDataUiState.Period.MONTH -> listOf("1주", "2주", "3주", "4주")
-            AdminDataUiState.Period.YEAR -> listOf("1월", "4월", "7월", "10월")
+            AdminDataUiState.Period.YEAR -> (1..12).map { "${it}월" }
         }
     }
 
+    private data class ChartShape(val base: Float, val amplitudeRatio: Float, val frequency: Float, val phase: Float)
+
+    // 카테고리마다 진폭·주기·위상을 다르게 줘서 탭 전환 시 그래프 모양이 실제로 달라지도록 함
     private fun mockChartValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
-        val base = when (category) {
-            AdminDataUiState.Category.TEMPERATURE -> 24f
-            AdminDataUiState.Category.HUMIDITY -> 55f
-            AdminDataUiState.Category.ILLUMINANCE -> 300f
-            AdminDataUiState.Category.PEOPLE_COUNT -> 3f
-            AdminDataUiState.Category.DISCOMFORT -> 70f
+        val shape = when (category) {
+            AdminDataUiState.Category.TEMPERATURE -> ChartShape(24f, 0.15f, 1f, -PI.toFloat() / 2f)
+            AdminDataUiState.Category.HUMIDITY -> ChartShape(55f, 0.2f, 1f, PI.toFloat() / 2f)
+            AdminDataUiState.Category.ILLUMINANCE -> ChartShape(300f, 0.6f, 1f, -PI.toFloat() / 2f)
+            AdminDataUiState.Category.PEOPLE_COUNT -> ChartShape(3f, 0.8f, 1.5f, 0f)
+            AdminDataUiState.Category.DISCOMFORT -> ChartShape(70f, 0.25f, 2f, 0f)
         }
         val size = chartLabelsFor(period).size
-        return List(size) { index -> base + (index % 3 - 1) * (base * 0.05f) }
+        val amplitude = shape.base * shape.amplitudeRatio
+        return List(size) { index ->
+            val angle = (2f * PI.toFloat() * shape.frequency * index / size) + shape.phase
+            shape.base + amplitude * sin(angle)
+        }
     }
 
     // TODO: 서버 Google Sheets 내보내기 API 연동 전까지의 목업. 실제 연동 시 UseCase/Repository로 대체 예정

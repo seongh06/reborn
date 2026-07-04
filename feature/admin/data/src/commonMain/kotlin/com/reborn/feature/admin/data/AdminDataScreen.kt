@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.ui.RebornLoadingScreen
-import com.reborn.core.ui.component.SelectPickerSection
+import com.reborn.core.ui.component.SelectOptionRow
 import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.data.component.section.AnalysisResultSection
@@ -91,16 +91,15 @@ fun AdminDataScreen(
             modifier = Modifier.padding(16.dp, 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SelectPickerSection(
-                title = "기간",
+            DataLineChartSection(
+                labels = state.chartLabels,
+                values = state.chartValues
+            )
+            SelectOptionRow(
                 options = AdminDataUiState.Period.entries,
                 selectedOption = state.selectedPeriod,
                 onOptionSelected = onPeriodClick,
                 optionToString = { it.label }
-            )
-            DataLineChartSection(
-                labels = state.chartLabels,
-                values = state.chartValues
             )
             AnalysisResultSection(text = state.analysisText)
         }

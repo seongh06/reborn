@@ -34,7 +34,7 @@ fun <T> SelectPickerSection(
     optionToString: (T) -> String = { it.toString() }
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(RebornTheme.color.grayScale100)
@@ -46,48 +46,64 @@ fun <T> SelectPickerSection(
             style = RebornTheme.typography.titleMedium,
             color = RebornTheme.color.grayScale900
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            options.forEach { option ->
-                val isSelected = option == selectedOption
+        SelectOptionRow(
+            options = options,
+            selectedOption = selectedOption,
+            onOptionSelected = onOptionSelected,
+            optionToString = optionToString
+        )
+    }
+}
 
-                val backgroundColor by animateColorAsState(
-                    targetValue = if (isSelected) RebornTheme.color.grayScale600 else RebornTheme.color.grayScale100,
-                    label = "BgColorAnimation"
-                )
-                val textColor by animateColorAsState(
-                    targetValue = if (isSelected) RebornTheme.color.grayScale100 else RebornTheme.color.grayScale600,
-                    label = "TextColorAnimation"
-                )
-                val borderColor = if (isSelected) Color.Transparent else RebornTheme.color.grayScale600
+@Composable
+fun <T> SelectOptionRow(
+    options: List<T>,
+    selectedOption: T,
+    onOptionSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    optionToString: (T) -> String = { it.toString() }
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        options.forEach { option ->
+            val isSelected = option == selectedOption
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(backgroundColor)
-                        .border(
-                            width = if (isSelected) 0.dp else 1.dp,
-                            color = borderColor,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            onOptionSelected(option)
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = optionToString(option),
-                        style = RebornTheme.typography.labelMedium,
-                        color = textColor
+            val backgroundColor by animateColorAsState(
+                targetValue = if (isSelected) RebornTheme.color.grayScale600 else RebornTheme.color.grayScale100,
+                label = "BgColorAnimation"
+            )
+            val textColor by animateColorAsState(
+                targetValue = if (isSelected) RebornTheme.color.grayScale100 else RebornTheme.color.grayScale600,
+                label = "TextColorAnimation"
+            )
+            val borderColor = if (isSelected) Color.Transparent else RebornTheme.color.grayScale600
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(backgroundColor)
+                    .border(
+                        width = if (isSelected) 0.dp else 1.dp,
+                        color = borderColor,
+                        shape = RoundedCornerShape(8.dp)
                     )
-                }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onOptionSelected(option)
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = optionToString(option),
+                    style = RebornTheme.typography.labelMedium,
+                    color = textColor
+                )
             }
         }
     }
