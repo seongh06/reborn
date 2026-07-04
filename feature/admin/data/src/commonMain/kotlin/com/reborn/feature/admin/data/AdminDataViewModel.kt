@@ -20,6 +20,17 @@ private data class MockDate(val year: Int, val month: Int, val day: Int)
 // TODO: 실제 날짜/시간대 연동 전까지 "오늘"을 고정값으로 사용하는 목업. 실제 연동 시 kotlinx-datetime의 현재 시각으로 대체 예정
 private val today = MockDate(2026, 7, 4)
 
+// TODO: 실제 기기 등록/센서 수집 시작일 연동 전까지의 목업 (Phase 1 MVP 시작 시점인 06.01 기준)
+private val dataCollectionStartDate = MockDate(2026, 6, 1)
+
+private fun MockDate.toEpochDayApprox(): Int {
+    val cumulativeDaysBeforeMonth = DAYS_IN_MONTH.take(month - 1).sum()
+    return year * 365 + cumulativeDaysBeforeMonth + day
+}
+
+private fun elapsedDaysSinceDataCollectionStart(): Int =
+    today.toEpochDayApprox() - dataCollectionStartDate.toEpochDayApprox()
+
 private fun Int.pad2(): String = toString().padStart(2, '0')
 
 private fun MockDate.toDateKey(): String = "$year${month.pad2()}${day.pad2()}"
@@ -153,6 +164,7 @@ class AdminDataViewModel : ViewModel() {
                     selectedPeriod = period,
                     chartLabels = chartLabelsFor(period),
                     chartValues = mockChartValues(category, period),
+                    hasEnoughData = hasEnoughDataFor(period),
                     analysisText = mockAnalysisText(category)
                 )
             )
@@ -184,10 +196,24 @@ class AdminDataViewModel : ViewModel() {
                     state.copy(
                         selectedPeriod = period,
                         chartLabels = chartLabelsFor(period),
-                        chartValues = chartValues
+                        chartValues = chartValues,
+                        hasEnoughData = hasEnoughDataFor(period)
                     )
                 } else state
             }
+        }
+    }
+
+    // 기기가 등록된 지 얼마 안 돼서 해당 기간 단위로 충분한 데이터가 쌓이지 않았으면 그래프 대신 안내 문구를 보여주기 위한 판단
+    // (1시간은 오늘 하루치라 항상 표시, 일/주/월/년은 각각 최소 6개 단위만큼 쌓였을 때만 표시)
+    private fun hasEnoughDataFor(period: AdminDataUiState.Period): Boolean {
+        val elapsedDays = elapsedDaysSinceDataCollectionStart()
+        return when (period) {
+            AdminDataUiState.Period.HOUR -> true
+            AdminDataUiState.Period.DAY -> elapsedDays >= 6
+            AdminDataUiState.Period.WEEK -> elapsedDays / 7 >= 6
+            AdminDataUiState.Period.MONTH -> elapsedDays / 30 >= 6
+            AdminDataUiState.Period.YEAR -> elapsedDays / 365 >= 6
         }
     }
 
@@ -211,6 +237,7 @@ class AdminDataViewModel : ViewModel() {
     }
 
     private suspend fun mockChartValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
+        if (!hasEnoughDataFor(period)) return emptyList()
         return when (period) {
             AdminDataUiState.Period.HOUR -> hourlyValues(category)
             AdminDataUiState.Period.DAY -> dailyAverageValues(category)

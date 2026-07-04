@@ -3,15 +3,20 @@ package com.reborn.feature.admin.data.component.section
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -38,11 +43,30 @@ private const val MAX_SCALE = 4f
 fun DataLineChartSection(
     labels: List<String>,
     values: List<Float>,
+    hasData: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    if (!hasData) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(RebornTheme.color.grayScale100),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "아직 데이터가 수집되지 않았습니다.",
+                style = RebornTheme.typography.bodyMedium,
+                color = RebornTheme.color.grayScale500
+            )
+        }
+        return
+    }
+
     val lineColor = RebornTheme.color.grayScale800
     val gridColor = RebornTheme.color.grayScale300
-    val axisLabelMaskColor = RebornTheme.color.grayScale200
+    val axisLabelMaskColor = RebornTheme.color.grayScale100
     val axisTextStyle = RebornTheme.typography.caption.copy(color = RebornTheme.color.grayScale500)
 
     val textMeasurer = rememberTextMeasurer()
@@ -65,7 +89,6 @@ fun DataLineChartSection(
         modifier = modifier
             .fillMaxWidth()
             .height(220.dp)
-            .background(RebornTheme.color.grayScale200)
             .padding(vertical = 12.dp)
             .clipToBounds()
             .onSizeChanged { canvasWidthPx = it.width.toFloat() }
@@ -145,7 +168,24 @@ fun DataLineChartSection(
             style = Stroke(width = 5f, cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
 
-        // Y축 값 라벨: 오른쪽 끝 기준 정렬 + 좌우 12dp 패딩. 선이 뒤로 지나가도 안 가리도록 배경을 먼저 깔고 그 위에 그림
+        // 아래(X축) 라벨을 먼저 그리고, 오른쪽(Y축) 라벨을 나중에 그려서 가로 스크롤 시 겹치더라도 오른쪽 라벨이 위에 보이도록 함
+        val maxLabelCount = 6
+        val visibleIndices = points.indices.filter { index -> points[index].x in 0f..plotWidth }
+        if (visibleIndices.isNotEmpty()) {
+            val stride = ceil(visibleIndices.size / maxLabelCount.toFloat()).toInt().coerceAtLeast(1)
+            visibleIndices.filterIndexed { i, _ -> i % stride == 0 }.forEach { index ->
+                val label = labels.getOrNull(index) ?: return@forEach
+                val x = points[index].x
+                val measuredLabel = textMeasurer.measure(label, axisTextStyle)
+                val textX = (x - measuredLabel.size.width / 2f)
+                    .coerceIn(textHorizontalPaddingPx, (size.width - textHorizontalPaddingPx - measuredLabel.size.width).coerceAtLeast(textHorizontalPaddingPx))
+                drawText(
+                    textLayoutResult = measuredLabel,
+                    topLeft = Offset(textX, size.height - bottomAxisHeight)
+                )
+            }
+        }
+
         val measuredValues = (0..gridLineCount).map { i ->
             val axisValue = maxValue - range * i / gridLineCount
             textMeasurer.measure(axisValue.roundToInt().toString(), axisTextStyle)
@@ -162,24 +202,6 @@ fun DataLineChartSection(
                 textLayoutResult = measuredValue,
                 topLeft = Offset(size.width - textHorizontalPaddingPx - measuredValue.size.width, y - measuredValue.size.height / 2f)
             )
-        }
-
-        // X축 라벨: 확대/이동 상태와 무관하게 현재 보이는 포인트 중 최대 6개만 균등하게 골라 표시, 좌우 12dp 패딩 적용
-        val maxLabelCount = 6
-        val visibleIndices = points.indices.filter { index -> points[index].x in 0f..plotWidth }
-        if (visibleIndices.isNotEmpty()) {
-            val stride = ceil(visibleIndices.size / maxLabelCount.toFloat()).toInt().coerceAtLeast(1)
-            visibleIndices.filterIndexed { i, _ -> i % stride == 0 }.forEach { index ->
-                val label = labels.getOrNull(index) ?: return@forEach
-                val x = points[index].x
-                val measuredLabel = textMeasurer.measure(label, axisTextStyle)
-                val textX = (x - measuredLabel.size.width / 2f)
-                    .coerceIn(textHorizontalPaddingPx, (size.width - textHorizontalPaddingPx - measuredLabel.size.width).coerceAtLeast(textHorizontalPaddingPx))
-                drawText(
-                    textLayoutResult = measuredLabel,
-                    topLeft = Offset(textX, size.height - bottomAxisHeight)
-                )
-            }
         }
     }
 }

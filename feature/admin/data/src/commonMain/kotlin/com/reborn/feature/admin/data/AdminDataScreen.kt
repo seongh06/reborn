@@ -1,8 +1,11 @@
 package com.reborn.feature.admin.data
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
@@ -17,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.designsystem.component.RebornTopAppBar
+import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.SelectOptionRow
 import com.reborn.core.ui.component.TabBar
@@ -88,20 +92,26 @@ fun AdminDataScreen(
             getDisplayName = { it.label }
         )
         Column(
-            modifier = Modifier.padding(16.dp, 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             DataLineChartSection(
                 labels = state.chartLabels,
-                values = state.chartValues
+                values = state.chartValues,
+                hasData = state.hasEnoughData
             )
             SelectOptionRow(
+                modifier = Modifier.padding(16.dp, 12.dp),
                 options = AdminDataUiState.Period.entries,
                 selectedOption = state.selectedPeriod,
                 onOptionSelected = onPeriodClick,
                 optionToString = { it.label }
             )
-            AnalysisResultSection(text = state.analysisText)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .width(8.dp)
+                    .background(RebornTheme.color.grayScale200)
+            )
         }
+        AnalysisResultSection(text = state.analysisText)
     }
 }

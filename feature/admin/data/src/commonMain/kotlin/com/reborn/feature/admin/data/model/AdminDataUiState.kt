@@ -11,6 +11,7 @@ sealed interface AdminDataUiState {
         val selectedPeriod: Period = Period.DAY,
         val chartLabels: List<String> = emptyList(),
         val chartValues: List<Float> = emptyList(),
+        val hasEnoughData: Boolean = true,
         val analysisText: String = ""
     ) : AdminDataUiState
 
