@@ -3,11 +3,11 @@ package com.reborn.core.designsystem.component
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
@@ -49,11 +50,14 @@ fun RebornSwitch(
             .size(width, height)
             .clip(RoundedCornerShape(percent = 50))
             .background(if (enabled) trackColor else trackColor.copy(alpha = 0.4f))
-            .clickable(
+            .toggleable(
+                value = checked,
+                onValueChange = onCheckedChange,
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                enabled = enabled
-            ) { onCheckedChange(!checked) }
+                enabled = enabled,
+                role = Role.Switch
+            )
     ) {
         Box(
             modifier = Modifier

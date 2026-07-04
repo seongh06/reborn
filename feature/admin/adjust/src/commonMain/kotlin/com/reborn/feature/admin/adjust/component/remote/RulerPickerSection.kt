@@ -22,6 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
 import kotlin.math.roundToInt
@@ -65,6 +70,7 @@ fun RulerPickerSection(
                 onValueChange = onValueChange,
                 range = range,
                 step = step,
+                contentDescription = title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(24.dp)
@@ -80,14 +86,29 @@ fun RulerWheelSlider(
     range: ClosedFloatingPointRange<Float>,
     step: Float,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     lineSpacing: Float = 25f,
     lineColor: Color = Color(0xFFE0E0E0),
     centerLineColor: Color = Color(0xFF757575)
 ) {
     var accumulatedDrag by remember { mutableFloatStateOf(0f) }
+    val totalSteps = ((range.endInclusive - range.start) / step).roundToInt() - 1
 
     Canvas(
         modifier = modifier
+            .semantics {
+                contentDescription?.let { this.contentDescription = it }
+                progressBarRangeInfo = ProgressBarRangeInfo(value, range, totalSteps.coerceAtLeast(0))
+                setProgress { targetValue ->
+                    val snappedValue = (targetValue.coerceIn(range) / step).roundToInt() * step
+                    if (snappedValue != value) {
+                        onValueChange(snappedValue)
+                        true
+                    } else {
+                        false
+                    }
+                }
+            }
             .draggable(
                 orientation = Orientation.Horizontal,
                 state = rememberDraggableState { delta ->

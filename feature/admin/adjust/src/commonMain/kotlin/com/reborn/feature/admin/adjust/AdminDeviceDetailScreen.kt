@@ -23,7 +23,6 @@ import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.component.DataType
-import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.SensorChip
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.adjust.component.DeviceSection
@@ -70,7 +69,16 @@ fun AdminDeviceDetailScreen(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
         RebornTopAppBar(title = "IoT 기기 상세보기", onBackClick = onBackClick)
-        DeviceSection(Device("1", "name", "place", true, true, DeviceType.AIR_CONDITIONER))
+        DeviceSection(
+            Device(
+                id = state.device.id.toString(),
+                name = state.device.name,
+                place = state.device.place,
+                isOnline = state.device.isOnline,
+                isPowerOn = state.device.isPowerOn,
+                deviceType = state.device.deviceType
+            )
+        )
         Column(
             modifier = Modifier.padding(12.dp, 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)

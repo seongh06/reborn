@@ -37,7 +37,7 @@ class AdminAdjustViewModel : ViewModel() {
             is AdminAdjustIntent.LoadInitial -> checkInitialState()
             is AdminAdjustIntent.NavigateBack -> navController.navigateBack()
             is AdminAdjustIntent.NavigateToAddDevice -> navController.navigateTo(AdminAdjustUiState.AddDevice)
-            is AdminAdjustIntent.NavigateToDeviceDetail -> navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.controlMethod, intent.deviceId))
+            is AdminAdjustIntent.NavigateToDeviceDetail -> navigateToDeviceDetail(intent)
             is AdminAdjustIntent.TogglePower -> togglePower(intent.deviceId)
             is AdminAdjustIntent.AddDevice -> addDevice(intent.place, intent.name)
             is AdminAdjustIntent.ClickTab -> handleTabClick(intent.tab)
@@ -51,6 +51,11 @@ class AdminAdjustViewModel : ViewModel() {
             delay(1500)
             navController.clearAndReset(AdminAdjustUiState.Adjust(devices))
         }
+    }
+
+    private fun navigateToDeviceDetail(intent: AdminAdjustIntent.NavigateToDeviceDetail) {
+        val device = devices.find { it.id == intent.deviceId } ?: return
+        navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.controlMethod, intent.deviceId, device))
     }
 
     private fun togglePower(deviceId: Int) {

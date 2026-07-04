@@ -110,7 +110,7 @@ fun DeviceOnOffButton(
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
-            .background(if (isPowerOn) Color.White else RebornTheme.color.grayScale400)
+            .background(if (isPowerOn && isOnline) Color.White else RebornTheme.color.grayScale400)
             .clickable(onClick = onClick)
             .padding(12.dp)
     ){

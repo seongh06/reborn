@@ -10,7 +10,8 @@ sealed interface AdminAdjustUiState {
     data object AddDevice : AdminAdjustUiState
     data class DeviceDetail(
         val selectedTab: ControlMethod = ControlMethod.Remote,
-        val deviceId: Int
+        val deviceId: Int,
+        val device: DeviceItem
     ) : AdminAdjustUiState
 
     enum class ControlMethod(val method: String) {
