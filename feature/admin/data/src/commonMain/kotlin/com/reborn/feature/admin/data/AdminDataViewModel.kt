@@ -78,14 +78,15 @@ class AdminDataViewModel : ViewModel() {
     }
 
     // TODO: 서버 sensorLogs 히스토리 조회 API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
-    // 기간별로 자연스러운 개수만큼만 라벨을 생성 (주/월처럼 실제 단위 개수가 적으면 억지로 채우지 않음)
+    // Period는 "총 조회 범위"가 아니라 "점 사이의 간격"을 의미함 (1시간 = 점 하나가 1시간 간격, 일 = 점 하나가 하루 간격 ...)
+    // 각 간격마다 자연스러운 개수만큼만 표시 (주/년처럼 실제 개수가 적으면 억지로 채우지 않음)
     private fun chartLabelsFor(period: AdminDataUiState.Period): List<String> {
         return when (period) {
-            AdminDataUiState.Period.HOUR -> (0 until 60 step 5).map { "${it}분" }
-            AdminDataUiState.Period.DAY -> (0 until 24 step 2).map { "${it}시" }
-            AdminDataUiState.Period.WEEK -> listOf("월", "화", "수", "목", "금", "토", "일")
-            AdminDataUiState.Period.MONTH -> listOf("1주", "2주", "3주", "4주")
-            AdminDataUiState.Period.YEAR -> (1..12).map { "${it}월" }
+            AdminDataUiState.Period.HOUR -> (0..23).map { "${it}시" }       // 1시간 간격 · 최근 24시간
+            AdminDataUiState.Period.DAY -> (1..14).map { "${it}일" }        // 1일 간격 · 최근 14일
+            AdminDataUiState.Period.WEEK -> (1..8).map { "${it}주" }        // 1주 간격 · 최근 8주
+            AdminDataUiState.Period.MONTH -> (1..12).map { "${it}월" }      // 1개월 간격 · 최근 12개월
+            AdminDataUiState.Period.YEAR -> (1..5).map { "${it}년차" }      // 1년 간격 · 최근 5년
         }
     }
 

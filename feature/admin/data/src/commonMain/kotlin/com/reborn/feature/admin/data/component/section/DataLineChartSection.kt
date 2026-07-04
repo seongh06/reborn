@@ -134,16 +134,12 @@ fun DataLineChartSection(
                 color = lineColor,
                 style = Stroke(width = 5f, cap = StrokeCap.Round, join = StrokeJoin.Round)
             )
-            points.forEach { point ->
-                drawCircle(color = Color.White, radius = 7f, center = point)
-                drawCircle(color = lineColor, radius = 5f, center = point)
-            }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            labels.forEach { label ->
+            sampledLabels(labels).forEach { label ->
                 Text(
                     text = label,
                     style = RebornTheme.typography.caption,
@@ -152,4 +148,11 @@ fun DataLineChartSection(
             }
         }
     }
+}
+
+// 라벨 개수가 많을 때(1시간 간격=24개 등) 하단 라벨이 겹치지 않도록 대표 라벨만 골라서 표시
+private fun sampledLabels(labels: List<String>, maxCount: Int = 6): List<String> {
+    if (labels.size <= maxCount) return labels
+    val step = (labels.size - 1).toFloat() / (maxCount - 1)
+    return List(maxCount) { index -> labels[(index * step).toInt()] }
 }
