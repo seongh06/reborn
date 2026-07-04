@@ -66,7 +66,10 @@ fun App() {
                     val isAdminHome = currentDestination?.hasRoute<Route.Admin.Home>() == true
                     val isAdminAdjust = currentDestination?.hasRoute<Route.Admin.Adjust>() == true
                     val isAdminFeedback = currentDestination?.hasRoute<Route.Admin.Feedback>() == true
-                    if (!isIntro && !isAerometer && (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)) {
+                    val isAdminSetting = currentDestination?.hasRoute<Route.Admin.Setting>() == true
+                    if (!isIntro && !isAerometer && !isAdminSetting &&
+                        (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
+                    ) {
                         Surface(
                             color = surfaceColor,
                             modifier = Modifier
@@ -159,6 +162,9 @@ fun App() {
                         navigateToFeedbackDetail = { feedbackId ->
                             //navController.navigate(Route.FeedbackDetail(feedbackId))
                         },
+                        onNavigateToSetting = {
+                            navController.navigate(Route.Admin.Setting)
+                        },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
                         }
@@ -180,7 +186,11 @@ fun App() {
                         }
                     )
                     adminDataNavGraph()
-                    adminSettingNavGraph()
+                    adminSettingNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
+                    )
                 }
             }
         }

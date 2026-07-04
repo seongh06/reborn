@@ -5,14 +5,16 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import com.reborn.core.navigation.Route
-import com.reborn.feature.admin.setting.AdminSettingScreen
+import com.reborn.feature.admin.setting.AdminSettingRoute
 
 fun NavController.navigateAdminSetting(navOptions: NavOptions) {
     navigate(route = Route.Admin.Setting, navOptions = navOptions)
 }
 
-fun NavGraphBuilder.adminSettingNavGraph() {
+fun NavGraphBuilder.adminSettingNavGraph(
+    onBackClick: () -> Unit
+) {
     composable<Route.Admin.Setting> {
-        AdminSettingScreen()
+        AdminSettingRoute(onBackClick = onBackClick)
     }
 }

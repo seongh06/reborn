@@ -15,8 +15,6 @@ sealed interface AdminHomeUiState{
         val time: String,
         val alarmContent: String
     )
-
-    data object Setting: AdminHomeUiState
 }
 
 sealed interface AdminHomeIntent{

@@ -31,6 +31,7 @@ fun AdminHomeRoute(
     viewModel: AdminHomeViewModel = koinViewModel(),
     onBackClick: () -> Unit,
     navigateToFeedbackDetail: (Int) -> Unit,
+    onNavigateToSetting: () -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -52,6 +53,7 @@ fun AdminHomeRoute(
                 }
                 is AdminHomeEvent.Exit -> onBackClick()
                 is AdminHomeEvent.NavigateToFeedbackDetail -> navigateToFeedbackDetail(event.feedbackId)
+                is AdminHomeEvent.NavigateToSetting -> onNavigateToSetting()
             }
         }
     }
@@ -72,7 +74,6 @@ fun AdminHomeRoute(
                 onAlarmDelete = { id -> viewModel.onIntent(AdminHomeIntent.DeleteAlarm(id)) },
                 onAlarmAllDelete = { viewModel.onIntent(AdminHomeIntent.DeleteAllAlarms) }
             )
-            is AdminHomeUiState.Setting -> {}
         }
     }
 }
