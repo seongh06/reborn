@@ -10,7 +10,8 @@ sealed interface AdminDataUiState {
         val selectedCategory: Category = Category.TEMPERATURE,
         val selectedPeriod: Period = Period.DAY,
         val chartLabels: List<String> = emptyList(),
-        val chartValues: List<Float> = emptyList()
+        val chartValues: List<Float> = emptyList(),
+        val analysisText: String = ""
     ) : AdminDataUiState
 
     enum class Category(val label: String) {

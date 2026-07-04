@@ -42,7 +42,8 @@ class AdminDataViewModel : ViewModel() {
                     selectedCategory = category,
                     selectedPeriod = period,
                     chartLabels = chartLabelsFor(period),
-                    chartValues = mockChartValues(category, period)
+                    chartValues = mockChartValues(category, period),
+                    analysisText = mockAnalysisText(category)
                 )
             )
         }
@@ -53,7 +54,8 @@ class AdminDataViewModel : ViewModel() {
             if (state is AdminDataUiState.Data) {
                 state.copy(
                     selectedCategory = category,
-                    chartValues = mockChartValues(category, state.selectedPeriod)
+                    chartValues = mockChartValues(category, state.selectedPeriod),
+                    analysisText = mockAnalysisText(category)
                 )
             } else state
         }
@@ -92,5 +94,16 @@ class AdminDataViewModel : ViewModel() {
         }
         val size = chartLabelsFor(period).size
         return List(size) { index -> base + (index % 3 - 1) * (base * 0.05f) }
+    }
+
+    // TODO: AI 분석 응답 데이터 연동 전까지의 목업 텍스트. 실제 연동 시 서버 응답으로 대체 예정
+    private fun mockAnalysisText(category: AdminDataUiState.Category): String {
+        return when (category) {
+            AdminDataUiState.Category.TEMPERATURE -> "현재 온도가 희망 온도보다 1도 정도 높습니다. 냉방을 가동하면 에너지 효율이 개선됩니다."
+            AdminDataUiState.Category.HUMIDITY -> "실내 습도가 적정 범위를 벗어났습니다. 제습 모드를 권장합니다."
+            AdminDataUiState.Category.ILLUMINANCE -> "조도가 낮은 시간대가 반복됩니다. 조명 자동 점등 설정을 검토해보세요."
+            AdminDataUiState.Category.PEOPLE_COUNT -> "재실 인원이 몰리는 시간대에 에너지 소비가 집중되고 있습니다."
+            AdminDataUiState.Category.DISCOMFORT -> "불쾌지수가 높은 구간이 감지됐습니다. 냉방 가동을 권장합니다."
+        }
     }
 }

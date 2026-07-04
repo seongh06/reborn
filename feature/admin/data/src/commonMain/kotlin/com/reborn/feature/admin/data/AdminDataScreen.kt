@@ -21,6 +21,7 @@ import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.SelectPickerSection
 import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
+import com.reborn.feature.admin.data.component.section.AnalysisResultSection
 import com.reborn.feature.admin.data.component.section.DataLineChartSection
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
@@ -96,6 +97,7 @@ fun AdminDataScreen(
                 labels = state.chartLabels,
                 values = state.chartValues
             )
+            AnalysisResultSection(text = state.analysisText)
         }
     }
 }
