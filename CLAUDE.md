@@ -153,8 +153,9 @@ QR 웹 → POST /api/feedback → feedback 저장
 ### 실시간 IoT 제어 흐름
 ```
 관리자 앱 → WebSocket(/ws/control) → 서버 중계
-         → 공기계 앱(KIOSK) → IoT 기기 Wi-Fi 제어
+         → 공기계 앱(KIOSK) → SmartThings API 호출 → IoT 기기 제어
 ```
+> 2026-07-06 확정: 공기계 앱이 SmartThings Cloud API를 직접 호출하여 기기를 제어함(로컬 Wi-Fi 직접 제어 아님). 서버는 SmartThings 자격증명을 갖지 않고 WebSocket 중계까지만 담당.
 
 ---
 

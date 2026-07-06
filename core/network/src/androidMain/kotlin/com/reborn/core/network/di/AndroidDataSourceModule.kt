@@ -10,5 +10,4 @@ actual val platformDataSourceModule = module {
 /*    single { SocialLoginDataSource(get()) }
     single<DataStore<Preferences>> { createDataStore(get<Context>()) }*/
     single<HttpClientEngineFactory<*>> { OkHttp }
-    single<Context> { androidContext() }
 }

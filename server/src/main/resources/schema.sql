@@ -14,10 +14,13 @@ CREATE TABLE IF NOT EXISTS `user`
     `name`          VARCHAR(100) NOT NULL COMMENT '사용자 이름',
     `profile_image` VARCHAR(512) NULL COMMENT '프로필 이미지 URL',
     `provider`      VARCHAR(20)  NOT NULL COMMENT 'OAuth 제공자 (KAKAO / GOOGLE)',
+    `provider_id`   VARCHAR(255) NOT NULL COMMENT '소셜 제공자 고유 사용자 ID (구글 sub, 카카오 id)',
+    `fcm_token`     VARCHAR(255) NULL COMMENT 'FCM 푸시 토큰',
     `created_at`    DATETIME(6)  NOT NULL COMMENT '가입일시',
     `updated_at`    DATETIME(6)  NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_user_email` (`email`)
+    UNIQUE KEY `uk_user_email` (`email`),
+    UNIQUE KEY `uk_user_provider_provider_id` (`provider`, `provider_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
@@ -32,11 +35,13 @@ CREATE TABLE IF NOT EXISTS `place`
     `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '장소 PK',
     `name`        VARCHAR(255) NOT NULL COMMENT '장소명',
     `qr_code`     VARCHAR(255) NOT NULL COMMENT 'QR 코드 식별자',
+    `type`        VARCHAR(20)  NOT NULL COMMENT '공간 유형 (HOME / STORE / COMPANY)',
     `description` VARCHAR(255) NULL COMMENT '장소 설명',
     `created_at`  DATETIME(6)  NOT NULL COMMENT '등록일시',
     `updated_at`  DATETIME(6)  NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_place_qr_code` (`qr_code`)
+    UNIQUE KEY `uk_place_qr_code` (`qr_code`),
+    CONSTRAINT `chk_place_type` CHECK (`type` IN ('HOME', 'STORE', 'COMPANY'))
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci

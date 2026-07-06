@@ -5,14 +5,20 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import com.reborn.core.navigation.Route
-import com.reborn.feature.admin.feedback.AdminFeedbackScreen
+import com.reborn.feature.admin.feedback.AdminFeedbackRoute
 
 fun NavController.navigateAdminFeedback(navOptions: NavOptions) {
     navigate(route = Route.Admin.Feedback, navOptions = navOptions)
 }
 
-fun NavGraphBuilder.adminFeedbackNavGraph() {
+fun NavGraphBuilder.adminFeedbackNavGraph(
+    onBackClick: () -> Unit,
+    onBottomBarVisibilityChange: (Boolean) -> Unit = {}
+) {
     composable<Route.Admin.Feedback> {
-        AdminFeedbackScreen()
+        AdminFeedbackRoute(
+            onBackClick = onBackClick,
+            onBottomBarVisibilityChange = onBottomBarVisibilityChange
+        )
     }
 }

@@ -1,7 +1,7 @@
 import com.reborn.configureKtor
-import com.reborn.configureKotlin
 import com.reborn.configureKotlinMultiplatform
 import com.reborn.configureCoroutineKmp
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
     id("com.android.kotlin.multiplatform.library")
@@ -9,6 +9,15 @@ plugins {
 }
 
 configureKotlinMultiplatform()
-configureKotlin()
 configureKtor()
 configureCoroutineKmp()
+
+val autoNamespace = "com.reborn.${project.path.removePrefix(":").replace(":", ".")}"
+
+extensions.configure<KotlinMultiplatformExtension> {
+    android {
+        compileSdk = 37
+        minSdk = 28
+        namespace = autoNamespace
+    }
+}

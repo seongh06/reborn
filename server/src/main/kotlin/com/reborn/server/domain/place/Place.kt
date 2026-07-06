@@ -3,6 +3,8 @@ package com.reborn.server.domain.place
 import com.reborn.server.global.jpa.BaseEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -17,6 +19,10 @@ class Place(
 
     @Column(nullable = false, unique = true)
     val qrCode: String,
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    val type: PlaceType,
 
     @Column
     val description: String? = null,

@@ -11,7 +11,6 @@ setNamespace("core.common")
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.moko.permissions.compose)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
             implementation(libs.koin.core)
@@ -19,6 +18,11 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
+            implementation(libs.camerax.core)
+            implementation(libs.camerax.camera2)
+            implementation(libs.camerax.lifecycle)
+            implementation(libs.mlkit.face.detection)
+            implementation(libs.androidx.lifecycle.process)
         }
         iosMain.dependencies {
 

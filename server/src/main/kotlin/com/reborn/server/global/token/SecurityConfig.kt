@@ -2,6 +2,7 @@ package com.reborn.server.global.token
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -32,10 +33,18 @@ class SecurityConfig(
 
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
+                    .requestMatchers("/api/auth/logout").authenticated()
                     .requestMatchers("/api/auth/**").permitAll()
 
                     // Arduino 기기 인증 (Device Key 헤더) — JWT 불필요
                     .requestMatchers("/api/sensor/collect", "/api/sensor/current").permitAll()
+
+                    // QR 웹페이지에서 비로그인 방문자가 제출 — 조회/상태변경은 anyRequest().authenticated()로 보호
+                    .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
+
+                    // WebSocket 핸드셰이크(HTTP) 자체는 permitAll — 실제 인증은 STOMP CONNECT 프레임에서
+                    // WebSocketAuthChannelInterceptor가 담당 (관리자: JWT / 공기계: deviceKey+appToken)
+                    .requestMatchers("/ws/control/**").permitAll()
 
                     .anyRequest().authenticated()
             }

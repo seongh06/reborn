@@ -9,9 +9,13 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 
 @Entity
-@Table(name = "user")
+@Table(
+    name = "user",
+    uniqueConstraints = [UniqueConstraint(name = "uk_user_provider_provider_id", columnNames = ["provider", "provider_id"])],
+)
 class User(
 
     @Column(nullable = false, unique = true)
@@ -27,8 +31,19 @@ class User(
     @Enumerated(EnumType.STRING)
     val provider: OAuthProvider,
 
+    @Column(name = "provider_id", nullable = false)
+    val providerId: String,
+
+    @Column(name = "fcm_token")
+    var fcmToken: String? = null,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-) : BaseEntity()
+) : BaseEntity() {
+
+    fun updateFcmToken(token: String?) {
+        fcmToken = token
+    }
+}

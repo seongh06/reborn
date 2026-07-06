@@ -21,3 +21,8 @@ fun String.mask(visibleCount: Int = 4): String {
 }
 
 fun generateUuid(): String = UUID.randomUUID().toString()
+
+private const val CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+fun generateRandomCode(length: Int): String =
+    (1..length).map { CODE_CHARS.random() }.joinToString("")

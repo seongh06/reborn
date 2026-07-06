@@ -1,6 +1,5 @@
 import com.reborn.configureCoil
 import com.reborn.libs
-import gradle.kotlin.dsl.accessors._659f28ada5b3cbfd2719111534f74c17.androidLibrary
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
@@ -9,7 +8,7 @@ plugins {
 }
 
 extensions.configure<KotlinMultiplatformExtension> {
-    androidLibrary {
+    android {
         packaging {
             resources.excludes.add("META-INF/**")
         }

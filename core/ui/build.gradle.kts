@@ -11,6 +11,7 @@ setNamespace("core.ui")
 kotlin {
     sourceSets {
         commonMain.dependencies {
+            implementation(compose.components.resources)
             implementation(projects.core.designsystem)
             implementation(projects.core.model)
             implementation(projects.core.common)

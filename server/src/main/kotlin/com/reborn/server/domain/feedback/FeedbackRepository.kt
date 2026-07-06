@@ -12,6 +12,14 @@ interface FeedbackRepository : JpaRepository<Feedback, Long> {
 
     fun countByDeviceId(deviceId: Long): Long
 
+    fun findAllByDevice_PlaceId(placeId: Long, pageable: Pageable): Page<Feedback>
+
+    fun findAllByDevice_PlaceIdAndStatus(placeId: Long, status: FeedbackStatus, pageable: Pageable): Page<Feedback>
+
+    fun countByDevice_PlaceId(placeId: Long): Long
+
+    fun countByDevice_PlaceIdAndStatus(placeId: Long, status: FeedbackStatus): Long
+
     // 기기 삭제(ON DELETE SET NULL) 후 device_id = NULL 상태인 고아 피드백 조회
     fun findAllByDeviceIsNull(pageable: Pageable): Page<Feedback>
 

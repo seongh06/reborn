@@ -13,33 +13,36 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.reborn.core.designsystem.RebornTheme
+import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.navigation.MainTab
 import com.reborn.core.navigation.Route
 import com.reborn.feature.admin.adjust.navigation.adjustNavGraph
+import com.reborn.feature.admin.adjust.navigation.adminAddDeviceNavGraph
 import com.reborn.feature.admin.data.navigation.adminDataNavGraph
 import com.reborn.feature.admin.feedback.navigation.adminFeedbackNavGraph
 import com.reborn.feature.admin.home.navigation.adminHomeNavGraph
 import com.reborn.feature.admin.setting.navigation.adminSettingNavGraph
 import com.reborn.feature.aerometer.navigation.aerometerNavGraph
+import com.reborn.feature.intro.navigation.introAdminCodeNavGraph
 import com.reborn.feature.intro.navigation.introNavGraph
 import moe.tlaster.precompose.PreComposeApp
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.KoinContext
 
 @Composable
 fun App() {
@@ -50,21 +53,36 @@ fun App() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
 
+            var isAdminHomeBottomBarVisible by remember { mutableStateOf(true) }
+            var introSkipToAdminModeSelect by remember { mutableStateOf(false) }
+
+            val lineColor = RebornTheme.color.grayScale700
+            val surfaceColor = RebornTheme.color.grayScale100
+
             Scaffold(
+
                 containerColor = RebornTheme.color.grayScale100,
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 bottomBar = {
                     val isIntro = currentDestination?.hasRoute<Route.Intro>() == true
-
-                    if (!isIntro) {
+                    val isAerometer = currentDestination?.hasRoute<Route.Aerometer>() == true
+                    val isAdminHome = currentDestination?.hasRoute<Route.Admin.Home>() == true
+                    val isAdminAdjust = currentDestination?.hasRoute<Route.Admin.Adjust>() == true
+                    val isAdminFeedback = currentDestination?.hasRoute<Route.Admin.Feedback>() == true
+                    val isAdminSetting = currentDestination?.hasRoute<Route.Admin.Setting>() == true
+                    val isAdminInviteCode = currentDestination?.hasRoute<Route.Admin.InviteCode>() == true
+                    val isAdminAddDevice = currentDestination?.hasRoute<Route.Admin.AddDevice>() == true
+                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice &&
+                        (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
+                    ) {
                         Surface(
-                            color = RebornTheme.color.grayScale100,
+                            color = surfaceColor,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .drawBehind {
                                     val strokeWidth = 1.dp.toPx()
                                     drawLine(
-                                        color = RebornTheme.color.grayScale700,
+                                        color = lineColor,
                                         start = Offset(0f, 0f),
                                         end = Offset(size.width, 0f),
                                         strokeWidth = strokeWidth
@@ -124,22 +142,84 @@ fun App() {
                 ) {
                     introNavGraph(
                         onNavigateToAdmin = {
+                            introSkipToAdminModeSelect = false
                             navController.navigate(Route.Admin.Home) {
-                                popUpTo(Route.Intro) { inclusive = true }
+                                popUpTo(navController.graph.id) { inclusive = true }
                             }
                         },
                         onNavigateToAerometer = {
+                            introSkipToAdminModeSelect = false
                             navController.navigate(Route.Aerometer) {
-                                popUpTo(Route.Intro) { inclusive = true }
+                                popUpTo(navController.graph.id) { inclusive = true }
                             }
+                        },
+                        onBackClick = {
+                            introSkipToAdminModeSelect = false
+                            navController.popBackStack()
+                        },
+                        skipToAdminModeSelect = { introSkipToAdminModeSelect }
+                    )
+                    introAdminCodeNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
                         }
                     )
-                    adminHomeNavGraph()
-                    adjustNavGraph()
-                    adminFeedbackNavGraph()
+                    aerometerNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
+                    )
+                    adminHomeNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        navigateToFeedbackDetail = { feedbackId ->
+                            //navController.navigate(Route.FeedbackDetail(feedbackId))
+                        },
+                        onNavigateToSetting = {
+                            navController.navigate(Route.Admin.Setting)
+                        },
+                        onBottomBarVisibilityChange = { visible ->
+                            isAdminHomeBottomBarVisible = visible
+                        }
+                    )
+                    adjustNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onBottomBarVisibilityChange = { visible ->
+                            isAdminHomeBottomBarVisible = visible
+                        }
+                    )
+                    adminAddDeviceNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
+                    )
+                    adminFeedbackNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onBottomBarVisibilityChange = { visible ->
+                            isAdminHomeBottomBarVisible = visible
+                        }
+                    )
                     adminDataNavGraph()
-                    adminSettingNavGraph()
-                    aerometerNavGraph()
+                    adminSettingNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onNavigateToInviteCode = { placeId ->
+                            navController.navigate(Route.Admin.InviteCode(placeId))
+                        },
+                        onNavigateToAddDevice = { placeId ->
+                            navController.navigate(Route.Admin.AddDevice(placeId))
+                        },
+                        onNavigateToAddPlace = {
+                            introSkipToAdminModeSelect = true
+                            navController.navigate(Route.Intro)
+                        }
+                    )
                 }
             }
         }

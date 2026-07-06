@@ -1,0 +1,177 @@
+package com.reborn.server.domain.place.service
+
+import com.reborn.server.domain.auth.UserRepository
+import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.device.DeviceType
+import com.reborn.server.domain.device.repository.DeviceRepository
+import com.reborn.server.domain.place.AccessLevel
+import com.reborn.server.domain.place.Place
+import com.reborn.server.domain.place.PlaceRepository
+import com.reborn.server.domain.place.PlaceType
+import com.reborn.server.domain.place.UserPlaceMapping
+import com.reborn.server.domain.place.UserPlaceMappingRepository
+import com.reborn.server.domain.place.converter.PlaceConverter
+import com.reborn.server.domain.place.dto.PlaceDto
+import com.reborn.server.global.handler.BusinessAlertException
+import com.reborn.server.global.model.CommonErrorCode
+import com.reborn.server.global.redis.RedisUtil
+import com.reborn.server.global.util.generateRandomCode
+import com.reborn.server.global.util.generateUuid
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
+import java.time.LocalDateTime
+
+@Service
+@Transactional(readOnly = true)
+class PlaceService(
+    private val userRepository: UserRepository,
+    private val placeRepository: PlaceRepository,
+    private val userPlaceMappingRepository: UserPlaceMappingRepository,
+    private val deviceRepository: DeviceRepository,
+    private val redisUtil: RedisUtil,
+) {
+
+    @Transactional
+    fun register(userId: Long, request: PlaceDto.RegisterRequest): PlaceDto.RegisterResponse {
+        val name = request.name?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "장소 이름은 필수입니다.")
+        val type = parsePlaceType(request.type)
+
+        val user = userRepository.findById(userId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 회원 정보입니다.")
+        }
+
+        val place = placeRepository.save(Place(name = name, qrCode = generateUuid(), type = type))
+        userPlaceMappingRepository.save(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
+
+        return PlaceConverter.toRegisterResponse(place)
+    }
+
+    @Transactional
+    fun generatePairingCode(userId: Long, placeId: Long): PlaceDto.PairingCodeResponse {
+        requireAdmin(userId, placeId)
+
+        val code = generateUniqueCode(PAIRING_PREFIX, PAIRING_CODE_LENGTH)
+        redisUtil.set("$PAIRING_PREFIX$code", placeId.toString(), Duration.ofMinutes(PAIRING_TTL_MINUTES))
+
+        return PlaceDto.PairingCodeResponse(
+            pairingCode = code,
+            expiresAt = LocalDateTime.now().plusMinutes(PAIRING_TTL_MINUTES),
+        )
+    }
+
+    @Transactional
+    fun pairDevice(request: PlaceDto.PairingRequest): PlaceDto.PairingResponse {
+        val code = request.pairingCode?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "페어링 코드는 필수입니다.")
+        val deviceName = request.deviceName?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "기기 이름은 필수입니다.")
+
+        val redisKey = "$PAIRING_PREFIX$code"
+        val placeId = redisUtil.get(redisKey)?.toLongOrNull()
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "페어링 코드가 만료되었거나 유효하지 않습니다.")
+
+        val place = placeRepository.findById(placeId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        }
+        redisUtil.delete(redisKey)
+
+        val appToken = generateUuid()
+        val device = try {
+            deviceRepository.save(
+                Device(
+                    place = place,
+                    deviceType = DeviceType.KIOSK,
+                    deviceKey = generateUuid(),
+                    name = deviceName,
+                    appToken = appToken,
+                ),
+            )
+        } catch (e: DataIntegrityViolationException) {
+            throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 등록된 기기입니다.")
+        }
+
+        return PlaceDto.PairingResponse(deviceId = device.deviceKey, placeId = place.id, appToken = appToken)
+    }
+
+    @Transactional
+    fun generateAdminCode(userId: Long, placeId: Long): PlaceDto.AdminCodeResponse {
+        requireAdmin(userId, placeId)
+
+        val code = generateUniqueCode(ADMIN_INVITE_PREFIX, ADMIN_CODE_LENGTH)
+        redisUtil.set("$ADMIN_INVITE_PREFIX$code", placeId.toString(), Duration.ofMinutes(ADMIN_INVITE_TTL_MINUTES))
+
+        return PlaceDto.AdminCodeResponse(
+            adminCode = code,
+            expiresAt = LocalDateTime.now().plusMinutes(ADMIN_INVITE_TTL_MINUTES),
+        )
+    }
+
+    @Transactional
+    fun redeemAdminCode(userId: Long, request: PlaceDto.AdminInviteRequest): PlaceDto.AdminInviteResponse {
+        val code = request.adminCode?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "관리자 코드는 필수입니다.")
+
+        val redisKey = "$ADMIN_INVITE_PREFIX$code"
+        val placeId = redisUtil.get(redisKey)?.toLongOrNull()
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "관리자 코드가 만료되었거나 유효하지 않습니다.")
+
+        val place = placeRepository.findById(placeId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        }
+        val user = userRepository.findById(userId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 회원 정보입니다.")
+        }
+
+        if (userPlaceMappingRepository.existsByUserIdAndPlaceId(userId, placeId)) {
+            throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 해당 장소의 관리자로 등록되어 있습니다.")
+        }
+        redisUtil.delete(redisKey)
+
+        userPlaceMappingRepository.save(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
+
+        return PlaceDto.AdminInviteResponse(
+            placeId = place.id,
+            placeName = place.name,
+            accessLevel = AccessLevel.ADMIN.name,
+        )
+    }
+
+    private fun requireAdmin(userId: Long, placeId: Long) {
+        if (!placeRepository.existsById(placeId)) {
+            throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        }
+        val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
+        if (mapping == null || mapping.accessLevel != AccessLevel.ADMIN) {
+            throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.")
+        }
+    }
+
+    private fun generateUniqueCode(prefix: String, length: Int): String {
+        repeat(MAX_CODE_GENERATION_ATTEMPTS) {
+            val code = generateRandomCode(length)
+            if (!redisUtil.exists("$prefix$code")) return code
+        }
+        throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "코드 생성에 실패했습니다. 다시 시도해주세요.")
+    }
+
+    private fun parsePlaceType(type: String?): PlaceType {
+        if (type.isNullOrBlank()) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "공간 유형은 필수입니다.")
+        }
+        return runCatching { PlaceType.valueOf(type) }
+            .getOrElse { throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "정의되지 않은 공간 유형입니다.") }
+    }
+
+    companion object {
+        private const val PAIRING_PREFIX = "pairing:"
+        private const val ADMIN_INVITE_PREFIX = "admin-invite:"
+        private const val PAIRING_CODE_LENGTH = 6
+        private const val ADMIN_CODE_LENGTH = 8
+        private const val PAIRING_TTL_MINUTES = 10L
+        private const val ADMIN_INVITE_TTL_MINUTES = 30L
+        private const val MAX_CODE_GENERATION_ATTEMPTS = 5
+    }
+}
