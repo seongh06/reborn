@@ -31,7 +31,6 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun RoomListItem(
     placeId: Int,
-    roomId: Int,
     roomName: String,
     adminCount: Int,
     deviceCount: Int,
@@ -55,9 +54,7 @@ fun RoomListItem(
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ){
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween
-            ){
+            Row {
                 Text(
                     roomName,
                     style = RebornTheme.typography.headlineMedium,

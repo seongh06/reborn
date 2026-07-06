@@ -144,13 +144,13 @@ fun App() {
                         onNavigateToAdmin = {
                             introSkipToAdminModeSelect = false
                             navController.navigate(Route.Admin.Home) {
-                                popUpTo(Route.Intro) { inclusive = true }
+                                popUpTo(navController.graph.id) { inclusive = true }
                             }
                         },
                         onNavigateToAerometer = {
                             introSkipToAdminModeSelect = false
                             navController.navigate(Route.Aerometer) {
-                                popUpTo(Route.Intro) { inclusive = true }
+                                popUpTo(navController.graph.id) { inclusive = true }
                             }
                         },
                         onBackClick = {
@@ -193,9 +193,6 @@ fun App() {
                     )
                     adminAddDeviceNavGraph(
                         onBackClick = {
-                            navController.popBackStack()
-                        },
-                        onSubmit = { _, _ ->
                             navController.popBackStack()
                         }
                     )

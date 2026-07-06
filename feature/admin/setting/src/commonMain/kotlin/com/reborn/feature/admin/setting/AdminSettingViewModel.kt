@@ -38,8 +38,10 @@ class AdminSettingViewModel : ViewModel() {
             is AdminSettingIntent.LoadInitial -> checkInitialState()
             is AdminSettingIntent.NavigateBack -> navigationManager.navigateBack()
             is AdminSettingIntent.DeleteRoom -> deleteRoom(intent.placeId)
-            is AdminSettingIntent.ClickAddAdmin -> navigationManager.emitEvent(AdminSettingEvent.NavigateToInviteCode(intent.placeId))
-            is AdminSettingIntent.ClickAddDevice -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddDevice(intent.placeId))
+            is AdminSettingIntent.ClickAddAdmin ->
+                navigationManager.emitEvent(AdminSettingEvent.NavigateToInviteCode(intent.placeId))
+            is AdminSettingIntent.ClickAddDevice ->
+                navigationManager.emitEvent(AdminSettingEvent.NavigateToAddDevice(intent.placeId))
             is AdminSettingIntent.ClickAddPlace -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddPlace)
         }
     }

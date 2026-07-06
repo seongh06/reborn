@@ -113,7 +113,6 @@ fun AdminSettingScreen(
             state.rooms.forEach { room ->
                 RoomListItem(
                     placeId = room.placeId,
-                    roomId = room.placeId,
                     roomName = room.roomName,
                     adminCount = room.adminCount,
                     deviceCount = room.deviceCount,
