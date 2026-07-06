@@ -7,8 +7,9 @@ services:
     restart: always
     ports:
       - "3306:3306"
+    env_file:
+      - server/deployment/env/.env
     environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       MYSQL_DATABASE: "reborn"
       TZ: "Asia/Seoul"
     volumes:
@@ -38,21 +39,18 @@ services:
       retries: 5
 
   backend-app:
-    image: seongh06/reborn-backend:latest
+    build:
+      context: .
+      dockerfile: server/deployment/docker/Dockerfile
+    image: reborn-backend-server:latest
     container_name: reborn-backend-server
     restart: always
     ports:
       - "8080:8080"
+    env_file:
+      - server/deployment/env/.env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - JWT_SECRET=${JWT_SECRET}
-      - DB_URL=jdbc:mysql://database:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
-      - DB_USERNAME=${DB_USERNAME:-root}
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - SQL_INIT_MODE=never
-      - JPA_DDL_AUTO=validate
       - TZ=Asia/Seoul
     depends_on:
       database:
