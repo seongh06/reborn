@@ -22,6 +22,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import java.time.Duration
 
 @ExtendWith(MockitoExtension::class)
 class AuthServiceTest {
@@ -149,11 +150,15 @@ class AuthServiceTest {
         given(redisUtil.get("refresh:1")).willReturn("old-refresh-token")
         given(jwtProvider.createAccessToken(1L)).willReturn("new-access-token")
         given(jwtProvider.createRefreshToken(1L)).willReturn("new-refresh-token")
+        given(jwtProvider.refreshTokenExpiry).willReturn(REFRESH_TOKEN_EXPIRY_MS)
 
         val response = authService.refresh(request)
 
         assertThat(response.accessToken).isEqualTo("new-access-token")
         assertThat(response.refreshToken).isEqualTo("new-refresh-token")
+        // Duration은 Mockito eq()/any()가 Kotlin non-null 파라미터와 만나면 NPE를 내서(플랫폼 타입이 아닌
+        // Kotlin 네이티브 타입 한정 이슈) 매처 대신 실제 값으로 직접 검증한다.
+        verify(redisUtil).set("refresh:1", "new-refresh-token", Duration.ofMillis(REFRESH_TOKEN_EXPIRY_MS))
     }
 
     @Test
@@ -210,5 +215,9 @@ class AuthServiceTest {
         authService.logout(1L)
 
         verify(redisUtil).delete("refresh:1")
+    }
+
+    companion object {
+        private const val REFRESH_TOKEN_EXPIRY_MS = 1209600000L
     }
 }
