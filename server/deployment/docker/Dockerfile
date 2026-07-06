@@ -1,5 +1,6 @@
-# 1단계: 빌드 환경 (JDK 17)
-FROM eclipse-temurin:17-jdk-alpine AS build
+# 1단계: 빌드 환경 (JDK 21 — gradle/gradle-daemon-jvm.properties의 toolchainVersion=21과 일치시켜
+# Gradle이 별도로 JDK를 다운로드하지 않고 컨테이너에 이미 설치된 JDK를 그대로 사용하도록 함)
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
 
 # 컨텍스트는 프로젝트 루트이므로 전체 파일 복사 (.dockerignore로 필터링)
@@ -9,8 +10,8 @@ COPY . .
 RUN chmod +x gradlew
 RUN ./gradlew :server:bootJar -x test
 
-# 2단계: 실행 환경 (JRE 17)
-FROM eclipse-temurin:17-jre-alpine
+# 2단계: 실행 환경 (JRE 21)
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # 빌드 단계에서 생성된 jar 파일 복사
