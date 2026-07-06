@@ -161,6 +161,7 @@ mlkit-face-detection = { group = "com.google.mlkit", name = "face-detection", ve
 
 # Spring Boot (server module)
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-websocket = { module = "org.springframework.boot:spring-boot-starter-websocket" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }

@@ -42,6 +42,10 @@ class SecurityConfig(
                     // QR 웹페이지에서 비로그인 방문자가 제출 — 조회/상태변경은 anyRequest().authenticated()로 보호
                     .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
 
+                    // WebSocket 핸드셰이크(HTTP) 자체는 permitAll — 실제 인증은 STOMP CONNECT 프레임에서
+                    // WebSocketAuthChannelInterceptor가 담당 (관리자: JWT / 공기계: deviceKey+appToken)
+                    .requestMatchers("/ws/control/**").permitAll()
+
                     .anyRequest().authenticated()
             }
             .addFilterBefore(JwtFilter(jwtProvider), UsernamePasswordAuthenticationFilter::class.java)
