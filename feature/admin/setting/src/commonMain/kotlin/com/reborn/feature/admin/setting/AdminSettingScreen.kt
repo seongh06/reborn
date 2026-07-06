@@ -37,7 +37,10 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun AdminSettingRoute(
     viewModel: AdminSettingViewModel = koinViewModel(),
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToInviteCode: (Int) -> Unit = {},
+    onNavigateToAddDevice: (Int) -> Unit = {},
+    onNavigateToAddPlace: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -56,6 +59,9 @@ fun AdminSettingRoute(
                     snackbarHostState.showSnackbar(message = event.message)
                 }
                 is AdminSettingEvent.Exit -> onBackClick()
+                is AdminSettingEvent.NavigateToInviteCode -> onNavigateToInviteCode(event.placeId)
+                is AdminSettingEvent.NavigateToAddDevice -> onNavigateToAddDevice(event.placeId)
+                is AdminSettingEvent.NavigateToAddPlace -> onNavigateToAddPlace()
             }
         }
     }
@@ -71,7 +77,7 @@ fun AdminSettingRoute(
                 onDeleteRoomClick = { placeId -> viewModel.onIntent(AdminSettingIntent.DeleteRoom(placeId)) },
                 onAddAdminClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAdmin(placeId)) },
                 onAddDeviceClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddDevice(placeId)) },
-                onAddPlaceClick = {}
+                onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) }
             )
         }
     }

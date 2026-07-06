@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import com.reborn.core.navigation.Route
 import com.reborn.feature.intro.IntroRoute
 import com.reborn.feature.intro.IntroScreen
+import com.reborn.feature.intro.screen.admin.IntroAdminCodeScreen
 
 fun NavController.navigateIntro(navOptions: NavOptions) {
     navigate(route = Route.Intro, navOptions = navOptions)
@@ -16,13 +17,24 @@ fun NavController.navigateIntro(navOptions: NavOptions) {
 fun NavGraphBuilder.introNavGraph(
     onNavigateToAdmin: () -> Unit,
     onNavigateToAerometer: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    skipToAdminModeSelect: () -> Boolean = { false }
 ) {
     composable<Route.Intro> {
         IntroRoute(
             onNavigateToAdmin = onNavigateToAdmin,
             onNavigateToAerometer = onNavigateToAerometer,
-            onBackClick =onBackClick
+            onBackClick =onBackClick,
+            skipToAdminModeSelect = skipToAdminModeSelect()
         )
+    }
+}
+
+// Setting의 "관리자 초대" 버튼에서 진입하는 페어링 코드 화면 — Intro 온보딩 플로우와 별개의 최상위 라우트
+fun NavGraphBuilder.introAdminCodeNavGraph(
+    onBackClick: () -> Unit
+) {
+    composable<Route.Admin.InviteCode> {
+        IntroAdminCodeScreen(onBackClick = onBackClick)
     }
 }

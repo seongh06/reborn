@@ -12,6 +12,9 @@ sealed class AdminSettingEvent {
     data object Exit : AdminSettingEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminSettingEvent()
     data class ShowSnackbar(val message: String) : AdminSettingEvent()
+    data class NavigateToInviteCode(val placeId: Int) : AdminSettingEvent()
+    data class NavigateToAddDevice(val placeId: Int) : AdminSettingEvent()
+    data object NavigateToAddPlace : AdminSettingEvent()
 }
 
 class AdminSettingViewModel : ViewModel() {
@@ -35,8 +38,9 @@ class AdminSettingViewModel : ViewModel() {
             is AdminSettingIntent.LoadInitial -> checkInitialState()
             is AdminSettingIntent.NavigateBack -> navigationManager.navigateBack()
             is AdminSettingIntent.DeleteRoom -> deleteRoom(intent.placeId)
-            is AdminSettingIntent.ClickAddAdmin -> {} // TODO: 관리자 초대(페어링 코드) 화면 라우팅, 후속 이슈에서 구현 예정
-            is AdminSettingIntent.ClickAddDevice -> {} // TODO: 디바이스 추가 화면 라우팅, 후속 이슈에서 구현 예정
+            is AdminSettingIntent.ClickAddAdmin -> navigationManager.emitEvent(AdminSettingEvent.NavigateToInviteCode(intent.placeId))
+            is AdminSettingIntent.ClickAddDevice -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddDevice(intent.placeId))
+            is AdminSettingIntent.ClickAddPlace -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddPlace)
         }
     }
 

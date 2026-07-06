@@ -33,11 +33,13 @@ import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.navigation.MainTab
 import com.reborn.core.navigation.Route
 import com.reborn.feature.admin.adjust.navigation.adjustNavGraph
+import com.reborn.feature.admin.adjust.navigation.adminAddDeviceNavGraph
 import com.reborn.feature.admin.data.navigation.adminDataNavGraph
 import com.reborn.feature.admin.feedback.navigation.adminFeedbackNavGraph
 import com.reborn.feature.admin.home.navigation.adminHomeNavGraph
 import com.reborn.feature.admin.setting.navigation.adminSettingNavGraph
 import com.reborn.feature.aerometer.navigation.aerometerNavGraph
+import com.reborn.feature.intro.navigation.introAdminCodeNavGraph
 import com.reborn.feature.intro.navigation.introNavGraph
 import moe.tlaster.precompose.PreComposeApp
 import org.jetbrains.compose.resources.painterResource
@@ -52,6 +54,7 @@ fun App() {
             val currentDestination = navBackStackEntry?.destination
 
             var isAdminHomeBottomBarVisible by remember { mutableStateOf(true) }
+            var introSkipToAdminModeSelect by remember { mutableStateOf(false) }
 
             val lineColor = RebornTheme.color.grayScale700
             val surfaceColor = RebornTheme.color.grayScale100
@@ -67,7 +70,9 @@ fun App() {
                     val isAdminAdjust = currentDestination?.hasRoute<Route.Admin.Adjust>() == true
                     val isAdminFeedback = currentDestination?.hasRoute<Route.Admin.Feedback>() == true
                     val isAdminSetting = currentDestination?.hasRoute<Route.Admin.Setting>() == true
-                    if (!isIntro && !isAerometer && !isAdminSetting &&
+                    val isAdminInviteCode = currentDestination?.hasRoute<Route.Admin.InviteCode>() == true
+                    val isAdminAddDevice = currentDestination?.hasRoute<Route.Admin.AddDevice>() == true
+                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice &&
                         (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
                     ) {
                         Surface(
@@ -137,15 +142,24 @@ fun App() {
                 ) {
                     introNavGraph(
                         onNavigateToAdmin = {
+                            introSkipToAdminModeSelect = false
                             navController.navigate(Route.Admin.Home) {
                                 popUpTo(Route.Intro) { inclusive = true }
                             }
                         },
                         onNavigateToAerometer = {
+                            introSkipToAdminModeSelect = false
                             navController.navigate(Route.Aerometer) {
                                 popUpTo(Route.Intro) { inclusive = true }
                             }
                         },
+                        onBackClick = {
+                            introSkipToAdminModeSelect = false
+                            navController.popBackStack()
+                        },
+                        skipToAdminModeSelect = { introSkipToAdminModeSelect }
+                    )
+                    introAdminCodeNavGraph(
                         onBackClick = {
                             navController.popBackStack()
                         }
@@ -177,6 +191,14 @@ fun App() {
                             isAdminHomeBottomBarVisible = visible
                         }
                     )
+                    adminAddDeviceNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onSubmit = { _, _ ->
+                            navController.popBackStack()
+                        }
+                    )
                     adminFeedbackNavGraph(
                         onBackClick = {
                             navController.popBackStack()
@@ -189,6 +211,16 @@ fun App() {
                     adminSettingNavGraph(
                         onBackClick = {
                             navController.popBackStack()
+                        },
+                        onNavigateToInviteCode = { placeId ->
+                            navController.navigate(Route.Admin.InviteCode(placeId))
+                        },
+                        onNavigateToAddDevice = { placeId ->
+                            navController.navigate(Route.Admin.AddDevice(placeId))
+                        },
+                        onNavigateToAddPlace = {
+                            introSkipToAdminModeSelect = true
+                            navController.navigate(Route.Intro)
                         }
                     )
                 }

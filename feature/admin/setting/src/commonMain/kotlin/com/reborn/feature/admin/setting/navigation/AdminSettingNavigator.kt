@@ -12,9 +12,17 @@ fun NavController.navigateAdminSetting(navOptions: NavOptions) {
 }
 
 fun NavGraphBuilder.adminSettingNavGraph(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToInviteCode: (Int) -> Unit = {},
+    onNavigateToAddDevice: (Int) -> Unit = {},
+    onNavigateToAddPlace: () -> Unit = {}
 ) {
     composable<Route.Admin.Setting> {
-        AdminSettingRoute(onBackClick = onBackClick)
+        AdminSettingRoute(
+            onBackClick = onBackClick,
+            onNavigateToInviteCode = onNavigateToInviteCode,
+            onNavigateToAddDevice = onNavigateToAddDevice,
+            onNavigateToAddPlace = onNavigateToAddPlace
+        )
     }
 }
