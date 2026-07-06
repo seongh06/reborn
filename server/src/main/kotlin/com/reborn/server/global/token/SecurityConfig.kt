@@ -2,6 +2,7 @@ package com.reborn.server.global.token
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -37,6 +38,9 @@ class SecurityConfig(
 
                     // Arduino 기기 인증 (Device Key 헤더) — JWT 불필요
                     .requestMatchers("/api/sensor/collect", "/api/sensor/current").permitAll()
+
+                    // QR 웹페이지에서 비로그인 방문자가 제출 — 조회/상태변경은 anyRequest().authenticated()로 보호
+                    .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
 
                     .anyRequest().authenticated()
             }
