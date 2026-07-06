@@ -5,7 +5,12 @@ import com.reborn.server.domain.auth.dto.AuthDto
 
 object AuthConverter {
 
-    fun toLoginResponse(user: User, accessToken: String, refreshToken: String, isNewUser: Boolean): AuthDto.LoginResponse =
+    fun toLoginResponse(
+        user: User,
+        accessToken: String,
+        refreshToken: String,
+        isNewUser: Boolean,
+    ): AuthDto.LoginResponse =
         AuthDto.LoginResponse(
             accessToken = accessToken,
             refreshToken = refreshToken,

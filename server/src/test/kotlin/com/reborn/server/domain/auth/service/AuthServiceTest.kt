@@ -51,7 +51,7 @@ class AuthServiceTest {
         given(googleAuthClient.verify("id-token")).willReturn(info)
         given(userRepository.findByProviderAndProviderId(OAuthProvider.GOOGLE, "google-1")).willReturn(null)
         given(userRepository.existsByEmail("new@reborn.com")).willReturn(false)
-        given(userRepository.save(any())).willReturn(saved)
+        given(userRepository.saveAndFlush(any())).willReturn(saved)
         given(jwtProvider.createAccessToken(1L)).willReturn("access-token")
         given(jwtProvider.createRefreshToken(1L)).willReturn("refresh-token")
 
@@ -124,7 +124,7 @@ class AuthServiceTest {
         given(kakaoAuthClient.verify("kakao-token")).willReturn(info)
         given(userRepository.findByProviderAndProviderId(OAuthProvider.KAKAO, "kakao-1")).willReturn(null)
         given(userRepository.existsByEmail("kakao@reborn.com")).willReturn(false)
-        given(userRepository.save(any())).willReturn(saved)
+        given(userRepository.saveAndFlush(any())).willReturn(saved)
         given(jwtProvider.createAccessToken(2L)).willReturn("access-token")
         given(jwtProvider.createRefreshToken(2L)).willReturn("refresh-token")
 

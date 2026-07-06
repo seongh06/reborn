@@ -12,8 +12,11 @@ import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.redis.RedisUtil
 import com.reborn.server.global.token.JwtProvider
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.Duration
 
 @Service
@@ -49,22 +52,40 @@ class AuthService(
             if (userRepository.existsByEmail(info.email)) {
                 throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 다른 소셜 계정으로 가입된 이메일입니다.")
             }
-            val saved = userRepository.save(
-                User(
-                    email = info.email,
-                    name = info.name,
-                    profileImage = info.profileImage,
-                    provider = provider,
-                    providerId = info.providerId,
-                ),
-            )
+            val saved = try {
+                userRepository.saveAndFlush(
+                    User(
+                        email = info.email,
+                        name = info.name,
+                        profileImage = info.profileImage,
+                        provider = provider,
+                        providerId = info.providerId,
+                    ),
+                )
+            } catch (e: DataIntegrityViolationException) {
+                throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 존재하는 계정입니다.")
+            }
             saved to true
         }
 
         val accessToken = jwtProvider.createAccessToken(user.id)
         val refreshToken = jwtProvider.createRefreshToken(user.id)
-        redisUtil.set("refresh:${user.id}", refreshToken, Duration.ofMillis(jwtProvider.refreshTokenExpiry))
+        persistRefreshTokenAfterCommit(user.id, refreshToken)
 
         return AuthConverter.toLoginResponse(user, accessToken, refreshToken, isNewUser)
+    }
+
+    private fun persistRefreshTokenAfterCommit(userId: Long, refreshToken: String) {
+        val expiry = Duration.ofMillis(jwtProvider.refreshTokenExpiry)
+        val write = { redisUtil.set("refresh:$userId", refreshToken, expiry) }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                object : TransactionSynchronization {
+                    override fun afterCommit() = write()
+                },
+            )
+        } else {
+            write()
+        }
     }
 }

@@ -38,7 +38,8 @@ class KakaoAuthClient(
             ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "유효하지 않은 Kakao AccessToken입니다.")
 
         val account = response.kakaoAccount
-        val email = account?.email?.takeIf { it.isNotBlank() }
+        val email = account?.email
+            ?.takeIf { it.isNotBlank() && account.isEmailValid == true && account.isEmailVerified == true }
             ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "카카오 계정에 이메일 제공 동의가 필요합니다.")
 
         return SocialUserInfo(
@@ -56,6 +57,8 @@ class KakaoAuthClient(
 
     private data class KakaoAccount(
         val email: String? = null,
+        @param:JsonProperty("is_email_valid") val isEmailValid: Boolean? = null,
+        @param:JsonProperty("is_email_verified") val isEmailVerified: Boolean? = null,
         val profile: KakaoProfile? = null,
     )
 

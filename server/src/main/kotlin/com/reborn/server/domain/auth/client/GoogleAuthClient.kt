@@ -1,5 +1,6 @@
 package com.reborn.server.domain.auth.client
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import org.slf4j.LoggerFactory
@@ -32,11 +33,12 @@ class GoogleAuthClient(
             .getOrNull()
             ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "유효하지 않은 Google ID Token입니다.")
 
-        if (clientId.isNotBlank() && response.aud != clientId) {
+        if (clientId.isBlank() || response.aud != clientId) {
             throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "유효하지 않은 Google ID Token입니다.")
         }
 
-        val email = response.email?.takeIf { it.isNotBlank() }
+        val email = response.email
+            ?.takeIf { it.isNotBlank() && response.emailVerified == "true" }
             ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "유효하지 않은 Google ID Token입니다.")
 
         return SocialUserInfo(
@@ -51,6 +53,7 @@ class GoogleAuthClient(
         val sub: String,
         val aud: String? = null,
         val email: String? = null,
+        @param:JsonProperty("email_verified") val emailVerified: String? = null,
         val name: String? = null,
         val picture: String? = null,
     )
