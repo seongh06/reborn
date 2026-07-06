@@ -11,6 +11,7 @@ import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.redis.RedisUtil
 import com.reborn.server.global.token.JwtProvider
+import io.jsonwebtoken.Claims
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -19,7 +20,9 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import java.time.Duration
 
 @ExtendWith(MockitoExtension::class)
 class AuthServiceTest {
@@ -38,6 +41,9 @@ class AuthServiceTest {
 
     @Mock
     private lateinit var redisUtil: RedisUtil
+
+    @Mock
+    private lateinit var claims: Claims
 
     @InjectMocks
     private lateinit var authService: AuthService
@@ -132,5 +138,86 @@ class AuthServiceTest {
 
         assertThat(response.isNewUser).isTrue()
         assertThat(response.userId).isEqualTo(2L)
+    }
+
+    @Test
+    fun `refresh - 유효한 refreshToken이면 토큰을 재발급한다`() {
+        val request = AuthDto.RefreshRequest(refreshToken = "old-refresh-token")
+
+        given(jwtProvider.parseClaims("old-refresh-token")).willReturn(claims)
+        given(claims[JwtProvider.TYPE_KEY]).willReturn(JwtProvider.REFRESH_TYPE)
+        given(claims.subject).willReturn("1")
+        given(redisUtil.get("refresh:1")).willReturn("old-refresh-token")
+        given(jwtProvider.createAccessToken(1L)).willReturn("new-access-token")
+        given(jwtProvider.createRefreshToken(1L)).willReturn("new-refresh-token")
+        given(jwtProvider.refreshTokenExpiry).willReturn(REFRESH_TOKEN_EXPIRY_MS)
+
+        val response = authService.refresh(request)
+
+        assertThat(response.accessToken).isEqualTo("new-access-token")
+        assertThat(response.refreshToken).isEqualTo("new-refresh-token")
+        // Duration은 Mockito eq()/any()가 Kotlin non-null 파라미터와 만나면 NPE를 내서(플랫폼 타입이 아닌
+        // Kotlin 네이티브 타입 한정 이슈) 매처 대신 실제 값으로 직접 검증한다.
+        verify(redisUtil).set("refresh:1", "new-refresh-token", Duration.ofMillis(REFRESH_TOKEN_EXPIRY_MS))
+    }
+
+    @Test
+    fun `refresh - refreshToken이 없으면 예외가 발생한다`() {
+        val request = AuthDto.RefreshRequest(refreshToken = " ")
+
+        assertThatThrownBy { authService.refresh(request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `refresh - 만료되었거나 변조된 토큰이면 예외가 발생한다`() {
+        val request = AuthDto.RefreshRequest(refreshToken = "invalid-token")
+        given(jwtProvider.parseClaims("invalid-token")).willReturn(null)
+
+        assertThatThrownBy { authService.refresh(request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.UNAUTHORIZED)
+    }
+
+    @Test
+    fun `refresh - AccessToken을 refreshToken으로 사용하면 예외가 발생한다`() {
+        val request = AuthDto.RefreshRequest(refreshToken = "access-token-used-as-refresh")
+
+        given(jwtProvider.parseClaims("access-token-used-as-refresh")).willReturn(claims)
+        given(claims[JwtProvider.TYPE_KEY]).willReturn(JwtProvider.ACCESS_TYPE)
+
+        assertThatThrownBy { authService.refresh(request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.UNAUTHORIZED)
+    }
+
+    @Test
+    fun `refresh - Redis에 저장된 최신 토큰과 다르면 예외가 발생한다`() {
+        val request = AuthDto.RefreshRequest(refreshToken = "rotated-out-token")
+
+        given(jwtProvider.parseClaims("rotated-out-token")).willReturn(claims)
+        given(claims[JwtProvider.TYPE_KEY]).willReturn(JwtProvider.REFRESH_TYPE)
+        given(claims.subject).willReturn("1")
+        given(redisUtil.get("refresh:1")).willReturn("newer-token-issued-since")
+
+        assertThatThrownBy { authService.refresh(request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.UNAUTHORIZED)
+    }
+
+    @Test
+    fun `logout - Redis에서 refreshToken을 삭제한다`() {
+        authService.logout(1L)
+
+        verify(redisUtil).delete("refresh:1")
+    }
+
+    companion object {
+        private const val REFRESH_TOKEN_EXPIRY_MS = 1209600000L
     }
 }

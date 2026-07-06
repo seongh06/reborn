@@ -32,6 +32,7 @@ class SecurityConfig(
 
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
+                    .requestMatchers("/api/auth/logout").authenticated()
                     .requestMatchers("/api/auth/**").permitAll()
 
                     // Arduino 기기 인증 (Device Key 헤더) — JWT 불필요
