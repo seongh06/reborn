@@ -44,8 +44,10 @@ fun SettingToggleItem(
 @Composable
 fun SettingItem(
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isDark: Boolean = false
 ) {
+    val textColor = if (isDark) RebornTheme.color.grayScale100 else RebornTheme.color.grayScale900
     Text(
         text = label,
         modifier = Modifier
@@ -53,6 +55,6 @@ fun SettingItem(
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         style = RebornTheme.typography.titleMedium,
-        color = RebornTheme.color.grayScale100
+        color = textColor
     )
 }
