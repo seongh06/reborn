@@ -45,7 +45,7 @@ class PlaceServiceTest {
 
     @BeforeEach
     fun setUp() {
-        user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, id = 1)
+        user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
     }
 
     @Test

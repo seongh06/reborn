@@ -9,6 +9,10 @@ jwt:
   access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:3600000} # 1시간 (ms)
   refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:1209600000} # 14일 (ms)
 
+oauth:
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:} # 필수 설정 — 미설정 시 Google 로그인은 항상 실패 처리(fail-closed)
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true}
