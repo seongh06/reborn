@@ -14,10 +14,12 @@ CREATE TABLE IF NOT EXISTS `user`
     `name`          VARCHAR(100) NOT NULL COMMENT '사용자 이름',
     `profile_image` VARCHAR(512) NULL COMMENT '프로필 이미지 URL',
     `provider`      VARCHAR(20)  NOT NULL COMMENT 'OAuth 제공자 (KAKAO / GOOGLE)',
+    `provider_id`   VARCHAR(255) NOT NULL COMMENT '소셜 제공자 고유 사용자 ID (구글 sub, 카카오 id)',
     `created_at`    DATETIME(6)  NOT NULL COMMENT '가입일시',
     `updated_at`    DATETIME(6)  NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_user_email` (`email`)
+    UNIQUE KEY `uk_user_email` (`email`),
+    UNIQUE KEY `uk_user_provider_provider_id` (`provider`, `provider_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci

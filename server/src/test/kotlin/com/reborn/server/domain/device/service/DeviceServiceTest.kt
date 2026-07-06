@@ -48,7 +48,7 @@ class DeviceServiceTest {
     @BeforeEach
     fun setUp() {
         place = Place(name = "테스트 거실", qrCode = "qr-test", type = PlaceType.HOME, id = 501)
-        user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, id = 1)
+        user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
         adminMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN)
     }
 
