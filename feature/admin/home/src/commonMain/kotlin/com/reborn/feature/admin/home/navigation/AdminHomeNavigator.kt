@@ -16,12 +16,14 @@ fun NavController.navigateAdminHome(navOptions: NavOptions) {
 fun NavGraphBuilder.adminHomeNavGraph(
     onBackClick: () -> Unit,
     navigateToFeedbackDetail: (Int) -> Unit,
+    onNavigateToSetting: () -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ) {
     composable<Route.Admin.Home> {
         AdminHomeRoute(
             onBackClick = onBackClick,
             navigateToFeedbackDetail = navigateToFeedbackDetail,
+            onNavigateToSetting = onNavigateToSetting,
             onBottomBarVisibilityChange = onBottomBarVisibilityChange
         )
     }

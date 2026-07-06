@@ -12,6 +12,7 @@ sealed class AdminHomeEvent {
     data object Exit : AdminHomeEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminHomeEvent()
     data class NavigateToFeedbackDetail(val feedbackId: Int) : AdminHomeEvent()
+    data object NavigateToSetting : AdminHomeEvent()
 }
 
 class AdminHomeViewModel : ViewModel() {
@@ -30,7 +31,7 @@ class AdminHomeViewModel : ViewModel() {
         when (intent) {
             is AdminHomeIntent.LoadInitial -> checkInitialState()
             is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm(alarm = alarmItems))
-            is AdminHomeIntent.NavigateToSetting -> navController.navigateTo(AdminHomeUiState.Setting)
+            is AdminHomeIntent.NavigateToSetting -> navigateToSetting()
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
             is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
             is AdminHomeIntent.DeleteAlarm -> deleteAlarm(intent.alarmId)
@@ -49,6 +50,12 @@ class AdminHomeViewModel : ViewModel() {
     private fun navigateToFeedbackDetail(feedbackId: Int) {
         viewModelScope.launch {
             navController.emitEvent(AdminHomeEvent.NavigateToFeedbackDetail(feedbackId))
+        }
+    }
+
+    private fun navigateToSetting() {
+        viewModelScope.launch {
+            navController.emitEvent(AdminHomeEvent.NavigateToSetting)
         }
     }
 

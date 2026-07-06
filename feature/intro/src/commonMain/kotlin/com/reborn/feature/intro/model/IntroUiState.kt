@@ -20,7 +20,7 @@ sealed interface IntroUiState{
 }
 
 sealed interface IntroIntent{
-    data object LoadInitial : IntroIntent
+    data class LoadInitial(val skipToAdminModeSelect: Boolean = false) : IntroIntent
     data object NavigateToTerm : IntroIntent
     data object NavigateToPermission : IntroIntent
     data object NavigateToModeSelect : IntroIntent

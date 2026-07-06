@@ -44,13 +44,14 @@ fun IntroRoute(
     viewModel: IntroViewModel = koinViewModel(),
     onNavigateToAdmin: () -> Unit,
     onNavigateToAerometer: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    skipToAdminModeSelect: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        viewModel.onIntent(IntroIntent.LoadInitial)
+        viewModel.onIntent(IntroIntent.LoadInitial(skipToAdminModeSelect = skipToAdminModeSelect))
 
         viewModel.event.collect { event ->
             when (event) {

@@ -44,11 +44,11 @@ fun AerometerSettingScreen(
                 onCheckedChange = { onToggleSaveImage() }
             )
             HorizontalDivider(color = RebornTheme.color.grayScale800)
-            SettingItem(label = "서비스 소개", onClick = {})
+            SettingItem(label = "서비스 소개", isDark = true, onClick = {})
             HorizontalDivider(color = RebornTheme.color.grayScale800)
-            SettingItem(label = "이용약관", onClick = {})
+            SettingItem(label = "이용약관", isDark = true, onClick = {})
             HorizontalDivider(color = RebornTheme.color.grayScale800)
-            SettingItem(label = "탈퇴", onClick = {})
+            SettingItem(label = "탈퇴", isDark = true, onClick = {})
         }
     }
 }
