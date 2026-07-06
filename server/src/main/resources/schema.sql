@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `user`
     `profile_image` VARCHAR(512) NULL COMMENT '프로필 이미지 URL',
     `provider`      VARCHAR(20)  NOT NULL COMMENT 'OAuth 제공자 (KAKAO / GOOGLE)',
     `provider_id`   VARCHAR(255) NOT NULL COMMENT '소셜 제공자 고유 사용자 ID (구글 sub, 카카오 id)',
+    `fcm_token`     VARCHAR(255) NULL COMMENT 'FCM 푸시 토큰',
     `created_at`    DATETIME(6)  NOT NULL COMMENT '가입일시',
     `updated_at`    DATETIME(6)  NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
