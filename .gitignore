@@ -28,7 +28,7 @@ mysql_reborn_data/
 redis_data/
 
 # ── 환경변수 / 시크릿 ─────────────────
-.env
+server/deployment/env/.env
 *.env
 docker-compose.override.yml
 google-services.json
