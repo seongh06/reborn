@@ -7,8 +7,10 @@ import com.reborn.server.domain.feedback.FeedbackStatus
 import com.reborn.server.domain.feedback.converter.FeedbackConverter
 import com.reborn.server.domain.feedback.dto.FeedbackDto
 import com.reborn.server.domain.place.AccessLevel
+import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.UserPlaceMappingRepository
+import com.reborn.server.global.fcm.FcmClient
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import org.springframework.data.domain.Page
@@ -23,6 +25,7 @@ class FeedbackService(
     private val deviceRepository: DeviceRepository,
     private val feedbackRepository: FeedbackRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
+    private val fcmClient: FcmClient,
 ) {
 
     @Transactional
@@ -50,7 +53,18 @@ class FeedbackService(
             Feedback(device = device, content = content, sessionToken = sessionToken, userAgent = userAgent),
         )
 
+        notifyAdmins(place, feedback)
+
         return FeedbackConverter.toSubmitResponse(feedback)
+    }
+
+    private fun notifyAdmins(place: Place, feedback: Feedback) {
+        val deviceName = feedback.device?.name ?: place.name
+        userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(place.id, AccessLevel.ADMIN)
+            .mapNotNull { it.user.fcmToken }
+            .forEach { token ->
+                fcmClient.send(token, "새로운 피드백이 도착했습니다.", "$deviceName - ${feedback.content}")
+            }
     }
 
     fun getList(

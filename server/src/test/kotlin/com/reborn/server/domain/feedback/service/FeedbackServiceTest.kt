@@ -15,6 +15,7 @@ import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.PlaceType
 import com.reborn.server.domain.place.UserPlaceMapping
 import com.reborn.server.domain.place.UserPlaceMappingRepository
+import com.reborn.server.global.fcm.FcmClient
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import org.assertj.core.api.Assertions.assertThat
@@ -26,6 +27,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -45,6 +47,9 @@ class FeedbackServiceTest {
 
     @Mock
     private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
+
+    @Mock
+    private lateinit var fcmClient: FcmClient
 
     @InjectMocks
     private lateinit var feedbackService: FeedbackService
@@ -81,6 +86,24 @@ class FeedbackServiceTest {
 
         assertThat(response.feedbackId).isEqualTo(100L)
         assertThat(response.status).isEqualTo("PENDING")
+    }
+
+    @Test
+    fun `submit - ADMIN에게 fcmToken이 있으면 FCM 발송을 호출한다`() {
+        val admin = User(email = "admin@reborn.com", name = "관리자", provider = OAuthProvider.GOOGLE, providerId = "google-2", fcmToken = "fcm-token-1", id = 2)
+        val mapping = UserPlaceMapping(user = admin, place = place, accessLevel = AccessLevel.ADMIN)
+        val request = FeedbackDto.SubmitRequest(qrCode = "qr-uuid", deviceId = "arduino_room_01", content = "덥다", sessionToken = "sess-1")
+        val saved = Feedback(device = device, content = "덥다", sessionToken = "sess-1", id = 100).apply { prePersist() }
+
+        given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
+        given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
+        given(feedbackRepository.existsBySessionToken("sess-1")).willReturn(false)
+        given(feedbackRepository.save(any())).willReturn(saved)
+        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN)).willReturn(listOf(mapping))
+
+        feedbackService.submit(request, null)
+
+        verify(fcmClient).send("fcm-token-1", "새로운 피드백이 도착했습니다.", "거실 - 덥다")
     }
 
     @Test

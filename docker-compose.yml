@@ -46,6 +46,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - FCM_SERVICE_ACCOUNT_KEY_BASE64=${FCM_SERVICE_ACCOUNT_KEY_BASE64}
       - DB_URL=jdbc:mysql://database:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
       - DB_USERNAME=${DB_USERNAME:-root}
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}

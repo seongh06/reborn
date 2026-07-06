@@ -63,3 +63,6 @@ cloud:
 
 slack:
   webhook-url: ${SLACK_WEBHOOK_URL:}
+
+fcm:
+  service-account-key-base64: ${FCM_SERVICE_ACCOUNT_KEY_BASE64:} # 미설정 시 FCM 발송 비활성화(로컬 dev 편의)

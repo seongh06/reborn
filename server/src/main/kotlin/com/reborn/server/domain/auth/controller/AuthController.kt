@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -77,9 +78,31 @@ class AuthController(
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/logout")
     fun logout(authentication: Authentication): ApiResponse<Nothing> {
-        val userId = authentication.principal as? Long
-            ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "인증 정보가 유효하지 않습니다.")
-        authService.logout(userId)
+        authService.logout(extractUserId(authentication))
         return ApiResponse.success("정상적으로 로그아웃되었습니다.")
     }
+
+    @Operation(
+        summary = "FCM 토큰 갱신",
+        description = "앱 재설치 또는 토큰 만료 시 새로운 FCM 토큰을 서버에 업데이트합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "FCM 토큰 갱신 완료"),
+        SwaggerApiResponse(responseCode = "400", description = "fcmToken 누락"),
+        SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 AccessToken"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/fcm")
+    fun updateFcmToken(
+        @Valid @RequestBody request: AuthDto.FcmTokenUpdateRequest,
+        authentication: Authentication,
+    ): ApiResponse<Nothing> {
+        authService.updateFcmToken(extractUserId(authentication), request)
+        return ApiResponse.success("FCM 토큰이 정상적으로 갱신되었습니다.")
+    }
+
+    private fun extractUserId(authentication: Authentication): Long =
+        authentication.principal as? Long
+            ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "인증 정보가 유효하지 않습니다.")
 }

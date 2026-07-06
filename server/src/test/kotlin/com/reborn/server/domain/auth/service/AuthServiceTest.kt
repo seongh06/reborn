@@ -23,6 +23,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.Duration
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 class AuthServiceTest {
@@ -215,6 +216,38 @@ class AuthServiceTest {
         authService.logout(1L)
 
         verify(redisUtil).delete("refresh:1")
+    }
+
+    @Test
+    fun `updateFcmToken - 정상 요청이면 토큰을 저장한다`() {
+        val user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
+        val request = AuthDto.FcmTokenUpdateRequest(fcmToken = "new-fcm-token")
+        given(userRepository.findById(1L)).willReturn(Optional.of(user))
+
+        authService.updateFcmToken(1L, request)
+
+        assertThat(user.fcmToken).isEqualTo("new-fcm-token")
+    }
+
+    @Test
+    fun `updateFcmToken - fcmToken이 없으면 예외가 발생한다`() {
+        val request = AuthDto.FcmTokenUpdateRequest(fcmToken = " ")
+
+        assertThatThrownBy { authService.updateFcmToken(1L, request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `updateFcmToken - 존재하지 않는 회원이면 예외가 발생한다`() {
+        val request = AuthDto.FcmTokenUpdateRequest(fcmToken = "new-fcm-token")
+        given(userRepository.findById(1L)).willReturn(Optional.empty())
+
+        assertThatThrownBy { authService.updateFcmToken(1L, request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
     }
 
     companion object {
