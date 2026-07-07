@@ -52,6 +52,7 @@ androidx-datastore-preferences = "1.2.0"
 #precompose
 precompose="1.5.8"
 firebaseCrashlyticsBuildtools = "3.0.6"
+firebaseAdmin = "9.4.3"
 
 #kakao
 kakao = "2.23.2"
@@ -160,6 +161,7 @@ mlkit-face-detection = { group = "com.google.mlkit", name = "face-detection", ve
 
 # Spring Boot (server module)
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-websocket = { module = "org.springframework.boot:spring-boot-starter-websocket" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
@@ -175,6 +177,7 @@ mysql-connector-j = { module = "com.mysql:mysql-connector-j" }
 aws-sdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "awssdk" }
 aws-sdk-s3 = { module = "software.amazon.awssdk:s3" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
+firebase-admin = { group = "com.google.firebase", name = "firebase-admin", version.ref = "firebaseAdmin" }
 
 
 [plugins]

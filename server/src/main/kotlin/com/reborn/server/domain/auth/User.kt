@@ -34,8 +34,16 @@ class User(
     @Column(name = "provider_id", nullable = false)
     val providerId: String,
 
+    @Column(name = "fcm_token")
+    var fcmToken: String? = null,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-) : BaseEntity()
+) : BaseEntity() {
+
+    fun updateFcmToken(token: String?) {
+        fcmToken = token
+    }
+}

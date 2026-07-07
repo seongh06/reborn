@@ -14,6 +14,7 @@ version = "1.0.0"
 dependencies {
     implementation(platform(libs.aws.sdk.bom))
     implementation(libs.spring.boot.starter.web)
+    implementation(libs.spring.boot.starter.websocket)
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.data.jpa)
@@ -23,6 +24,7 @@ dependencies {
     implementation(libs.springdoc.openapi.webmvc)
     implementation(libs.jjwt.api)
     implementation(libs.aws.sdk.s3)
+    implementation(libs.firebase.admin)
     runtimeOnly(libs.jjwt.impl)
     runtimeOnly(libs.jjwt.jackson)
     runtimeOnly(libs.mysql.connector.j)

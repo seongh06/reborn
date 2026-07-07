@@ -12,6 +12,19 @@ class AuthDto {
         @field:NotBlank val accessToken: String? = null,
     )
 
+    data class RefreshRequest(
+        @field:NotBlank val refreshToken: String? = null,
+    )
+
+    data class RefreshResponse(
+        val accessToken: String,
+        val refreshToken: String,
+    )
+
+    data class FcmTokenUpdateRequest(
+        @field:NotBlank val fcmToken: String? = null,
+    )
+
     data class LoginResponse(
         val accessToken: String,
         val refreshToken: String,

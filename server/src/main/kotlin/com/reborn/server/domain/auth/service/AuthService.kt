@@ -43,6 +43,42 @@ class AuthService(
         return login(OAuthProvider.KAKAO, kakaoAuthClient.verify(accessToken))
     }
 
+    fun refresh(request: AuthDto.RefreshRequest): AuthDto.RefreshResponse {
+        val refreshToken = request.refreshToken?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "refreshToken은 필수입니다.")
+
+        val claims = jwtProvider.parseClaims(refreshToken)
+            ?.takeIf { it[JwtProvider.TYPE_KEY] == JwtProvider.REFRESH_TYPE }
+            ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "유효하지 않거나 만료된 RefreshToken입니다.")
+        val userId = claims.subject?.toLongOrNull()
+            ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "유효하지 않거나 만료된 RefreshToken입니다.")
+
+        val storedToken = redisUtil.get("refresh:$userId")
+        if (storedToken == null || storedToken != refreshToken) {
+            throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "유효하지 않거나 만료된 RefreshToken입니다.")
+        }
+
+        val newAccessToken = jwtProvider.createAccessToken(userId)
+        val newRefreshToken = jwtProvider.createRefreshToken(userId)
+        redisUtil.set("refresh:$userId", newRefreshToken, Duration.ofMillis(jwtProvider.refreshTokenExpiry))
+
+        return AuthDto.RefreshResponse(accessToken = newAccessToken, refreshToken = newRefreshToken)
+    }
+
+    fun logout(userId: Long) {
+        redisUtil.delete("refresh:$userId")
+    }
+
+    @Transactional
+    fun updateFcmToken(userId: Long, request: AuthDto.FcmTokenUpdateRequest) {
+        val fcmToken = request.fcmToken?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "fcmToken은 필수입니다.")
+        val user = userRepository.findById(userId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 회원 정보입니다.")
+        }
+        user.updateFcmToken(fcmToken)
+    }
+
     private fun login(provider: OAuthProvider, info: SocialUserInfo): AuthDto.LoginResponse {
         val existing = userRepository.findByProviderAndProviderId(provider, info.providerId)
 
