@@ -1,0 +1,14 @@
+.git
+.gradle
+.idea
+.kotlin
+**/build
+*.iml
+.claude
+.github
+node_modules
+mysql_reborn_data
+redis_data
+.env
+local.properties
+server/deployment/env/.env
