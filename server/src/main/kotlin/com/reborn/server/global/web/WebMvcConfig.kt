@@ -1,31 +1,18 @@
 package com.reborn.server.global.web
 
 import com.reborn.server.global.log.LoggingInterceptor
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
+// CORS는 global/token/SecurityConfig의 corsConfigurationSource()가 전담한다.
+// Spring Security가 활성화된 상태에서 CORS를 여기(WebMvcConfigurer)에도 중복 등록하면
+// 어느 쪽 설정이 실제로 적용되는지 헷갈리고, Security 필터 체인이 이 설정보다 먼저
+// 요청을 가로채 preflight(OPTIONS)에 헤더가 안 붙는 문제가 생길 수 있어 한 곳으로 일원화함.
 @Configuration
 class WebMvcConfig(
-    @param:Value("\${cors.allowed-origins}") private val allowedOrigins: Array<String>,
     private val loggingInterceptor: LoggingInterceptor,
 ) : WebMvcConfigurer {
-
-    override fun addCorsMappings(registry: CorsRegistry) {
-        registry.addMapping("/api/**")
-            .allowedOriginPatterns(*allowedOrigins)
-            .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-            .allowedHeaders("*")
-            .allowCredentials(true)
-            .maxAge(3600)
-        registry.addMapping("/ws/**")
-            .allowedOriginPatterns(*allowedOrigins)
-            .allowedMethods("GET", "POST")
-            .allowedHeaders("*")
-            .allowCredentials(true)
-    }
 
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(loggingInterceptor)
