@@ -50,8 +50,8 @@ class AuthServiceTest {
     private lateinit var authService: AuthService
 
     @Test
-    fun `loginWithGoogle - 신규 유저면 회원가입 후 토큰을 발급한다`() {
-        val request = AuthDto.GoogleLoginRequest(idToken = "id-token")
+    fun `login - GOOGLE 신규 유저면 회원가입 후 토큰을 발급한다`() {
+        val request = AuthDto.LoginRequest(provider = "GOOGLE", token = "id-token")
         val info = SocialUserInfo(providerId = "google-1", email = "new@reborn.com", name = "홍길동", profileImage = null)
         val saved = User(email = "new@reborn.com", name = "홍길동", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
 
@@ -62,7 +62,7 @@ class AuthServiceTest {
         given(jwtProvider.createAccessToken(1L)).willReturn("access-token")
         given(jwtProvider.createRefreshToken(1L)).willReturn("refresh-token")
 
-        val response = authService.loginWithGoogle(request)
+        val response = authService.login(request)
 
         assertThat(response.isNewUser).isTrue()
         assertThat(response.userId).isEqualTo(1L)
@@ -71,8 +71,8 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `loginWithGoogle - 기존 유저면 회원가입 없이 로그인 처리한다`() {
-        val request = AuthDto.GoogleLoginRequest(idToken = "id-token")
+    fun `login - GOOGLE 기존 유저면 회원가입 없이 로그인 처리한다`() {
+        val request = AuthDto.LoginRequest(provider = "GOOGLE", token = "id-token")
         val info = SocialUserInfo(providerId = "google-1", email = "exist@reborn.com", name = "홍길동", profileImage = null)
         val existing = User(email = "exist@reborn.com", name = "홍길동", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 7)
 
@@ -81,50 +81,50 @@ class AuthServiceTest {
         given(jwtProvider.createAccessToken(7L)).willReturn("access-token")
         given(jwtProvider.createRefreshToken(7L)).willReturn("refresh-token")
 
-        val response = authService.loginWithGoogle(request)
+        val response = authService.login(request)
 
         assertThat(response.isNewUser).isFalse()
         assertThat(response.userId).isEqualTo(7L)
     }
 
     @Test
-    fun `loginWithGoogle - 다른 provider가 같은 이메일을 쓰고 있으면 예외가 발생한다`() {
-        val request = AuthDto.GoogleLoginRequest(idToken = "id-token")
+    fun `login - 다른 provider가 같은 이메일을 쓰고 있으면 예외가 발생한다`() {
+        val request = AuthDto.LoginRequest(provider = "GOOGLE", token = "id-token")
         val info = SocialUserInfo(providerId = "google-1", email = "dup@reborn.com", name = "홍길동", profileImage = null)
 
         given(googleAuthClient.verify("id-token")).willReturn(info)
         given(userRepository.findByProviderAndProviderId(OAuthProvider.GOOGLE, "google-1")).willReturn(null)
         given(userRepository.existsByEmail("dup@reborn.com")).willReturn(true)
 
-        assertThatThrownBy { authService.loginWithGoogle(request) }
+        assertThatThrownBy { authService.login(request) }
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.CONFLICT)
     }
 
     @Test
-    fun `loginWithGoogle - idToken이 없으면 예외가 발생한다`() {
-        val request = AuthDto.GoogleLoginRequest(idToken = " ")
+    fun `login - token이 없으면 예외가 발생한다`() {
+        val request = AuthDto.LoginRequest(provider = "GOOGLE", token = " ")
 
-        assertThatThrownBy { authService.loginWithGoogle(request) }
+        assertThatThrownBy { authService.login(request) }
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)
     }
 
     @Test
-    fun `loginWithKakao - accessToken이 없으면 예외가 발생한다`() {
-        val request = AuthDto.KakaoLoginRequest(accessToken = null)
+    fun `login - 지원하지 않는 provider면 예외가 발생한다`() {
+        val request = AuthDto.LoginRequest(provider = "NAVER", token = "token")
 
-        assertThatThrownBy { authService.loginWithKakao(request) }
+        assertThatThrownBy { authService.login(request) }
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)
     }
 
     @Test
-    fun `loginWithKakao - 신규 유저면 회원가입 후 토큰을 발급한다`() {
-        val request = AuthDto.KakaoLoginRequest(accessToken = "kakao-token")
+    fun `login - KAKAO 신규 유저면 회원가입 후 토큰을 발급한다`() {
+        val request = AuthDto.LoginRequest(provider = "KAKAO", token = "kakao-token")
         val info = SocialUserInfo(providerId = "kakao-1", email = "kakao@reborn.com", name = "김철수", profileImage = null)
         val saved = User(email = "kakao@reborn.com", name = "김철수", provider = OAuthProvider.KAKAO, providerId = "kakao-1", id = 2)
 
@@ -135,7 +135,7 @@ class AuthServiceTest {
         given(jwtProvider.createAccessToken(2L)).willReturn("access-token")
         given(jwtProvider.createRefreshToken(2L)).willReturn("refresh-token")
 
-        val response = authService.loginWithKakao(request)
+        val response = authService.login(request)
 
         assertThat(response.isNewUser).isTrue()
         assertThat(response.userId).isEqualTo(2L)
