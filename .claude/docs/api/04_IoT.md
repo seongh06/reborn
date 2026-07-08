@@ -129,7 +129,7 @@ POST /api/device/pairing/code?placeId=501
   "data": {
     "deviceId": "aerometer_a3f7k2_1716",
     "placeId": 501,
-    "appToken": "eyJhbGciOiJIUzI1NiJ9..."
+    "appToken": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
   }
 }
 ```
@@ -344,7 +344,7 @@ GET /api/device?placeId=501
 
 | 필드 이름 | 필수 여부 | 타입 | 설명 |
 | --- | --- | --- | --- |
-| kioskDeviceId | 필수 | String | 명령을 수신할 공기계 앱의 deviceId |
+| aerometerDeviceId | 필수 | String | 명령을 수신할 공기계 앱의 deviceId |
 | command | 필수 | String | 제어 명령 유형 (POWER_ON / POWER_OFF / TEMP_UP / TEMP_DOWN / SET_TEMP) |
 | value | 선택 | Int | 명령에 따른 값 (SET_TEMP일 경우 설정 온도, 예: 24) |
 
@@ -352,7 +352,7 @@ GET /api/device?placeId=501
 
 ```json
 {
-  "kioskDeviceId": "kiosk_a3f7k2_1716",
+  "aerometerDeviceId": "aerometer_a3f7k2_1716",
   "command": "SET_TEMP",
   "value": 24
 }
@@ -374,7 +374,7 @@ GET /api/device?placeId=501
 
 | 필드 이름 | 필수 여부 | 타입 | 설명 |
 | --- | --- | --- | --- |
-| kioskDeviceId | 필수 | String | 명령을 수신한 공기계 deviceId |
+| aerometerDeviceId | 필수 | String | 명령을 수신한 공기계 deviceId |
 | command | 필수 | String | 전달된 제어 명령 |
 | value | 선택 | Int | 전달된 명령 값 |
 | sentAt | 필수 | DateTime | 명령 전달 시간 (ISO 8601) |
@@ -386,7 +386,7 @@ GET /api/device?placeId=501
   "success": true,
   "message": "제어 명령이 전달되었습니다.",
   "data": {
-    "kioskDeviceId": "kiosk_a3f7k2_1716",
+    "aerometerDeviceId": "aerometer_a3f7k2_1716",
     "command": "SET_TEMP",
     "value": 24,
     "sentAt": "2026-05-17T21:05:04Z"
