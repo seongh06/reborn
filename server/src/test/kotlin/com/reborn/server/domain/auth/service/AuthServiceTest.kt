@@ -17,9 +17,11 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.Duration
@@ -139,6 +141,25 @@ class AuthServiceTest {
 
         assertThat(response.isNewUser).isTrue()
         assertThat(response.userId).isEqualTo(2L)
+    }
+
+    @Test
+    fun `login - KAKAO 이메일 동의가 없어도(email null) 회원가입 후 토큰을 발급한다`() {
+        val request = AuthDto.LoginRequest(provider = "KAKAO", token = "kakao-token")
+        val info = SocialUserInfo(providerId = "kakao-2", email = null, name = "이영희", profileImage = null)
+        val saved = User(email = null, name = "이영희", provider = OAuthProvider.KAKAO, providerId = "kakao-2", id = 3)
+
+        given(kakaoAuthClient.verify("kakao-token")).willReturn(info)
+        given(userRepository.findByProviderAndProviderId(OAuthProvider.KAKAO, "kakao-2")).willReturn(null)
+        given(userRepository.saveAndFlush(any())).willReturn(saved)
+        given(jwtProvider.createAccessToken(3L)).willReturn("access-token")
+        given(jwtProvider.createRefreshToken(3L)).willReturn("refresh-token")
+
+        val response = authService.login(request)
+
+        assertThat(response.isNewUser).isTrue()
+        assertThat(response.userId).isEqualTo(3L)
+        verify(userRepository, never()).existsByEmail(anyString())
     }
 
     @Test

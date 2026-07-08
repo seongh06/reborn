@@ -10,7 +10,7 @@
 CREATE TABLE IF NOT EXISTS `user`
 (
     `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '사용자 PK',
-    `email`         VARCHAR(255) NOT NULL COMMENT '소셜 이메일',
+    `email`         VARCHAR(255) NULL COMMENT '소셜 이메일 (카카오는 이메일 동의 항목 미사용 심사로 NULL 가능)',
     `name`          VARCHAR(100) NOT NULL COMMENT '사용자 이름',
     `profile_image` VARCHAR(512) NULL COMMENT '프로필 이미지 URL',
     `provider`      VARCHAR(20)  NOT NULL COMMENT 'OAuth 제공자 (KAKAO / GOOGLE)',

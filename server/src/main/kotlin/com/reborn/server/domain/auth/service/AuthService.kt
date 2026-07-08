@@ -89,7 +89,7 @@ class AuthService(
         val (user, isNewUser) = if (existing != null) {
             existing to false
         } else {
-            if (userRepository.existsByEmail(info.email)) {
+            if (info.email != null && userRepository.existsByEmail(info.email)) {
                 throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 다른 소셜 계정으로 가입된 이메일입니다.")
             }
             val saved = try {

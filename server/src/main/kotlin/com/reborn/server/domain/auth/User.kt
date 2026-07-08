@@ -18,8 +18,8 @@ import jakarta.persistence.UniqueConstraint
 )
 class User(
 
-    @Column(nullable = false, unique = true)
-    val email: String,
+    @Column(unique = true)
+    val email: String? = null,
 
     @Column(nullable = false)
     val name: String,
