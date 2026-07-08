@@ -13,7 +13,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:network"))
             implementation(project(":core:model"))
-            //implementation(project(":core:datastore"))
+            implementation(project(":core:datastore"))
             implementation(project(":core:common"))
             api(project(":core:domain"))
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")

@@ -2,6 +2,8 @@ package com.reborn.feature.intro
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reborn.core.domain.usecase.LoginUseCase
+import com.reborn.core.model.Login
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
 import kotlinx.coroutines.delay
@@ -17,10 +19,13 @@ sealed class IntroEvent {
     data object NavigateToAerometer : IntroEvent()
     data object PermissionGranted : IntroEvent()
     data object ExitIntro : IntroEvent()
+    data object LoginSuccess : IntroEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : IntroEvent()
 }
 
-class IntroViewModel : ViewModel() {
+class IntroViewModel(
+    private val loginUseCase: LoginUseCase,
+) : ViewModel() {
     private val _uiState = MutableStateFlow<IntroUiState>(IntroUiState.Loading)
     val uiState = _uiState.asStateFlow()
 
@@ -100,6 +105,26 @@ class IntroViewModel : ViewModel() {
     private fun navigateToAerometer() {
         viewModelScope.launch {
             _event.emit(IntroEvent.NavigateToAerometer)
+        }
+    }
+
+    fun login(provider: String, token: String) {
+        viewModelScope.launch {
+            loginUseCase(Login(provider = provider, token = token))
+                .onSuccess {
+                    println("IntroViewModel: 로그인 API 성공 - provider=$provider")
+                    _event.emit(IntroEvent.LoginSuccess)
+                }
+                .onFailure {
+                    println("IntroViewModel: 로그인 API 실패 - provider=$provider, error=${it.message}")
+                    _event.emit(IntroEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
+
+    fun reportError(throwable: Throwable) {
+        viewModelScope.launch {
+            _event.emit(IntroEvent.ShowErrorSnackbar(throwable))
         }
     }
 
