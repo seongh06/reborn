@@ -2,9 +2,11 @@ package com.reborn.core.network.util
 
 import com.reborn.core.network.model.ApiResponse
 import com.reborn.core.network.model.BaseResponse
+import com.reborn.core.network.model.ErrorResponse
 import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.isSuccess
 
 internal suspend inline fun <reified T> Result<HttpResponse>.asApiResponse(): ApiResponse<T> {
     val response = this.getOrNull()
@@ -27,6 +29,14 @@ internal suspend inline fun <reified T> Result<HttpResponse>.asApiResponse(): Ap
 
     return try {
         if (response == null) throw Exception("Response is null")
+
+        if (!response.status.isSuccess()) {
+            val errorResponse: ErrorResponse = response.body()
+            return ApiResponse.Failure.HttpError(
+                code = response.status.value,
+                message = errorResponse.message
+            )
+        }
 
         val baseResponse: BaseResponse<T> = response.body()
         if (baseResponse.isSuccess) {
