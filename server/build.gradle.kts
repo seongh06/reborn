@@ -1,4 +1,5 @@
 import org.gradle.api.JavaVersion
+import org.gradle.api.tasks.bundling.Jar
 
 plugins {
     alias(libs.plugins.kotlinJvm)
@@ -33,4 +34,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// plain jar(-plain.jar)를 비활성화해 Dockerfile의 `COPY *.jar app.jar`가
+// bootJar 산출물 하나만 매칭하도록 보장
+tasks.named<Jar>("jar") {
+    enabled = false
 }
