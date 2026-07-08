@@ -24,7 +24,7 @@ class GlobalExceptionHandler(
         log.warn("Business exception [{}]: {}", e.errorCode, e.message)
         return ResponseEntity
             .status(e.errorCode.code)
-            .body(ErrorResponse.of(e.errorCode))
+            .body(ErrorResponse.of(e.errorCode.code, e.message))
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
