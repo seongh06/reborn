@@ -51,7 +51,7 @@ CREATE TABLE `user_place_mapping`
 
 -- ------------------------------------------------
 -- 4. device
--- deviceType 추가  → ARDUINO / KIOSK 구분
+-- deviceType 추가  → ARDUINO / AEROMETER 구분
 -- appToken 추가   → 공기계 앱 WebSocket 연결 식별자
 -- isOnline 추가   → 공기계 앱 온라인 상태
 -- ------------------------------------------------
@@ -60,8 +60,8 @@ CREATE TABLE `device`
     `deviceId`   VARCHAR(50)  NOT NULL COMMENT '기기 고유 ID',
     `placeId`    INT          NOT NULL COMMENT '장소 ID',
     `deviceName` VARCHAR(50)  NOT NULL COMMENT '기기 이름 겸 방 이름 (예: 거실, 안방)',
-    `deviceType` VARCHAR(20)  NOT NULL DEFAULT 'ARDUINO' COMMENT '기기 유형 (ARDUINO / KIOSK)',
-    `appToken`   VARCHAR(255) NULL COMMENT '공기계 앱 WebSocket 연결 식별자 (KIOSK 전용)',
+    `deviceType` VARCHAR(20)  NOT NULL DEFAULT 'ARDUINO' COMMENT '기기 유형 (ARDUINO / AEROMETER)',
+    `appToken`   VARCHAR(255) NULL COMMENT '공기계 앱 WebSocket 연결 식별자 (AEROMETER 전용)',
     `isOnline`   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '현재 온라인 여부 (0: 오프라인, 1: 온라인)',
     `createdAt`  DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '기기 등록일시',
     PRIMARY KEY (`deviceId`),
@@ -70,11 +70,11 @@ CREATE TABLE `device`
 ) COMMENT = '기기 정보 (Arduino 센서 및 공기계 앱)';
 
 -- ------------------------------------------------
--- 5. sensor_logs
+-- 5. metric_logs
 -- 복합 인덱스 추가 → 최신 데이터 조회 성능 확보
 -- device_id NULL 허용 → 기기 삭제 시 로그 보존
 -- ------------------------------------------------
-CREATE TABLE `sensor_logs`
+CREATE TABLE `metric_logs`
 (
     `id`          BIGINT        NOT NULL AUTO_INCREMENT COMMENT '로그 ID',
     `device_id`   VARCHAR(50)   NULL     COMMENT '기기 ID',
@@ -85,10 +85,10 @@ CREATE TABLE `sensor_logs`
     `created_at`  DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '수집일시',
     `updated_at`  DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
     PRIMARY KEY (`id`),
-    INDEX `idx_sensor_logs_device_id_created_at` (`device_id`, `created_at` DESC) COMMENT '기기별 최신 로그 조회 최적화',
-    CONSTRAINT `FK_device_TO_sensor_logs`
+    INDEX `idx_metric_logs_device_id_created_at` (`device_id`, `created_at` DESC) COMMENT '기기별 최신 로그 조회 최적화',
+    CONSTRAINT `FK_device_TO_metric_logs`
         FOREIGN KEY (`device_id`) REFERENCES `device` (`deviceId`) ON DELETE SET NULL
-) COMMENT = '센서 수집 로그';
+) COMMENT = '메트릭 수집 로그';
 
 -- ------------------------------------------------
 -- 6. feedback

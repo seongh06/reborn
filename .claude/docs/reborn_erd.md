@@ -29,13 +29,13 @@ erDiagram
         VARCHAR deviceId PK "기기 고유 ID"
         INT placeId FK "장소 ID"
         VARCHAR deviceName "기기 이름 / 방 이름"
-        VARCHAR deviceType "기기 유형 (ARDUINO / KIOSK)"
+        VARCHAR deviceType "기기 유형 (ARDUINO / AEROMETER)"
         VARCHAR appToken "공기계 앱 WebSocket 식별자"
         TINYINT isOnline "온라인 여부 (0 / 1)"
         DATETIME createdAt "기기 등록일시"
     }
 
-    sensorLogs {
+    metricLogs {
         BIGINT logId PK "로그 ID (AUTO_INCREMENT)"
         VARCHAR deviceId FK "기기 ID"
         DECIMAL temperature "온도 (°C)"
@@ -61,7 +61,7 @@ erDiagram
     user            ||--o{ user_place_mapping : "가입"
     place           ||--o{ user_place_mapping : "소속"
     place           ||--o{ device             : "설치"
-    device          ||--o{ sensorLogs         : "수집"
+    device          ||--o{ metricLogs         : "수집"
     device          ||--o{ feedback           : "접수"
 ```
 
@@ -80,6 +80,6 @@ erDiagram
 
 | 테이블 | 인덱스 | 목적 |
 |--------|--------|------|
-| `sensorLogs` | `(deviceId, createdAt DESC)` | 기기별 최신 로그 조회 |
+| `metricLogs` | `(deviceId, createdAt DESC)` | 기기별 최신 로그 조회 |
 | `feedback` | `(deviceId, status)` | 기기별 상태 필터 조회 |
 | `place` | `qrCode UNIQUE` | QR 코드 중복 방지 및 빠른 조회 |

@@ -1,8 +1,8 @@
-package com.reborn.server.domain.data.dto
+package com.reborn.server.domain.metric.dto
 
 import java.time.LocalDateTime
 
-class SensorDataDto {
+class MetricDto {
 
     data class CollectRequest(
         val temperature: Double? = null,
