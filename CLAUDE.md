@@ -93,7 +93,7 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 
 | 테이블 | 설명 | 주요 변경 |
 |--------|------|----------|
-| `user` | 사용자 | refreshToken 없음 → Redis 관리 |
+| `user` | 사용자 | refreshToken 없음 → Redis 관리, email nullable(카카오 이메일 동의 미사용) |
 | `place` | 장소 | qrCode UNIQUE 추가 |
 | `user_place_mapping` | 사용자-장소 권한 (ADMIN/USER) | - |
 | `device` | 기기 (ARDUINO/AEROMETER) | deviceType, appToken, isOnline 추가 |
