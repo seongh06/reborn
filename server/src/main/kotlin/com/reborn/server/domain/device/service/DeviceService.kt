@@ -61,15 +61,13 @@ class DeviceService(
         return DeviceConverter.toRegisterResponse(device)
     }
 
-    @Transactional
     fun generatePairingCode(userId: Long, placeId: Long): DeviceDto.PairingCodeResponse {
         if (!placeRepository.existsById(placeId)) {
             throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
         }
         requireAdmin(userId, placeId)
 
-        val code = generateUniqueCode(PAIRING_PREFIX, PAIRING_CODE_LENGTH)
-        redisUtil.set("$PAIRING_PREFIX$code", placeId.toString(), Duration.ofMinutes(PAIRING_TTL_MINUTES))
+        val code = reserveUniqueCode(PAIRING_PREFIX, PAIRING_CODE_LENGTH, placeId.toString())
 
         return DeviceDto.PairingCodeResponse(
             pairingCode = code,
@@ -118,10 +116,12 @@ class DeviceService(
         }
     }
 
-    private fun generateUniqueCode(prefix: String, length: Int): String {
+    private fun reserveUniqueCode(prefix: String, length: Int, value: String): String {
         repeat(MAX_CODE_GENERATION_ATTEMPTS) {
             val code = generateRandomCode(length)
-            if (!redisUtil.exists("$prefix$code")) return code
+            if (redisUtil.setIfAbsent("$prefix$code", value, Duration.ofMinutes(PAIRING_TTL_MINUTES))) {
+                return code
+            }
         }
         throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "코드 생성에 실패했습니다. 다시 시도해주세요.")
     }

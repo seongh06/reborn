@@ -67,7 +67,7 @@ CREATE TABLE `device`
     PRIMARY KEY (`deviceId`),
     CONSTRAINT `FK_place_TO_device`
         FOREIGN KEY (`placeId`) REFERENCES `place` (`placeId`) ON DELETE CASCADE
-) COMMENT = '기기 정보 (Arduino 센서 및 공기계 앱)';
+) COMMENT = '기기 (Arduino / Aerometer)';
 
 -- ------------------------------------------------
 -- 5. metric_logs

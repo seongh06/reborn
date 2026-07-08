@@ -97,13 +97,13 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 | `place` | 장소 | qrCode UNIQUE 추가 |
 | `user_place_mapping` | 사용자-장소 권한 (ADMIN/USER) | - |
 | `device` | 기기 (ARDUINO/AEROMETER) | deviceType, appToken, isOnline 추가 |
-| `metricLogs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (deviceId, createdAt DESC) 인덱스 |
+| `metric_logs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (device_id, created_at DESC) 인덱스 |
 | `feedback` | 방문자 피드백 | userAgent, sessionToken 추가 |
 
 ### 테이블 관계
 
 ```
-user ──< user_place_mapping >── place ──< device ──< metricLogs
+user ──< user_place_mapping >── place ──< device ──< metric_logs
                                                  └──< feedback
 ```
 
@@ -123,7 +123,7 @@ user ──< user_place_mapping >── place ──< device ──< metricLogs
 | POST | `/api/auth/kakao` | 카카오 소셜 로그인 | ❌ |
 | POST | `/api/auth/google` | 구글 소셜 로그인 | ❌ |
 | POST | `/api/auth/refresh` | AccessToken 재발급 | ❌ |
-| POST | `/api/metric/collect` | 메트릭 수집 (Arduino) | Device Key |
+| POST | `/api/metric/collect` | 메트릭 수집 (Arduino) | X-Device-Id 헤더 |
 | GET | `/api/metric/current` | 특정 기기 최신 메트릭 조회 | ❌ |
 | GET | `/api/metric/history` | 메트릭 히스토리 조회 | ✅ |
 | POST | `/api/feedback` | 피드백 제출 (QR 웹) | ❌ |
@@ -143,7 +143,7 @@ user ──< user_place_mapping >── place ──< device ──< metricLogs
 
 ### 메트릭 수집 흐름
 ```
-Arduino → POST /api/metric/collect → server/domain/metric → metricLogs 저장
+Arduino → POST /api/metric/collect → server/domain/metric → metric_logs 저장
 ```
 
 ### 피드백 → FCM 알림 흐름

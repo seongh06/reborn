@@ -115,6 +115,24 @@ class AuthServiceTest {
     }
 
     @Test
+    fun `login - provider 대소문자를 구분하지 않는다`() {
+        val request = AuthDto.LoginRequest(provider = "google", token = "id-token")
+        val info = SocialUserInfo(providerId = "google-1", email = "new@reborn.com", name = "홍길동", profileImage = null)
+        val saved = User(email = "new@reborn.com", name = "홍길동", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
+
+        given(googleAuthClient.verify("id-token")).willReturn(info)
+        given(userRepository.findByProviderAndProviderId(OAuthProvider.GOOGLE, "google-1")).willReturn(null)
+        given(userRepository.existsByEmail("new@reborn.com")).willReturn(false)
+        given(userRepository.saveAndFlush(any())).willReturn(saved)
+        given(jwtProvider.createAccessToken(1L)).willReturn("access-token")
+        given(jwtProvider.createRefreshToken(1L)).willReturn("refresh-token")
+
+        val response = authService.login(request)
+
+        assertThat(response.userId).isEqualTo(1L)
+    }
+
+    @Test
     fun `login - 지원하지 않는 provider면 예외가 발생한다`() {
         val request = AuthDto.LoginRequest(provider = "NAVER", token = "token")
 

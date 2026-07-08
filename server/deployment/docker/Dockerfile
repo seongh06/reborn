@@ -7,7 +7,10 @@ RUN echo "BASE_URL=https://dummy.local" >> local.properties
 RUN ./gradlew :server:bootJar -x test --no-daemon
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+RUN addgroup -S reborn && adduser -S reborn -G reborn
 COPY --from=build /app/server/build/libs/*.jar app.jar
+RUN chown reborn:reborn app.jar
+USER reborn
 ENV TZ=Asia/Seoul
 ENV SPRING_PROFILES_ACTIVE=prod
 EXPOSE 8080

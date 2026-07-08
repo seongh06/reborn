@@ -21,15 +21,25 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.dao.DataIntegrityViolationException
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Optional
+
+// Mockito의 any()/eq()는 Duration 같은 Kotlin non-null 참조 타입 인자에서 null을 반환해
+// "must not be null" NPE를 유발한다. 직접 정의한 매처는 Mockito 스택에 매처를 등록하되
+// 실제로는 null이 아닌 값을 반환해 이 문제를 피한다.
+private fun anyDuration(): Duration {
+    Mockito.any(Duration::class.java)
+    return Duration.ZERO
+}
 
 @ExtendWith(MockitoExtension::class)
 class DeviceServiceTest {
@@ -135,12 +145,25 @@ class DeviceServiceTest {
     fun `generatePairingCode - ADMIN이면 코드를 생성한다`() {
         given(placeRepository.existsById(501L)).willReturn(true)
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(redisUtil.setIfAbsent(anyString(), anyString(), anyDuration())).willReturn(true)
 
         val response = deviceService.generatePairingCode(1L, 501L)
 
         assertThat(response.pairingCode).hasSize(6)
         assertThat(response.expiresAt).isAfter(LocalDateTime.now())
-        verify(redisUtil).set("pairing:${response.pairingCode}", "501", Duration.ofMinutes(10))
+        verify(redisUtil).setIfAbsent("pairing:${response.pairingCode}", "501", Duration.ofMinutes(10))
+    }
+
+    @Test
+    fun `generatePairingCode - 코드 생성이 계속 충돌하면 예외가 발생한다`() {
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(redisUtil.setIfAbsent(anyString(), anyString(), anyDuration())).willReturn(false)
+
+        assertThatThrownBy { deviceService.generatePairingCode(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INTERNAL_SERVER_ERROR)
     }
 
     @Test
@@ -221,5 +244,28 @@ class DeviceServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.CONFLICT)
+    }
+
+    @Test
+    fun `pairDevice - 기기 이름이 없으면 예외가 발생한다`() {
+        val request = DeviceDto.PairingRequest(pairingCode = "ABC123", deviceName = " ")
+
+        assertThatThrownBy { deviceService.pairDevice(request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `pairDevice - 장소를 찾을 수 없으면 예외가 발생한다`() {
+        val request = DeviceDto.PairingRequest(pairingCode = "ABC123", deviceName = "거실 공기계")
+
+        given(redisUtil.getAndDelete("pairing:ABC123")).willReturn("999")
+        given(placeRepository.findById(999L)).willReturn(Optional.empty())
+
+        assertThatThrownBy { deviceService.pairDevice(request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
     }
 }
