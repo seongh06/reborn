@@ -38,7 +38,7 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 │   ├── network                     ← Ktor 클라이언트
 │   ├── ui                          ← 공용 UI 컴포넌트
 │   ├── notification                ← (예정) FCM 수신 처리
-│   └── datastore                   ← (예정) Proto DataStore
+│   └── datastore                   ← DataStore(Okio 기반, KMP 공용) — AccessToken/RefreshToken 로컬 저장
 │
 ├── feature/                        ← 화면 단위 기능 모듈
 │   ├── intro                       ← 모드 선택 · 소셜 로그인
