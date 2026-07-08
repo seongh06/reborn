@@ -13,6 +13,7 @@ import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.redis.RedisUtil
 import com.reborn.server.global.util.generateRandomCode
 import com.reborn.server.global.util.generateUuid
+import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -27,6 +28,7 @@ class DeviceService(
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
     private val redisUtil: RedisUtil,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun register(userId: Long, request: DeviceDto.RegisterRequest): DeviceDto.RegisterResponse {
@@ -52,6 +54,7 @@ class DeviceService(
                 Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = deviceKey, name = deviceName),
             )
         } catch (e: DataIntegrityViolationException) {
+            log.warn("register 기기 저장 중 무결성 위반: {}", e.message)
             throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 등록된 기기입니다.")
         }
 
@@ -82,13 +85,12 @@ class DeviceService(
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "기기 이름은 필수입니다.")
 
         val redisKey = "$PAIRING_PREFIX$code"
-        val placeId = redisUtil.get(redisKey)?.toLongOrNull()
+        val placeId = redisUtil.getAndDelete(redisKey)?.toLongOrNull()
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "페어링 코드가 만료되었거나 유효하지 않습니다.")
 
         val place = placeRepository.findById(placeId).orElseThrow {
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
         }
-        redisUtil.delete(redisKey)
 
         val appToken = generateUuid()
         val device = try {
@@ -102,6 +104,7 @@ class DeviceService(
                 ),
             )
         } catch (e: DataIntegrityViolationException) {
+            log.warn("pairDevice 기기 저장 중 무결성 위반: {}", e.message)
             throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 등록된 기기입니다.")
         }
 

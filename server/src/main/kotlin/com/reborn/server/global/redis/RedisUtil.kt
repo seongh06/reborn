@@ -11,6 +11,12 @@ class RedisUtil(
     fun get(key: String): String? =
         redisTemplate.opsForValue().get(key)
 
+    /**
+     * 키를 원자적으로 조회 후 삭제한다 (GETDEL). 동시 요청에 의한 중복 소비를 방지할 때 사용.
+     */
+    fun getAndDelete(key: String): String? =
+        redisTemplate.opsForValue().getAndDelete(key)
+
     fun set(key: String, value: String, ttl: Duration) =
         redisTemplate.opsForValue().set(key, value, ttl)
 

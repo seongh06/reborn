@@ -26,6 +26,8 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.dao.DataIntegrityViolationException
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Optional
 
@@ -138,6 +140,7 @@ class DeviceServiceTest {
 
         assertThat(response.pairingCode).hasSize(6)
         assertThat(response.expiresAt).isAfter(LocalDateTime.now())
+        verify(redisUtil).set("pairing:${response.pairingCode}", "501", Duration.ofMinutes(10))
     }
 
     @Test
@@ -173,7 +176,7 @@ class DeviceServiceTest {
             id = 10,
         )
 
-        given(redisUtil.get("pairing:ABC123")).willReturn("501")
+        given(redisUtil.getAndDelete("pairing:ABC123")).willReturn("501")
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
         given(deviceRepository.save(any())).willReturn(savedDevice)
 
@@ -182,7 +185,7 @@ class DeviceServiceTest {
         assertThat(response.deviceId).isEqualTo("device-uuid")
         assertThat(response.placeId).isEqualTo(501L)
         assertThat(response.appToken).isNotBlank()
-        verify(redisUtil).delete("pairing:ABC123")
+        verify(redisUtil).getAndDelete("pairing:ABC123")
     }
 
     @Test
@@ -198,11 +201,25 @@ class DeviceServiceTest {
     @Test
     fun `pairDevice - 코드가 만료되었거나 유효하지 않으면 예외가 발생한다`() {
         val request = DeviceDto.PairingRequest(pairingCode = "INVALID", deviceName = "거실 공기계")
-        given(redisUtil.get("pairing:INVALID")).willReturn(null)
+        given(redisUtil.getAndDelete("pairing:INVALID")).willReturn(null)
 
         assertThatThrownBy { deviceService.pairDevice(request) }
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `pairDevice - 저장 중 충돌이 발생하면 예외가 발생한다`() {
+        val request = DeviceDto.PairingRequest(pairingCode = "ABC123", deviceName = "거실 공기계")
+
+        given(redisUtil.getAndDelete("pairing:ABC123")).willReturn("501")
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(deviceRepository.save(any())).willThrow(DataIntegrityViolationException("duplicate"))
+
+        assertThatThrownBy { deviceService.pairDevice(request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.CONFLICT)
     }
 }
