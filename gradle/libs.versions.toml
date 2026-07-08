@@ -59,6 +59,10 @@ firebaseAdmin = "9.4.3"
 kakao = "2.23.2"
 datastoreCore = "1.2.1"
 
+#google sign-in (Credential Manager)
+androidx-credentials = "1.5.0"
+googleid = "1.1.1"
+
 #reorderable (이미지 드로그앤 드롭 구현)
 reorderable = "3.0.0"
 camerax = "1.4.1"
@@ -147,6 +151,11 @@ firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "fireb
 
 #kakao
 kakao-sdk-user = { group = "com.kakao.sdk", name = "v2-user", version.ref = "kakao" }
+
+#google sign-in (Credential Manager)
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "androidx-credentials" }
+androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "androidx-credentials" }
+google-id = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 
 #reorderable
 compose-reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }

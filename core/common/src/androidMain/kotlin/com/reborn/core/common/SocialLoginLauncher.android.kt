@@ -5,8 +5,18 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.kakao.sdk.user.UserApiClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 private const val TAG = "SocialLogin"
 
@@ -16,15 +26,14 @@ actual fun rememberSocialLoginLauncher(
     onError: (Throwable) -> Unit,
 ): SocialLoginLauncher {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     return remember {
         object : SocialLoginLauncher {
             override fun launch(socialType: SocialType) {
                 when (socialType) {
                     SocialType.KAKAO -> loginWithKakao(context, onResult, onError)
-                    SocialType.GOOGLE -> onError(
-                        UnsupportedOperationException("구글 로그인은 아직 준비 중입니다."),
-                    )
+                    SocialType.GOOGLE -> loginWithGoogle(context, coroutineScope, onResult, onError)
                 }
             }
         }
@@ -53,6 +62,51 @@ private fun loginWithKakao(
                 Toast.makeText(context, "[디버그] 카카오 로그인 성공, 서버 호출 시작", Toast.LENGTH_SHORT).show()
                 onResult("KAKAO", token.accessToken)
             }
+        }
+    }
+}
+
+private fun loginWithGoogle(
+    context: Context,
+    coroutineScope: CoroutineScope,
+    onResult: (String, String) -> Unit,
+    onError: (Throwable) -> Unit,
+) {
+    Log.d(TAG, "구글 로그인 시작")
+    Toast.makeText(context, "[디버그] 구글 로그인 시작", Toast.LENGTH_SHORT).show()
+
+    val googleIdOption = GetGoogleIdOption.Builder()
+        .setFilterByAuthorizedAccounts(false)
+        .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+        .build()
+    val request = GetCredentialRequest.Builder()
+        .addCredentialOption(googleIdOption)
+        .build()
+
+    coroutineScope.launch {
+        try {
+            val credential = CredentialManager.create(context)
+                .getCredential(context, request)
+                .credential
+
+            if (credential !is CustomCredential ||
+                credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+            ) {
+                onError(IllegalStateException("예상하지 못한 Credential 타입입니다: ${credential.type}"))
+                return@launch
+            }
+
+            val idToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
+            Log.d(TAG, "구글 로그인 성공, idToken 획득")
+            Toast.makeText(context, "[디버그] 구글 로그인 성공, 서버 호출 시작", Toast.LENGTH_SHORT).show()
+            onResult("GOOGLE", idToken)
+        } catch (e: GetCredentialException) {
+            Log.e(TAG, "구글 로그인 실패: ${e.message}", e)
+            Toast.makeText(context, "[디버그] 구글 로그인 실패: ${e.message}", Toast.LENGTH_LONG).show()
+            onError(e)
+        } catch (e: GoogleIdTokenParsingException) {
+            Log.e(TAG, "구글 idToken 파싱 실패: ${e.message}", e)
+            onError(e)
         }
     }
 }
