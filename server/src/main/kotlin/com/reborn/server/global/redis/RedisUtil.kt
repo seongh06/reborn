@@ -20,6 +20,14 @@ class RedisUtil(
     fun set(key: String, value: String, ttl: Duration) =
         redisTemplate.opsForValue().set(key, value, ttl)
 
+    /**
+     * 키가 없을 때만 원자적으로 값을 설정한다 (SET NX). 코드 생성처럼
+     * "존재 확인 후 저장"을 분리하면 동시 요청 간 경쟁이 생기는 경우에 사용.
+     * @return true = 새로 설정됨, false = 이미 키가 존재해 설정 실패
+     */
+    fun setIfAbsent(key: String, value: String, ttl: Duration): Boolean =
+        redisTemplate.opsForValue().setIfAbsent(key, value, ttl) ?: false
+
     fun delete(key: String): Boolean =
         redisTemplate.delete(key) ?: false
 

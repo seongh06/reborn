@@ -20,13 +20,24 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Optional
+
+// Mockito의 any()/eq()는 Duration 같은 Kotlin non-null 참조 타입 인자에서 null을 반환해
+// "must not be null" NPE를 유발한다. 직접 정의한 매처는 Mockito 스택에 매처를 등록하되
+// 실제로는 null이 아닌 값을 반환해 이 문제를 피한다.
+private fun anyDuration(): Duration {
+    Mockito.any(Duration::class.java)
+    return Duration.ZERO
+}
 
 @ExtendWith(MockitoExtension::class)
 class PlaceServiceTest {
@@ -113,6 +124,7 @@ class PlaceServiceTest {
         given(placeRepository.existsById(501L)).willReturn(true)
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
             .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
+        given(redisUtil.setIfAbsent(anyString(), anyString(), anyDuration())).willReturn(true)
 
         val response = placeService.generateAdminCode(1L, 501L)
 

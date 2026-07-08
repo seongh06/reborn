@@ -44,12 +44,10 @@ class PlaceService(
         return PlaceConverter.toRegisterResponse(place)
     }
 
-    @Transactional
     fun generateAdminCode(userId: Long, placeId: Long): PlaceDto.AdminCodeResponse {
         requireAdmin(userId, placeId)
 
-        val code = generateUniqueCode(ADMIN_INVITE_PREFIX, ADMIN_CODE_LENGTH)
-        redisUtil.set("$ADMIN_INVITE_PREFIX$code", placeId.toString(), Duration.ofMinutes(ADMIN_INVITE_TTL_MINUTES))
+        val code = reserveUniqueCode(ADMIN_INVITE_PREFIX, ADMIN_CODE_LENGTH, placeId.toString())
 
         return PlaceDto.AdminCodeResponse(
             adminCode = code,
@@ -97,10 +95,12 @@ class PlaceService(
         }
     }
 
-    private fun generateUniqueCode(prefix: String, length: Int): String {
+    private fun reserveUniqueCode(prefix: String, length: Int, value: String): String {
         repeat(MAX_CODE_GENERATION_ATTEMPTS) {
             val code = generateRandomCode(length)
-            if (!redisUtil.exists("$prefix$code")) return code
+            if (redisUtil.setIfAbsent("$prefix$code", value, Duration.ofMinutes(ADMIN_INVITE_TTL_MINUTES))) {
+                return code
+            }
         }
         throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "코드 생성에 실패했습니다. 다시 시도해주세요.")
     }

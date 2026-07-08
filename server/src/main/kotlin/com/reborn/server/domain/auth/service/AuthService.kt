@@ -43,7 +43,7 @@ class AuthService(
     }
 
     private fun parseProvider(provider: String?): OAuthProvider {
-        val parsed = provider?.let { runCatching { OAuthProvider.valueOf(it) }.getOrNull() }
+        val parsed = provider?.let { runCatching { OAuthProvider.valueOf(it.trim().uppercase()) }.getOrNull() }
         return parsed ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "지원하지 않는 provider입니다. (GOOGLE, KAKAO 중 하나를 입력하세요)")
     }
 
