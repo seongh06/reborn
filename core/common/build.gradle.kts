@@ -23,6 +23,7 @@ kotlin {
             implementation(libs.camerax.lifecycle)
             implementation(libs.mlkit.face.detection)
             implementation(libs.androidx.lifecycle.process)
+            implementation(libs.kakao.sdk.user)
         }
         iosMain.dependencies {
 

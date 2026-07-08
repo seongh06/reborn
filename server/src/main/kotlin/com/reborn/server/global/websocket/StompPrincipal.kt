@@ -4,7 +4,7 @@ import java.security.Principal
 
 enum class ConnectionRole {
     ADMIN,
-    KIOSK,
+    AEROMETER,
 }
 
 data class StompPrincipal(

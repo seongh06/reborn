@@ -10,7 +10,7 @@
 CREATE TABLE IF NOT EXISTS `user`
 (
     `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '사용자 PK',
-    `email`         VARCHAR(255) NOT NULL COMMENT '소셜 이메일',
+    `email`         VARCHAR(255) NULL COMMENT '소셜 이메일 (카카오는 이메일 동의 항목 미사용 심사로 NULL 가능)',
     `name`          VARCHAR(100) NOT NULL COMMENT '사용자 이름',
     `profile_image` VARCHAR(512) NULL COMMENT '프로필 이미지 URL',
     `provider`      VARCHAR(20)  NOT NULL COMMENT 'OAuth 제공자 (KAKAO / GOOGLE)',
@@ -78,10 +78,10 @@ CREATE TABLE IF NOT EXISTS `device`
 (
     `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '기기 PK',
     `place_id`    BIGINT       NOT NULL COMMENT '장소 FK',
-    `device_type` VARCHAR(20)  NOT NULL COMMENT '기기 유형 (ARDUINO / KIOSK)',
+    `device_type` VARCHAR(20)  NOT NULL COMMENT '기기 유형 (ARDUINO / AEROMETER)',
     `device_key`  VARCHAR(255) NOT NULL COMMENT '인증용 고유 키',
     `name`        VARCHAR(100) NULL COMMENT '기기 이름',
-    `app_token`   VARCHAR(512) NULL COMMENT 'FCM 앱 토큰 (KIOSK 전용)',
+    `app_token`   VARCHAR(512) NULL COMMENT 'FCM 앱 토큰 (AEROMETER 전용)',
     `is_online`   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '온라인 여부',
     `created_at`  DATETIME(6)  NOT NULL COMMENT '등록일시',
     `updated_at`  DATETIME(6)  NOT NULL COMMENT '수정일시',
@@ -92,14 +92,14 @@ CREATE TABLE IF NOT EXISTS `device`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
-    COMMENT = '기기 (Arduino / Kiosk)';
+    COMMENT = '기기 (Arduino / Aerometer)';
 
 -- ------------------------------------------------
--- 5. sensor_logs
+-- 5. metric_logs
 -- 복합 인덱스 (device_id, created_at DESC) → 최신 로그 조회 최적화
 -- device_id nullable + SET NULL → 기기 삭제 시 로그 데이터 보존
 -- ------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sensor_logs`
+CREATE TABLE IF NOT EXISTS `metric_logs`
 (
     `id`          BIGINT      NOT NULL AUTO_INCREMENT COMMENT '로그 PK',
     `device_id`   BIGINT      NULL COMMENT '기기 FK (기기 삭제 시 NULL)',
@@ -110,13 +110,13 @@ CREATE TABLE IF NOT EXISTS `sensor_logs`
     `created_at`  DATETIME(6) NOT NULL COMMENT '수집일시',
     `updated_at`  DATETIME(6) NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
-    KEY `idx_sensor_device_created` (`device_id`, `created_at` DESC) COMMENT '기기별 최신 로그 조회 최적화',
-    CONSTRAINT `fk_sensor_device`
+    KEY `idx_metric_device_created` (`device_id`, `created_at` DESC) COMMENT '기기별 최신 로그 조회 최적화',
+    CONSTRAINT `fk_metric_device`
         FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE SET NULL
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
-    COMMENT = '센서 수집 로그';
+    COMMENT = '메트릭 수집 로그';
 
 -- ------------------------------------------------
 -- 6. feedback

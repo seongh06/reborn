@@ -1,0 +1,63 @@
+services:
+  database:
+    image: mysql:8.0
+    container_name: reborn-mysql
+    restart: always
+    ports:
+      - "127.0.0.1:3306:3306"
+    env_file:
+      - server/deployment/env/.env
+    environment:
+      MYSQL_DATABASE: "reborn"
+      TZ: "Asia/Seoul"
+    volumes:
+      - /home/seongh06/reborn-data/mysql:/var/lib/mysql
+    networks:
+      - reborn-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h localhost -u root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: reborn-redis
+    restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - /home/seongh06/reborn-data/redis:/data
+    networks:
+      - reborn-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend-app:
+    build:
+      context: .
+      dockerfile: server/deployment/docker/Dockerfile
+    image: reborn-backend-server:latest
+    container_name: reborn-backend-server
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - server/deployment/env/.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - TZ=Asia/Seoul
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - reborn-network
+
+networks:
+  reborn-network:
+    driver: bridge

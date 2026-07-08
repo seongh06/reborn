@@ -16,15 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.reborn.core.common.SocialType
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.feature.intro.Res
 import com.reborn.feature.intro.*
 import org.jetbrains.compose.resources.painterResource
-
-enum class SocialType {
-    KAKAO,
-    GOOGLE,
-}
 
 @Composable
 fun SocialLoginButton(

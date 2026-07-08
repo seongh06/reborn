@@ -32,7 +32,7 @@ class WebSocketAuthChannelInterceptor(
 
         return when {
             !authHeader.isNullOrBlank() -> authenticateAdmin(authHeader)
-            !deviceKey.isNullOrBlank() -> authenticateKiosk(deviceKey, accessor.getFirstNativeHeader(APP_TOKEN_HEADER))
+            !deviceKey.isNullOrBlank() -> authenticateAerometer(deviceKey, accessor.getFirstNativeHeader(APP_TOKEN_HEADER))
             else -> throw IllegalArgumentException("인증 정보가 없습니다. Authorization 또는 X-Device-Key 헤더가 필요합니다.")
         }
     }
@@ -51,16 +51,16 @@ class WebSocketAuthChannelInterceptor(
         return StompPrincipal(name = userId.toString(), role = ConnectionRole.ADMIN)
     }
 
-    private fun authenticateKiosk(deviceKey: String, appToken: String?): StompPrincipal {
+    private fun authenticateAerometer(deviceKey: String, appToken: String?): StompPrincipal {
         val device = deviceRepository.findByDeviceKey(deviceKey)
-            ?.takeIf { it.deviceType == DeviceType.KIOSK }
+            ?.takeIf { it.deviceType == DeviceType.AEROMETER }
             ?: throw IllegalArgumentException("등록되지 않은 공기계 기기입니다.")
 
         if (appToken.isNullOrBlank() || device.appToken != appToken) {
             throw IllegalArgumentException("유효하지 않은 앱 토큰입니다.")
         }
 
-        return StompPrincipal(name = deviceKey, role = ConnectionRole.KIOSK)
+        return StompPrincipal(name = deviceKey, role = ConnectionRole.AEROMETER)
     }
 
     companion object {

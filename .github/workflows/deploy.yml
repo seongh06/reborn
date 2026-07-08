@@ -1,0 +1,32 @@
+name: Deploy to Home Server
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, gram]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Link production .env
+        run: |
+          mkdir -p server/deployment/env
+          ln -sf /home/seongh06/reborn/server/deployment/env/.env server/deployment/env/.env
+
+      - name: Build backend image
+        run: |
+          docker compose -f server/deployment/docker/docker-compose.yml --project-directory . build backend-app
+
+      - name: Restart backend container
+        run: |
+          docker compose -f server/deployment/docker/docker-compose.yml --project-directory . up -d backend-app
+
+      - name: Clean up old images
+        run: docker image prune -f

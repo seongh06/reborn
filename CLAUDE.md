@@ -38,7 +38,7 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 │   ├── network                     ← Ktor 클라이언트
 │   ├── ui                          ← 공용 UI 컴포넌트
 │   ├── notification                ← (예정) FCM 수신 처리
-│   └── datastore                   ← (예정) Proto DataStore
+│   └── datastore                   ← DataStore(Okio 기반, KMP 공용) — AccessToken/RefreshToken 로컬 저장
 │
 ├── feature/                        ← 화면 단위 기능 모듈
 │   ├── intro                       ← 모드 선택 · 소셜 로그인
@@ -68,10 +68,10 @@ reborn/                             ← 루트 프로젝트 (모노레포)
     └── domain/                     ← 기능별 비즈니스 도메인
         ├── admin/                  ← 관리자 기능
         ├── auth/                   ← 인증 (OAuth 2.0, JWT)
-        ├── data/                   ← 센서 데이터 수집·조회
+        ├── metric/                 ← 실내 환경 지표(온습도·조도·재실 인원) 수집·조회
         ├── feedback/               ← 피드백 관리·FCM 알림
         ├── place/                  ← 장소 관리
-        └── device/                 ← 기기(Arduino·공기계) 관리
+        └── device/                 ← 기기(Arduino·공기계) 등록·관리 (페어링 포함)
 ```
 
 ### 도메인 레이어 구조 (domain 하위 공통)
@@ -93,17 +93,17 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 
 | 테이블 | 설명 | 주요 변경 |
 |--------|------|----------|
-| `user` | 사용자 | refreshToken 없음 → Redis 관리 |
+| `user` | 사용자 | refreshToken 없음 → Redis 관리, email nullable(카카오 이메일 동의 미사용) |
 | `place` | 장소 | qrCode UNIQUE 추가 |
 | `user_place_mapping` | 사용자-장소 권한 (ADMIN/USER) | - |
-| `device` | 기기 (ARDUINO/KIOSK) | deviceType, appToken, isOnline 추가 |
-| `sensorLogs` | 센서 수집 로그 | (deviceId, createdAt DESC) 인덱스 |
+| `device` | 기기 (ARDUINO/AEROMETER) | deviceType, appToken, isOnline 추가 |
+| `metric_logs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (device_id, created_at DESC) 인덱스 |
 | `feedback` | 방문자 피드백 | userAgent, sessionToken 추가 |
 
 ### 테이블 관계
 
 ```
-user ──< user_place_mapping >── place ──< device ──< sensorLogs
+user ──< user_place_mapping >── place ──< device ──< metric_logs
                                                  └──< feedback
 ```
 
@@ -123,25 +123,27 @@ user ──< user_place_mapping >── place ──< device ──< sensorLogs
 | POST | `/api/auth/kakao` | 카카오 소셜 로그인 | ❌ |
 | POST | `/api/auth/google` | 구글 소셜 로그인 | ❌ |
 | POST | `/api/auth/refresh` | AccessToken 재발급 | ❌ |
-| POST | `/api/sensor/collect` | 센서 데이터 수집 (Arduino) | Device Key |
-| GET | `/api/sensor/current` | 특정 기기 최신 센서 데이터 조회 | ❌ |
-| GET | `/api/data/history` | 센서 로그 히스토리 조회 | ✅ |
+| POST | `/api/metric/collect` | 메트릭 수집 (Arduino) | X-Device-Id 헤더 |
+| GET | `/api/metric/current` | 특정 기기 최신 메트릭 조회 | ❌ |
+| GET | `/api/metric/history` | 메트릭 히스토리 조회 | ✅ |
 | POST | `/api/feedback` | 피드백 제출 (QR 웹) | ❌ |
 | GET | `/api/feedback` | 피드백 목록 조회 | ✅ ADMIN |
 | PATCH | `/api/feedback/{id}` | 피드백 상태 변경 | ✅ ADMIN |
 | GET | `/api/place` | 장소 목록 조회 | ✅ |
 | POST | `/api/place` | 장소 등록 | ✅ ADMIN |
 | GET | `/api/device` | 기기 목록 조회 | ✅ |
-| POST | `/api/device` | 기기 등록 | ✅ ADMIN |
+| POST | `/api/device` | Arduino 기기 등록 | ✅ ADMIN |
+| POST | `/api/device/pairing/code` | 공기계 페어링 코드 생성 | ✅ ADMIN |
+| POST | `/api/device/pairing` | 공기계 페어링 코드 입력·등록 | ✅ |
 | WS | `/ws/control` | WebSocket 제어 명령 중계 | ✅ |
 
 ---
 
 ## 🔄 핵심 데이터 흐름
 
-### 센서 수집 흐름
+### 메트릭 수집 흐름
 ```
-Arduino → POST /api/sensor/collect → server/domain/data → sensorLogs 저장
+Arduino → POST /api/metric/collect → server/domain/metric → metric_logs 저장
 ```
 
 ### 피드백 → FCM 알림 흐름
@@ -153,7 +155,7 @@ QR 웹 → POST /api/feedback → feedback 저장
 ### 실시간 IoT 제어 흐름
 ```
 관리자 앱 → WebSocket(/ws/control) → 서버 중계
-         → 공기계 앱(KIOSK) → SmartThings API 호출 → IoT 기기 제어
+         → 공기계 앱(AEROMETER) → SmartThings API 호출 → IoT 기기 제어
 ```
 > 2026-07-06 확정: 공기계 앱이 SmartThings Cloud API를 직접 호출하여 기기를 제어함(로컬 Wi-Fi 직접 제어 아님). 서버는 SmartThings 자격증명을 갖지 않고 WebSocket 중계까지만 담당.
 

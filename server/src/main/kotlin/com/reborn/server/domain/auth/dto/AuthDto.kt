@@ -4,12 +4,9 @@ import jakarta.validation.constraints.NotBlank
 
 class AuthDto {
 
-    data class GoogleLoginRequest(
-        @field:NotBlank val idToken: String? = null,
-    )
-
-    data class KakaoLoginRequest(
-        @field:NotBlank val accessToken: String? = null,
+    data class LoginRequest(
+        @field:NotBlank val provider: String? = null,
+        @field:NotBlank val token: String? = null,
     )
 
     data class RefreshRequest(

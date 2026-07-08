@@ -30,17 +30,21 @@ class AuthService(
 ) {
 
     @Transactional
-    fun loginWithGoogle(request: AuthDto.GoogleLoginRequest): AuthDto.LoginResponse {
-        val idToken = request.idToken?.takeIf { it.isNotBlank() }
-            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "idToken은 필수입니다.")
-        return login(OAuthProvider.GOOGLE, googleAuthClient.verify(idToken))
+    fun login(request: AuthDto.LoginRequest): AuthDto.LoginResponse {
+        val token = request.token?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "token은 필수입니다.")
+        val provider = parseProvider(request.provider)
+
+        val socialUserInfo = when (provider) {
+            OAuthProvider.GOOGLE -> googleAuthClient.verify(token)
+            OAuthProvider.KAKAO -> kakaoAuthClient.verify(token)
+        }
+        return login(provider, socialUserInfo)
     }
 
-    @Transactional
-    fun loginWithKakao(request: AuthDto.KakaoLoginRequest): AuthDto.LoginResponse {
-        val accessToken = request.accessToken?.takeIf { it.isNotBlank() }
-            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "accessToken은 필수입니다.")
-        return login(OAuthProvider.KAKAO, kakaoAuthClient.verify(accessToken))
+    private fun parseProvider(provider: String?): OAuthProvider {
+        val parsed = provider?.let { runCatching { OAuthProvider.valueOf(it.trim().uppercase()) }.getOrNull() }
+        return parsed ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "지원하지 않는 provider입니다. (GOOGLE, KAKAO 중 하나를 입력하세요)")
     }
 
     fun refresh(request: AuthDto.RefreshRequest): AuthDto.RefreshResponse {
@@ -85,7 +89,7 @@ class AuthService(
         val (user, isNewUser) = if (existing != null) {
             existing to false
         } else {
-            if (userRepository.existsByEmail(info.email)) {
+            if (info.email != null && userRepository.existsByEmail(info.email)) {
                 throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 다른 소셜 계정으로 가입된 이메일입니다.")
             }
             val saved = try {

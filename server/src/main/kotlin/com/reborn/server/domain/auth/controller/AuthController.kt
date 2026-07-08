@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Tag(name = "인증 API", description = "카카오/구글 소셜 로그인")
+@Tag(name = "인증 API", description = "소셜 로그인 (통합)")
 @RestController
 @RequestMapping("/api/auth")
 class AuthController(
@@ -26,32 +26,19 @@ class AuthController(
 ) {
 
     @Operation(
-        summary = "구글 로그인",
-        description = "Google OAuth 2.0 idToken을 검증하여 로그인 또는 회원가입을 처리합니다.",
+        summary = "소셜 로그인 (통합)",
+        description = "provider(GOOGLE/KAKAO)에 따라 Google idToken 또는 Kakao accessToken을 검증하여 " +
+            "로그인 또는 회원가입을 처리합니다. 기존 /google, /kakao 엔드포인트를 이 API로 통합함.",
     )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "로그인 성공 — accessToken, refreshToken, userId, name, isNewUser 반환"),
-        SwaggerApiResponse(responseCode = "400", description = "idToken 누락"),
-        SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 Google ID Token"),
+        SwaggerApiResponse(responseCode = "400", description = "provider/token 누락 또는 지원하지 않는 provider"),
+        SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 소셜 토큰"),
         SwaggerApiResponse(responseCode = "409", description = "이미 다른 소셜 계정으로 가입된 이메일"),
     )
-    @PostMapping("/google")
-    fun google(@Valid @RequestBody request: AuthDto.GoogleLoginRequest): ApiResponse<AuthDto.LoginResponse> =
-        ApiResponse.success(authService.loginWithGoogle(request))
-
-    @Operation(
-        summary = "카카오 로그인",
-        description = "Kakao OAuth 2.0 accessToken을 검증하여 로그인 또는 회원가입을 처리합니다.",
-    )
-    @ApiResponses(
-        SwaggerApiResponse(responseCode = "200", description = "로그인 성공 — accessToken, refreshToken, userId, name, isNewUser 반환"),
-        SwaggerApiResponse(responseCode = "400", description = "accessToken 누락"),
-        SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 Kakao AccessToken"),
-        SwaggerApiResponse(responseCode = "409", description = "이미 다른 소셜 계정으로 가입된 이메일"),
-    )
-    @PostMapping("/kakao")
-    fun kakao(@Valid @RequestBody request: AuthDto.KakaoLoginRequest): ApiResponse<AuthDto.LoginResponse> =
-        ApiResponse.success(authService.loginWithKakao(request))
+    @PostMapping("/login")
+    fun login(@Valid @RequestBody request: AuthDto.LoginRequest): ApiResponse<AuthDto.LoginResponse> =
+        ApiResponse.success(authService.login(request))
 
     @Operation(
         summary = "AccessToken 재발급",

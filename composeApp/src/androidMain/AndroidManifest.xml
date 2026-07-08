@@ -22,5 +22,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 카카오 SDK의 v2-auth 라이브러리가 이 액티비티를 이미 선언(launchMode=singleTask)하고 있고,
+             여기서는 리다이렉트 스킴 인텐트 필터만 매니페스트 머지로 덧붙인다.
+             (MainActivity에 필터를 달면 안 됨 — 리다이렉트가 엉뚱한 곳으로 가서 카카오 SDK 콜백이 영원히 안 불림) -->
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="kakao${KAKAO_APP_KEY}" android:host="oauth" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>

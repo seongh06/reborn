@@ -64,6 +64,7 @@ fun IntroRoute(
                 is IntroEvent.NavigateToAerometer -> onNavigateToAerometer()
                 is IntroEvent.PermissionGranted -> {}
                 is IntroEvent.ExitIntro -> onBackClick()
+                is IntroEvent.LoginSuccess -> {} // IntroAdminLoginScreen에서 자체적으로 처리
             }
         }
     }
