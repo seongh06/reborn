@@ -1,9 +1,6 @@
 package com.reborn.server.domain.place.service
 
 import com.reborn.server.domain.auth.UserRepository
-import com.reborn.server.domain.device.Device
-import com.reborn.server.domain.device.DeviceType
-import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
@@ -17,7 +14,6 @@ import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.redis.RedisUtil
 import com.reborn.server.global.util.generateRandomCode
 import com.reborn.server.global.util.generateUuid
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
@@ -29,7 +25,6 @@ class PlaceService(
     private val userRepository: UserRepository,
     private val placeRepository: PlaceRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
-    private val deviceRepository: DeviceRepository,
     private val redisUtil: RedisUtil,
 ) {
 
@@ -47,53 +42,6 @@ class PlaceService(
         userPlaceMappingRepository.save(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
 
         return PlaceConverter.toRegisterResponse(place)
-    }
-
-    @Transactional
-    fun generatePairingCode(userId: Long, placeId: Long): PlaceDto.PairingCodeResponse {
-        requireAdmin(userId, placeId)
-
-        val code = generateUniqueCode(PAIRING_PREFIX, PAIRING_CODE_LENGTH)
-        redisUtil.set("$PAIRING_PREFIX$code", placeId.toString(), Duration.ofMinutes(PAIRING_TTL_MINUTES))
-
-        return PlaceDto.PairingCodeResponse(
-            pairingCode = code,
-            expiresAt = LocalDateTime.now().plusMinutes(PAIRING_TTL_MINUTES),
-        )
-    }
-
-    @Transactional
-    fun pairDevice(request: PlaceDto.PairingRequest): PlaceDto.PairingResponse {
-        val code = request.pairingCode?.takeIf { it.isNotBlank() }
-            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "페어링 코드는 필수입니다.")
-        val deviceName = request.deviceName?.takeIf { it.isNotBlank() }
-            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "기기 이름은 필수입니다.")
-
-        val redisKey = "$PAIRING_PREFIX$code"
-        val placeId = redisUtil.get(redisKey)?.toLongOrNull()
-            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "페어링 코드가 만료되었거나 유효하지 않습니다.")
-
-        val place = placeRepository.findById(placeId).orElseThrow {
-            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
-        }
-        redisUtil.delete(redisKey)
-
-        val appToken = generateUuid()
-        val device = try {
-            deviceRepository.save(
-                Device(
-                    place = place,
-                    deviceType = DeviceType.KIOSK,
-                    deviceKey = generateUuid(),
-                    name = deviceName,
-                    appToken = appToken,
-                ),
-            )
-        } catch (e: DataIntegrityViolationException) {
-            throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 등록된 기기입니다.")
-        }
-
-        return PlaceDto.PairingResponse(deviceId = device.deviceKey, placeId = place.id, appToken = appToken)
     }
 
     @Transactional
@@ -166,11 +114,8 @@ class PlaceService(
     }
 
     companion object {
-        private const val PAIRING_PREFIX = "pairing:"
         private const val ADMIN_INVITE_PREFIX = "admin-invite:"
-        private const val PAIRING_CODE_LENGTH = 6
         private const val ADMIN_CODE_LENGTH = 8
-        private const val PAIRING_TTL_MINUTES = 10L
         private const val ADMIN_INVITE_TTL_MINUTES = 30L
         private const val MAX_CODE_GENERATION_ATTEMPTS = 5
     }

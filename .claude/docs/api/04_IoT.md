@@ -2,6 +2,155 @@
 
 ---
 
+## 📍 08 페어링 코드 생성 API
+
+- **설명:** 공기계 앱과 장소를 연결하기 위한 일회용 페어링 코드를 생성하는 API입니다. 생성된 코드는 Redis에 일정 시간(10분) 동안 저장되며, 공기계 앱에서 해당 코드를 입력하면 장소와 기기가 연결됩니다. (ADMIN 권한 필요)
+- **헤더:** `Authorization: Bearer {accessToken}`
+
+**Parameter**
+
+| 필드 이름 | 필수 여부 | 타입 | 설명 |
+| --- | --- | --- | --- |
+| placeId | 필수 | Int | 페어링할 장소의 고유 ID |
+
+**Request Body**
+
+| 필드 이름 | 필수 여부 | 타입 | 설명 |
+| --- | --- | --- | --- |
+
+**Request Sample**
+
+```
+POST /api/device/pairing/code?placeId=501
+```
+
+**응답코드**
+
+| 성공 여부 | 응답 코드 | 설명 |
+| --- | --- | --- |
+| 성공 | 200 | 페어링 코드 생성 완료 |
+| 실패 | 401 | 인증 실패 |
+| 실패 | 403 | ADMIN 권한 없음 |
+| 실패 | 404 | 존재하지 않는 장소 또는 회원 |
+| 실패 | 500 | 서버 내부 오류 |
+
+**Response Body**
+
+| 필드 이름 | 필수 여부 | 타입 | 설명 |
+| --- | --- | --- | --- |
+| pairingCode | 필수 | String | 생성된 6자리 페어링 코드 |
+| expiresAt | 필수 | DateTime | 코드 만료 시간 (생성 후 10분, ISO 8601) |
+
+**JSON 형식 응답**
+
+```json
+{
+  "success": true,
+  "message": "API 호출 성공",
+  "data": {
+    "pairingCode": "A3F7K2",
+    "expiresAt": "2026-05-17T21:15:00Z"
+  }
+}
+```
+
+**실패 케이스 - 401 Unauthorized**
+```json
+{ "success": false, "message": "인증 정보가 유효하지 않습니다. 다시 로그인해주세요.", "data": null }
+```
+
+**실패 케이스 - 403 Forbidden**
+```json
+{ "success": false, "message": "권한이 없습니다.", "data": null }
+```
+
+**실패 케이스 - 404 Not Found**
+```json
+{ "success": false, "message": "존재하지 않는 장소 정보입니다.", "data": null }
+```
+
+**실패 케이스 - 500 Internal Server Error**
+```json
+{ "success": false, "message": "서버 내부 오류가 발생했습니다.", "data": null }
+```
+
+---
+
+## 📍 09 페어링 코드 입력 API
+
+- **설명:** 공기계 앱에서 관리자가 생성한 페어링 코드를 입력하여 해당 장소와 기기를 연결하는 API입니다. 코드 검증 후 device 테이블에 AEROMETER 타입으로 기기가 등록되며, WebSocket 연결을 위한 appToken이 발급됩니다.
+- **헤더:** `Authorization: Bearer {accessToken}`
+
+**Parameter**
+
+| 필드 이름 | 필수 여부 | 타입 | 설명 |
+| --- | --- | --- | --- |
+
+**Request Body**
+
+| 필드 이름 | 필수 여부 | 타입 | 설명 |
+| --- | --- | --- | --- |
+| pairingCode | 필수 | String | 관리자로부터 전달받은 6자리 페어링 코드 |
+| deviceName | 필수 | String | 공기계 기기 이름 (예: 거실 공기계) |
+
+**Request Sample**
+
+```json
+{
+  "pairingCode": "A3F7K2",
+  "deviceName": "거실 공기계"
+}
+```
+
+**응답코드**
+
+| 성공 여부 | 응답 코드 | 설명 |
+| --- | --- | --- |
+| 성공 | 200 | 페어링 완료 및 기기 등록 성공 |
+| 실패 | 400 | 코드 누락 또는 만료된 코드 |
+| 실패 | 401 | 인증 실패 |
+| 실패 | 404 | 존재하지 않는 회원 |
+| 실패 | 500 | 서버 내부 오류 |
+
+**Response Body**
+
+| 필드 이름 | 필수 여부 | 타입 | 설명 |
+| --- | --- | --- | --- |
+| deviceId | 필수 | String | 등록된 기기의 고유 ID |
+| placeId | 필수 | Int | 연결된 장소 ID |
+| appToken | 필수 | String | WebSocket 연결에 사용할 앱 토큰 |
+
+**JSON 형식 응답**
+
+```json
+{
+  "success": true,
+  "message": "페어링이 완료되었습니다.",
+  "data": {
+    "deviceId": "aerometer_a3f7k2_1716",
+    "placeId": 501,
+    "appToken": "eyJhbGciOiJIUzI1NiJ9..."
+  }
+}
+```
+
+**실패 케이스 - 400 Bad Request**
+```json
+{ "success": false, "message": "페어링 코드가 만료되었거나 유효하지 않습니다.", "data": null }
+```
+
+**실패 케이스 - 401 Unauthorized**
+```json
+{ "success": false, "message": "인증 정보가 유효하지 않습니다. 다시 로그인해주세요.", "data": null }
+```
+
+**실패 케이스 - 500 Internal Server Error**
+```json
+{ "success": false, "message": "서버 내부 오류가 발생했습니다.", "data": null }
+```
+
+---
+
 ## 📍 17 장소별 IoT 기기 목록 조회 API
 
 - **설명:** 특정 장소에 등록된 모든 IoT 기기(Arduino 센서 및 공기계 앱) 목록을 조회하는 API입니다. 기기의 온라인 상태 및 기기 유형을 함께 반환하며, 관리자 앱의 기기 관리 화면에서 사용됩니다. (인증 필요)
@@ -42,7 +191,7 @@ GET /api/device?placeId=501
 | devices | 필수 | Array | 기기 목록 |
 | devices[].deviceId | 필수 | String | 기기 고유 ID |
 | devices[].deviceName | 필수 | String | 기기 이름 (방 이름) |
-| devices[].deviceType | 필수 | String | 기기 유형 (ARDUINO / KIOSK) |
+| devices[].deviceType | 필수 | String | 기기 유형 (ARDUINO / AEROMETER) |
 | devices[].isOnline | 필수 | Boolean | 현재 온라인 여부 |
 | devices[].createdAt | 필수 | DateTime | 기기 등록일시 (ISO 8601) |
 
@@ -62,9 +211,9 @@ GET /api/device?placeId=501
         "createdAt": "2026-05-01T10:00:00Z"
       },
       {
-        "deviceId": "kiosk_a3f7k2_1716",
+        "deviceId": "aerometer_a3f7k2_1716",
         "deviceName": "거실 공기계",
-        "deviceType": "KIOSK",
+        "deviceType": "AEROMETER",
         "isOnline": true,
         "createdAt": "2026-05-01T10:05:00Z"
       }
@@ -97,7 +246,7 @@ GET /api/device?placeId=501
 
 ## 📍 18 새로운 IoT 기기 추가 API
 
-- **설명:** 장소에 새로운 Arduino IoT 기기를 등록하는 API입니다. 공기계 앱(KIOSK) 등록은 페어링 코드 방식을 사용하며, 이 API는 Arduino 기기(ARDUINO) 직접 등록에 사용됩니다. (ADMIN 권한 필요)
+- **설명:** 장소에 새로운 Arduino IoT 기기를 등록하는 API입니다. 공기계 앱(AEROMETER) 등록은 페어링 코드 방식을 사용하며(#08, #09 참고), 이 API는 Arduino 기기(ARDUINO) 직접 등록에 사용됩니다. (ADMIN 권한 필요)
 - **헤더:** `Authorization: Bearer {accessToken}`
 
 **Parameter**
@@ -183,7 +332,7 @@ GET /api/device?placeId=501
 
 ## 📍 19 IoT 기기 제어 API
 
-- **설명:** 관리자 앱에서 특정 공기계 앱(KIOSK)을 통해 IoT 기기(에어컨 등)를 제어하는 명령을 전달하는 API입니다. 서버는 WebSocket을 통해 해당 공기계 앱으로 제어 명령을 중계하며, 공기계 앱이 Wi-Fi로 IoT 기기를 직접 제어합니다. (ADMIN 권한 필요)
+- **설명:** 관리자 앱에서 특정 공기계 앱(AEROMETER)을 통해 IoT 기기(에어컨 등)를 제어하는 명령을 전달하는 API입니다. 서버는 WebSocket을 통해 해당 공기계 앱으로 제어 명령을 중계하며, 공기계 앱이 SmartThings API를 호출해 IoT 기기를 제어합니다. (ADMIN 권한 필요)
 - **헤더:** `Authorization: Bearer {accessToken}`
 
 **Parameter**

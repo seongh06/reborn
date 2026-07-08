@@ -3,9 +3,6 @@ package com.reborn.server.domain.place.service
 import com.reborn.server.domain.auth.OAuthProvider
 import com.reborn.server.domain.auth.User
 import com.reborn.server.domain.auth.UserRepository
-import com.reborn.server.domain.device.Device
-import com.reborn.server.domain.device.DeviceType
-import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.PlaceType
@@ -42,9 +39,6 @@ class PlaceServiceTest {
 
     @Mock
     private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
-
-    @Mock
-    private lateinit var deviceRepository: DeviceRepository
 
     @Mock
     private lateinit var redisUtil: RedisUtil
@@ -112,84 +106,6 @@ class PlaceServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.NOT_FOUND)
-    }
-
-    @Test
-    fun `generatePairingCode - ADMIN이면 코드를 생성한다`() {
-        given(placeRepository.existsById(501L)).willReturn(true)
-        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
-            .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
-
-        val response = placeService.generatePairingCode(1L, 501L)
-
-        assertThat(response.pairingCode).hasSize(6)
-        assertThat(response.expiresAt).isAfter(LocalDateTime.now())
-    }
-
-    @Test
-    fun `generatePairingCode - ADMIN 권한이 없으면 예외가 발생한다`() {
-        given(placeRepository.existsById(501L)).willReturn(true)
-        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(null)
-
-        assertThatThrownBy { placeService.generatePairingCode(1L, 501L) }
-            .isInstanceOf(BusinessAlertException::class.java)
-            .extracting("errorCode")
-            .isEqualTo(CommonErrorCode.FORBIDDEN)
-    }
-
-    @Test
-    fun `generatePairingCode - 존재하지 않는 장소면 예외가 발생한다`() {
-        given(placeRepository.existsById(999L)).willReturn(false)
-
-        assertThatThrownBy { placeService.generatePairingCode(1L, 999L) }
-            .isInstanceOf(BusinessAlertException::class.java)
-            .extracting("errorCode")
-            .isEqualTo(CommonErrorCode.NOT_FOUND)
-    }
-
-    @Test
-    fun `pairDevice - 유효한 코드면 KIOSK 기기를 등록한다`() {
-        val request = PlaceDto.PairingRequest(pairingCode = "ABC123", deviceName = "거실 공기계")
-        val savedDevice = Device(
-            place = place,
-            deviceType = DeviceType.KIOSK,
-            deviceKey = "device-uuid",
-            name = "거실 공기계",
-            appToken = "token-uuid",
-            id = 10,
-        )
-
-        given(redisUtil.get("pairing:ABC123")).willReturn("501")
-        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
-        given(deviceRepository.save(any())).willReturn(savedDevice)
-
-        val response = placeService.pairDevice(request)
-
-        assertThat(response.deviceId).isEqualTo("device-uuid")
-        assertThat(response.placeId).isEqualTo(501L)
-        assertThat(response.appToken).isNotBlank()
-        verify(redisUtil).delete("pairing:ABC123")
-    }
-
-    @Test
-    fun `pairDevice - 페어링 코드가 없으면 예외가 발생한다`() {
-        val request = PlaceDto.PairingRequest(pairingCode = " ", deviceName = "거실 공기계")
-
-        assertThatThrownBy { placeService.pairDevice(request) }
-            .isInstanceOf(BusinessAlertException::class.java)
-            .extracting("errorCode")
-            .isEqualTo(CommonErrorCode.INVALID_INPUT)
-    }
-
-    @Test
-    fun `pairDevice - 코드가 만료되었거나 유효하지 않으면 예외가 발생한다`() {
-        val request = PlaceDto.PairingRequest(pairingCode = "INVALID", deviceName = "거실 공기계")
-        given(redisUtil.get("pairing:INVALID")).willReturn(null)
-
-        assertThatThrownBy { placeService.pairDevice(request) }
-            .isInstanceOf(BusinessAlertException::class.java)
-            .extracting("errorCode")
-            .isEqualTo(CommonErrorCode.INVALID_INPUT)
     }
 
     @Test

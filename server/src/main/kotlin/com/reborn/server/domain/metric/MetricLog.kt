@@ -1,4 +1,4 @@
-package com.reborn.server.domain.data
+package com.reborn.server.domain.metric
 
 import com.reborn.server.domain.device.Device
 import com.reborn.server.global.jpa.BaseEntity
@@ -13,8 +13,8 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "sensor_logs")
-class SensorLogs(
+@Table(name = "metric_logs")
+class MetricLog(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_id")

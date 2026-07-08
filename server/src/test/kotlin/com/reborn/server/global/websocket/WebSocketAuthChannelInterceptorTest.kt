@@ -47,7 +47,7 @@ class WebSocketAuthChannelInterceptorTest {
         place = Place(name = "우리집", qrCode = "qr-uuid", type = PlaceType.HOME, id = 501)
         device = Device(
             place = place,
-            deviceType = DeviceType.KIOSK,
+            deviceType = DeviceType.AEROMETER,
             deviceKey = "kiosk-1",
             name = "거실 공기계",
             appToken = "app-token-1",
@@ -89,7 +89,7 @@ class WebSocketAuthChannelInterceptorTest {
     }
 
     @Test
-    fun `preSend - deviceKey와 appToken이 일치하면 KIOSK로 인증한다`() {
+    fun `preSend - deviceKey와 appToken이 일치하면 AEROMETER로 인증한다`() {
         val accessor = connectAccessor(mapOf("X-Device-Key" to "kiosk-1", "X-App-Token" to "app-token-1"))
         val message = MessageBuilder.createMessage(ByteArray(0), accessor.messageHeaders)
         given(deviceRepository.findByDeviceKey("kiosk-1")).willReturn(device)
@@ -98,7 +98,7 @@ class WebSocketAuthChannelInterceptorTest {
 
         val principal = StompHeaderAccessor.wrap(result).user as StompPrincipal
         assertThat(principal.name).isEqualTo("kiosk-1")
-        assertThat(principal.role).isEqualTo(ConnectionRole.KIOSK)
+        assertThat(principal.role).isEqualTo(ConnectionRole.AEROMETER)
     }
 
     @Test

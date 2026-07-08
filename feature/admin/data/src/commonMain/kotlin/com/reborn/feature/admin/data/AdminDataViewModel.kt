@@ -158,7 +158,7 @@ private fun yearlyMockValues(category: AdminDataUiState.Category): List<Double> 
     AdminDataUiState.Category.DISCOMFORT -> listOf(70.0, 72.0, 69.0, 71.0, 73.0)
 }
 
-// TODO: 서버 /api/data/history 연동 확정 후 실제 Ktor 구현체로 교체하고 Koin으로 주입받도록 변경 예정.
+// TODO: 서버 /api/metric/history 연동 확정 후 실제 Ktor 구현체로 교체하고 Koin으로 주입받도록 변경 예정.
 // 카테고리당 리터럴 패턴 2개 = 딱 2일치("어제", "오늘")만 생성 — 반복/순환 없이 그대로 사용
 private class MockSensorHistoryApi : SensorHistoryApi {
     override suspend fun getSensorHistory(deviceId: Int, sensorType: String): SensorHistoryResponse {

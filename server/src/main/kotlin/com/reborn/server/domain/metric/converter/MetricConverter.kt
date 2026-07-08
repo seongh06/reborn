@@ -1,21 +1,21 @@
-package com.reborn.server.domain.data.converter
+package com.reborn.server.domain.metric.converter
 
-import com.reborn.server.domain.data.SensorLogs
-import com.reborn.server.domain.data.dto.SensorDataDto
 import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.metric.MetricLog
+import com.reborn.server.domain.metric.dto.MetricDto
 import org.springframework.data.domain.Page
 
-object SensorDataConverter {
+object MetricConverter {
 
-    fun toCollectResponse(entity: SensorLogs): SensorDataDto.CollectResponse =
-        SensorDataDto.CollectResponse(
+    fun toCollectResponse(entity: MetricLog): MetricDto.CollectResponse =
+        MetricDto.CollectResponse(
             logId = entity.id,
             discomfort = calculateDiscomfort(entity.temperature, entity.humidity),
             createdAt = requireNotNull(entity.createdAt),
         )
 
-    fun toCurrentResponse(device: Device, entity: SensorLogs): SensorDataDto.CurrentResponse =
-        SensorDataDto.CurrentResponse(
+    fun toCurrentResponse(device: Device, entity: MetricLog): MetricDto.CurrentResponse =
+        MetricDto.CurrentResponse(
             deviceId = device.deviceKey,
             deviceName = device.name,
             temperature = entity.temperature,
@@ -26,8 +26,8 @@ object SensorDataConverter {
             createdAt = requireNotNull(entity.createdAt),
         )
 
-    fun toHistoryResponse(deviceId: String, logs: Page<SensorLogs>): SensorDataDto.HistoryResponse =
-        SensorDataDto.HistoryResponse(
+    fun toHistoryResponse(deviceId: String, logs: Page<MetricLog>): MetricDto.HistoryResponse =
+        MetricDto.HistoryResponse(
             deviceId = deviceId,
             logs = logs.content.map(::toHistoryItem),
             page = logs.number,
@@ -36,8 +36,8 @@ object SensorDataConverter {
             totalPages = logs.totalPages,
         )
 
-    private fun toHistoryItem(entity: SensorLogs): SensorDataDto.HistoryItem =
-        SensorDataDto.HistoryItem(
+    private fun toHistoryItem(entity: MetricLog): MetricDto.HistoryItem =
+        MetricDto.HistoryItem(
             logId = entity.id,
             temperature = entity.temperature,
             humidity = entity.humidity,

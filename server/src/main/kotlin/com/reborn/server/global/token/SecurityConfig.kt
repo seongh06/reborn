@@ -61,7 +61,7 @@ class SecurityConfig(
                     .requestMatchers("/api/auth/**").permitAll()
 
                     // Arduino 기기 인증 (Device Key 헤더) — JWT 불필요
-                    .requestMatchers("/api/sensor/collect", "/api/sensor/current").permitAll()
+                    .requestMatchers("/api/metric/collect", "/api/metric/current").permitAll()
 
                     // QR 웹페이지에서 비로그인 방문자가 제출 — 조회/상태변경은 anyRequest().authenticated()로 보호
                     .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
