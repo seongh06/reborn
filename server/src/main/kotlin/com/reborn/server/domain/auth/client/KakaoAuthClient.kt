@@ -40,13 +40,14 @@ class KakaoAuthClient(
         val account = response.kakaoAccount
         val email = account?.email
             ?.takeIf { it.isNotBlank() && account.isEmailValid == true && account.isEmailVerified == true }
-            ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "카카오 계정에 이메일 제공 동의가 필요합니다.")
+        val nickname = account?.profile?.nickname?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "카카오 계정에 닉네임 제공 동의가 필요합니다.")
 
         return SocialUserInfo(
             providerId = response.id.toString(),
             email = email,
-            name = account.profile?.nickname?.takeIf { it.isNotBlank() } ?: email,
-            profileImage = account.profile?.profileImageUrl,
+            name = nickname,
+            profileImage = account.profile.profileImageUrl,
         )
     }
 
