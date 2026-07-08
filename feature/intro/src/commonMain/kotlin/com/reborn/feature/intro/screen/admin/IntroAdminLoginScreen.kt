@@ -25,7 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.common.PermissionHandler
 import com.reborn.core.common.PermissionType
+import com.reborn.core.common.SocialType
 import com.reborn.core.common.rememberPermissionManager
+import com.reborn.core.common.rememberSocialLoginLauncher
 import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
@@ -35,7 +37,6 @@ import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
 import com.reborn.feature.intro.component.PermissionSection
 import com.reborn.feature.intro.component.SocialLoginButton
-import com.reborn.feature.intro.component.SocialType
 import com.reborn.feature.intro.component.TermSection
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
@@ -48,6 +49,19 @@ fun IntroAdminLoginScreen(
     onLoginClick: () -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
+    val socialLoginLauncher = rememberSocialLoginLauncher(
+        onResult = { provider, token -> viewModel.login(provider, token) },
+        onError = { viewModel.reportError(it) }
+    )
+
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            if (event is IntroEvent.LoginSuccess) {
+                onLoginClick()
+            }
+        }
+    }
+
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
@@ -55,11 +69,11 @@ fun IntroAdminLoginScreen(
 
         SocialLoginButton(
             socialType = SocialType.KAKAO,
-            onClick = { onLoginClick() }
+            onClick = { socialLoginLauncher.launch(SocialType.KAKAO) }
         )
         SocialLoginButton(
             socialType = SocialType.GOOGLE,
-            onClick = { onLoginClick() }
+            onClick = { socialLoginLauncher.launch(SocialType.GOOGLE) }
         )
     }
 }
