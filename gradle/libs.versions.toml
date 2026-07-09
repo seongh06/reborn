@@ -77,7 +77,7 @@ lifecycleProcess = "2.11.0"
 
 #firebase / fcm
 googleServicesPlugin = "4.5.0"
-firebaseMessaging = "24.1.1"
+firebaseMessaging = "25.1.0"
 
 
 [libraries]

@@ -8,12 +8,14 @@ import com.reborn.core.model.Login
 import com.reborn.core.notification.getFcmToken
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed class IntroEvent {
     data object NavigateToAdmin : IntroEvent()
@@ -115,7 +117,11 @@ class IntroViewModel(
             loginUseCase(Login(provider, token))
                 .onSuccess { result ->
                     _event.emit(IntroEvent.LoginSuccess(result.isNewUser))
-                    registerFcmToken()
+                    // 기존 유저는 LoginSuccess 직후 네비게이션으로 IntroViewModel의 viewModelScope가
+                    // 취소될 수 있어(#103 CodeRabbit 리뷰), FCM 등록만은 취소되지 않도록 보호한다.
+                    withContext(NonCancellable) {
+                        registerFcmToken()
+                    }
                 }
                 .onFailure {
                     println("IntroViewModel: 로그인 API 실패 - provider=$provider, error=${it.message}")

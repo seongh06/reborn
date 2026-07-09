@@ -23,9 +23,9 @@ class AuthRepositoryImpl(
     // 원격 로그아웃(Redis RefreshToken 삭제)이 401/네트워크 오류로 실패해도
     // 로컬 세션은 항상 종료한다 - 그렇지 않으면 사용자가 로그아웃을 못 하는 상태로 남는다.
     override suspend fun logout(): Result<Unit> = runCatching {
-        val remoteResult = remote.logout(local.getAccessToken().orEmpty()).toResult()
+        val remoteResult = runCatching { remote.logout(local.getAccessToken().orEmpty()).toResult() }
         local.clearTokens()
-        remoteResult.onFailure { println("AuthRepositoryImpl: 원격 로그아웃 실패(로컬 세션은 종료됨) - ${it.message}") }
+        remoteResult.getOrNull()?.onFailure { println("AuthRepositoryImpl: 원격 로그아웃 실패(로컬 세션은 종료됨) - ${it.message}") }
     }
 
     override suspend fun updateFcmToken(fcmToken: String): Result<Unit> =
