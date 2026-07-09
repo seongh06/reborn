@@ -140,7 +140,7 @@ class PlaceService(
 
     companion object {
         private const val ADMIN_INVITE_PREFIX = "admin-invite:"
-        private const val ADMIN_CODE_LENGTH = 8
+        private const val ADMIN_CODE_LENGTH = 6
         private const val ADMIN_INVITE_TTL_MINUTES = 30L
         private const val MAX_CODE_GENERATION_ATTEMPTS = 5
     }
