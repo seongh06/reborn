@@ -9,7 +9,6 @@ import com.reborn.feature.intro.model.IntroUiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -19,7 +18,7 @@ sealed class IntroEvent {
     data object NavigateToAerometer : IntroEvent()
     data object PermissionGranted : IntroEvent()
     data object ExitIntro : IntroEvent()
-    data object LoginSuccess : IntroEvent()
+    data class LoginSuccess(val isNewUser: Boolean) : IntroEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : IntroEvent()
 }
 
@@ -110,10 +109,9 @@ class IntroViewModel(
 
     fun login(provider: String, token: String) {
         viewModelScope.launch {
-            loginUseCase(Login(provider = provider, token = token))
-                .onSuccess {
-                    println("IntroViewModel: 로그인 API 성공 - provider=$provider")
-                    _event.emit(IntroEvent.LoginSuccess)
+            loginUseCase(Login(provider,token))
+                .onSuccess { result ->
+                    _event.emit(IntroEvent.LoginSuccess(result.isNewUser))
                 }
                 .onFailure {
                     println("IntroViewModel: 로그인 API 실패 - provider=$provider, error=${it.message}")

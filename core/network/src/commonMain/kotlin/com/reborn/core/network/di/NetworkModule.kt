@@ -32,7 +32,7 @@ val networkModule = module {
         createHttpClient(get(), get())
     }
 
-    // Phase 3에서 Bearer 토큰 인증 추가 예정
+    // 요청마다 호출부에서 Authorization 헤더를 직접 실어 보냄 (자동 첨부 인터셉터는 추후 추가 예정)
     single(named("auth")) {
         createHttpClient(get(), get())
     }

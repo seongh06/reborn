@@ -40,7 +40,8 @@ fun AdminSettingRoute(
     onBackClick: () -> Unit,
     onNavigateToInviteCode: (Int) -> Unit = {},
     onNavigateToAddDevice: (Int) -> Unit = {},
-    onNavigateToAddPlace: () -> Unit = {}
+    onNavigateToAddPlace: () -> Unit = {},
+    onLoggedOut: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -62,6 +63,7 @@ fun AdminSettingRoute(
                 is AdminSettingEvent.NavigateToInviteCode -> onNavigateToInviteCode(event.placeId)
                 is AdminSettingEvent.NavigateToAddDevice -> onNavigateToAddDevice(event.placeId)
                 is AdminSettingEvent.NavigateToAddPlace -> onNavigateToAddPlace()
+                is AdminSettingEvent.LoggedOut -> onLoggedOut()
             }
         }
     }
@@ -77,7 +79,8 @@ fun AdminSettingRoute(
                 onDeleteRoomClick = { placeId -> viewModel.onIntent(AdminSettingIntent.DeleteRoom(placeId)) },
                 onAddAdminClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAdmin(placeId)) },
                 onAddDeviceClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddDevice(placeId)) },
-                onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) }
+                onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) },
+                onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) }
             )
         }
     }
@@ -90,7 +93,8 @@ fun AdminSettingScreen(
     onDeleteRoomClick: (Int) -> Unit,
     onAddAdminClick: (Int) -> Unit,
     onAddDeviceClick: (Int) -> Unit,
-    onAddPlaceClick: () -> Unit
+    onAddPlaceClick: () -> Unit,
+    onLogoutClick: () -> Unit
 
 ) {
     Column(
@@ -153,7 +157,7 @@ fun AdminSettingScreen(
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
                 SettingItem(label = "이용약관", onClick = {})
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
-                SettingItem(label = "로그아웃", onClick = {})
+                SettingItem(label = "로그아웃", onClick = onLogoutClick)
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
                 SettingItem(label = "탈퇴", onClick = {})
             }

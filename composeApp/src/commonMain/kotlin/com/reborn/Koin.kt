@@ -5,6 +5,8 @@ import com.reborn.core.data.di.repositoryModule
 import com.reborn.core.datastore.di.dataStoreModule
 import com.reborn.core.datastore.di.platformDataStoreModule
 import com.reborn.core.domain.usecase.LoginUseCase
+import com.reborn.core.domain.usecase.LogoutUseCase
+import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.network.di.dataSourceModule
 import com.reborn.core.network.di.networkModule
 import com.reborn.feature.admin.adjust.AdminAdjustViewModel
@@ -24,6 +26,9 @@ import org.koin.dsl.module
 
 val appDependenciesModule = module {
     factory { LoginUseCase(get()) }
+    factory { LogoutUseCase(get()) }
+    // core:notification 연동 시 앱 시작/토큰 갱신 트리거에서 사용 예정
+    factory { UpdateFcmTokenUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)
