@@ -104,12 +104,12 @@ fun IntroRoute(
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.AdminLogin -> IntroAdminLoginScreen(
-                onLoginClick = { isNewUser ->
-                    if (isNewUser) {
-                        // 신규 유저: 장소 등록/페어링 등 초기 설정 플로우를 거쳐야 함
+                onLoginClick = { needsPlaceSetup ->
+                    if (needsPlaceSetup) {
+                        // 신규 유저이거나, 기존 유저지만 소속 장소가 없는 경우(#108) — 장소 등록/페어링 등 초기 설정 플로우를 거쳐야 함
                         viewModel.onIntent(IntroIntent.NavigateToAdminModeSelect)
                     } else {
-                        // 기존 유저: 초기 설정 없이 바로 메인 화면(AdminHomeScreen)으로 이동
+                        // 소속 장소가 있는 기존 유저: 초기 설정 없이 바로 메인 화면(AdminHomeScreen)으로 이동
                         viewModel.onIntent(IntroIntent.NavigateToAdmin)
                     }
                 }
