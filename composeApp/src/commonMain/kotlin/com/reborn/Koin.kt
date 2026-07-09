@@ -27,7 +27,6 @@ import org.koin.dsl.module
 val appDependenciesModule = module {
     factory { LoginUseCase(get()) }
     factory { LogoutUseCase(get()) }
-    // core:notification 연동 시 앱 시작/토큰 갱신 트리거에서 사용 예정
     factory { UpdateFcmTokenUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
