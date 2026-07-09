@@ -23,7 +23,11 @@ fun getProperty(key: String): String {
 buildConfig {
     packageName("com.reborn.core.common")
 
-    buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${getProperty("GOOGLE_WEB_CLIENT_ID")}\"")
+    buildConfigField(
+        "String",
+        "GOOGLE_WEB_CLIENT_ID",
+        providers.provider { "\"${getProperty("GOOGLE_WEB_CLIENT_ID")}\"" },
+    )
 }
 
 kotlin {
