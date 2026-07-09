@@ -5,6 +5,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.reborn.application)
     alias(libs.plugins.oss)
+    alias(libs.plugins.googleServices)
 }
 
 val localProperties = Properties()
@@ -56,7 +57,7 @@ kotlin {
             implementation(projects.core.domain)
             implementation(projects.core.model)
             implementation(projects.core.navigation)
-            //implementation(projects.core.notification)
+            implementation(projects.core.notification)
             implementation(projects.core.network)
             implementation(projects.core.ui)
 

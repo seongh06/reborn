@@ -75,6 +75,10 @@ playServicesOssLicenses = "17.5.1"
 oss-plugin = "0.12.0"
 lifecycleProcess = "2.11.0"
 
+#firebase / fcm
+googleServicesPlugin = "4.5.0"
+firebaseMessaging = "24.1.1"
+
 
 [libraries]
 
@@ -191,6 +195,9 @@ aws-sdk-s3 = { module = "software.amazon.awssdk:s3" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 firebase-admin = { group = "com.google.firebase", name = "firebase-admin", version.ref = "firebaseAdmin" }
 
+#firebase / fcm (Android client)
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
+
 
 [plugins]
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -221,3 +228,4 @@ reborn-feature = { id = "reborn.feature", version = "unspecified" }
 reborn-library = { id = "reborn.library", version = "unspecified" }
 
 oss = { id = "com.google.android.gms.oss-licenses-plugin", version.ref = "oss-plugin" }
+googleServices = { id = "com.google.gms.google-services", version.ref = "googleServicesPlugin" }

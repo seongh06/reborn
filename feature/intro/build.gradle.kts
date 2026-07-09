@@ -10,7 +10,7 @@ setNamespace("feature.intro")
 kotlin {
     sourceSets {
         commonMain.dependencies {
-
+            implementation(projects.core.notification)
         }
     }
 }

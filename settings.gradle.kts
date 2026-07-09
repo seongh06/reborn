@@ -42,6 +42,7 @@ include(":core:ui")
 include(":core:navigation")
 include(":core:common")
 include(":core:datastore")
+include(":core:notification")
 
 include(":feature:intro")
 include(":feature:aerometer")

@@ -3,7 +3,9 @@ package com.reborn.feature.intro
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.domain.usecase.LoginUseCase
+import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.model.Login
+import com.reborn.core.notification.getFcmToken
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
 import kotlinx.coroutines.delay
@@ -24,6 +26,7 @@ sealed class IntroEvent {
 
 class IntroViewModel(
     private val loginUseCase: LoginUseCase,
+    private val updateFcmTokenUseCase: UpdateFcmTokenUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<IntroUiState>(IntroUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -109,15 +112,24 @@ class IntroViewModel(
 
     fun login(provider: String, token: String) {
         viewModelScope.launch {
-            loginUseCase(Login(provider,token))
+            loginUseCase(Login(provider, token))
                 .onSuccess { result ->
                     _event.emit(IntroEvent.LoginSuccess(result.isNewUser))
+                    registerFcmToken()
                 }
                 .onFailure {
                     println("IntroViewModel: 로그인 API 실패 - provider=$provider, error=${it.message}")
                     _event.emit(IntroEvent.ShowErrorSnackbar(it))
                 }
         }
+    }
+
+    // 로그인 성공 직후(accessToken 확보 이후)에만 서버로 FCM 토큰을 보낼 수 있어 이 시점에 호출.
+    // 실패해도 로그인 플로우 자체를 막지 않는 best-effort 동작.
+    private suspend fun registerFcmToken() {
+        val token = runCatching { getFcmToken() }.getOrNull() ?: return
+        updateFcmTokenUseCase(token)
+            .onFailure { println("IntroViewModel: FCM 토큰 등록 실패 - ${it.message}") }
     }
 
     fun reportError(throwable: Throwable) {
