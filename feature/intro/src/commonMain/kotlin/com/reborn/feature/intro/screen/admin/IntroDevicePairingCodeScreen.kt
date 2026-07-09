@@ -16,31 +16,37 @@ import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
-import com.reborn.feature.intro.IntroViewModel.Companion.ADMIN_CODE_TTL_SECONDS
+import com.reborn.feature.intro.IntroViewModel.Companion.PAIRING_CODE_TTL_SECONDS
 import com.reborn.feature.intro.component.PairingCodeIssued
 import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
-// Setting의 "관리자 초대" 버튼에서 진입하는 관리자 초대 코드(#10) 화면.
-// 실제 완료(초대받은 사람이 코드를 입력함)는 이 화면에서 알 수 없다 - 향후 서버 이벤트/소켓으로
-// 실시간 알림을 받기 전까지는 뒤로가기로만 나갈 수 있다(#110).
+// 장소 생성 직후 공기계 기기를 이 장소에 연결하기 위한 페어링 코드(#08) 발급 화면.
+// Setting의 "관리자 초대"에서 진입하는 IntroAdminCodeScreen(관리자 초대 코드, #10)과는 다른 화면 - #110
 @Composable
-fun IntroAdminCodeScreen(
-    placeId: Long,
+fun IntroDevicePairingCodeScreen(
+    placeId: Long?,
     onBackClick: () -> Unit,
+    onNextClick: () -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
     val waitTime = 60
 
     var code by remember { mutableStateOf<String?>(null) }
-    var timeLeft by remember { mutableStateOf(ADMIN_CODE_TTL_SECONDS) }
+    var timeLeft by remember { mutableStateOf(PAIRING_CODE_TTL_SECONDS) }
+
+    if (placeId == null) {
+        // 정상 흐름에서는 발생하지 않음 - 온보딩 중 방금 등록한 장소로 항상 채워짐
+        LaunchedEffect(Unit) { onBackClick() }
+        return
+    }
 
     LaunchedEffect(Unit) {
-        viewModel.generateAdminCode(placeId)
+        viewModel.generatePairingCode(placeId)
 
         viewModel.event.collect { event ->
             when (event) {
-                is IntroEvent.AdminCodeIssued -> {
+                is IntroEvent.PairingCodeIssued -> {
                     code = event.code
                     timeLeft = event.remainingSeconds
                 }
@@ -52,7 +58,7 @@ fun IntroAdminCodeScreen(
                 is IntroEvent.ExitIntro,
                 is IntroEvent.LoginSuccess,
                 is IntroEvent.PlaceRegistered,
-                is IntroEvent.PairingCodeIssued,
+                is IntroEvent.AdminCodeIssued,
                 is IntroEvent.InviteCodeVerified,
                 is IntroEvent.InviteCodeInvalid -> {}
             }
@@ -66,7 +72,7 @@ fun IntroAdminCodeScreen(
         }
     }
 
-    val canReissue = (ADMIN_CODE_TTL_SECONDS - timeLeft) >= waitTime
+    val canReissue = (PAIRING_CODE_TTL_SECONDS - timeLeft) >= waitTime
 
     val issuedCode = code
     if (issuedCode == null) {
@@ -78,14 +84,18 @@ fun IntroAdminCodeScreen(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
         RebornTopAppBar(onBackClick = { onBackClick() })
-        RebornTopAppBar(title = "관리자 초대 코드")
+        RebornTopAppBar(title = "공기계 페어링")
         PairingCodeIssued(issuedCode, timeLeft)
         Spacer(modifier = Modifier.weight(1f))
 
         RebornButton(
-            text = "코드 재발급",
+            text = "페어링 코드 재발급",
             enabled = canReissue,
-            onClick = { viewModel.generateAdminCode(placeId) }
+            onClick = { viewModel.generatePairingCode(placeId) }
+        )
+        RebornButton(
+            text = "완료",
+            onClick = { onNextClick() }
         )
     }
 }

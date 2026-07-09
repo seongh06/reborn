@@ -29,11 +29,11 @@ import com.reborn.feature.intro.model.IntroUiState
 import com.reborn.feature.intro.screen.IntroModeSelectScreen
 import com.reborn.feature.intro.screen.IntroPermissionScreen
 import com.reborn.feature.intro.screen.IntroTermScreen
-import com.reborn.feature.intro.screen.admin.IntroAdminCodeScreen
 import com.reborn.feature.intro.screen.admin.IntroAdminLoginScreen
 import com.reborn.feature.intro.screen.admin.IntroAdminModeSelectScreen
 import com.reborn.feature.intro.screen.admin.IntroAdminPlaceNameScreen
 import com.reborn.feature.intro.screen.admin.IntroAdminPlaceSelectScreen
+import com.reborn.feature.intro.screen.admin.IntroDevicePairingCodeScreen
 import com.reborn.feature.intro.screen.admin.IntroInviteCodeScreen
 import com.reborn.feature.intro.screen.aerometer.IntroAermeterPairingScreen
 import com.reborn.feature.intro.screen.aerometer.IntroAerometerDeviceNameScreen
@@ -67,6 +67,7 @@ fun IntroRoute(
                 is IntroEvent.LoginSuccess -> {} // IntroAdminLoginScreen에서 자체적으로 처리
                 is IntroEvent.PlaceRegistered -> {} // IntroAdminPlaceSelectScreen에서 자체적으로 처리
                 is IntroEvent.AdminCodeIssued -> {} // IntroAdminCodeScreen에서 자체적으로 처리
+                is IntroEvent.PairingCodeIssued -> {} // IntroDevicePairingCodeScreen에서 자체적으로 처리
                 is IntroEvent.InviteCodeVerified -> {} // IntroInviteCodeScreen에서 자체적으로 처리
                 is IntroEvent.InviteCodeInvalid -> {} // IntroInviteCodeScreen에서 자체적으로 처리
             }
@@ -126,10 +127,10 @@ fun IntroRoute(
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.AdminPlaceSelect -> IntroAdminPlaceSelectScreen(
-                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdminCode) },
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToDevicePairing) },
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
-            is IntroUiState.AdminCode -> IntroAdminCodeScreen(
+            is IntroUiState.DevicePairing -> IntroDevicePairingCodeScreen(
                 placeId = viewModel.registeredPlaceId,
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) },
                 onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) }
