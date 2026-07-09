@@ -31,6 +31,8 @@ class AdminSettingViewModel(
     val uiState = navigationManager.uiState
     val event = navigationManager.event
 
+    private var isLoggingOut = false
+
     // TODO: 서버 place 목록 조회 API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
     private var rooms: List<AdminSettingUiState.RoomItem> = listOf(
         AdminSettingUiState.RoomItem(placeId = 1, roomName = "Home 01", adminCount = 3, deviceCount = 3),
@@ -67,12 +69,15 @@ class AdminSettingViewModel(
     }
 
     private fun logout() {
+        if (isLoggingOut) return
+        isLoggingOut = true
         viewModelScope.launch {
             logoutUseCase()
                 .onSuccess {
                     navigationManager.emitEvent(AdminSettingEvent.LoggedOut)
                 }
                 .onFailure {
+                    isLoggingOut = false
                     navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
                 }
         }

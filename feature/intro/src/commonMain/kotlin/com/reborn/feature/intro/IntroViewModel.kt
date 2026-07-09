@@ -111,7 +111,6 @@ class IntroViewModel(
         viewModelScope.launch {
             loginUseCase(Login(provider,token))
                 .onSuccess { result ->
-                    println("IntroViewModel: 로그인 API 성공 - provider=$provider, isNewUser=${result.isNewUser}")
                     _event.emit(IntroEvent.LoginSuccess(result.isNewUser))
                 }
                 .onFailure {
