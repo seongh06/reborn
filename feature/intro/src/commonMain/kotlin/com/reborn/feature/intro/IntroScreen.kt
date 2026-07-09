@@ -99,7 +99,15 @@ fun IntroRoute(
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.AdminLogin -> IntroAdminLoginScreen(
-                onLoginClick = { viewModel.onIntent(IntroIntent.NavigateToAdminModeSelect) }
+                onLoginClick = { isNewUser ->
+                    if (isNewUser) {
+                        // 신규 유저: 장소 등록/페어링 등 초기 설정 플로우를 거쳐야 함
+                        viewModel.onIntent(IntroIntent.NavigateToAdminModeSelect)
+                    } else {
+                        // 기존 유저: 초기 설정 없이 바로 메인 화면(AdminHomeScreen)으로 이동
+                        viewModel.onIntent(IntroIntent.NavigateToAdmin)
+                    }
+                }
             )
             is IntroUiState.AdminModeSelect -> IntroAdminModeSelectScreen(
                 onInviteCodeClick = { viewModel.onIntent(IntroIntent.NavigateToInviteCode) },

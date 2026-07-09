@@ -16,7 +16,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun IntroAdminLoginScreen(
-    onLoginClick: () -> Unit,
+    onLoginClick: (isNewUser: Boolean) -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
     val socialLoginLauncher = rememberSocialLoginLauncher(
@@ -27,7 +27,7 @@ fun IntroAdminLoginScreen(
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->
             if (event is IntroEvent.LoginSuccess) {
-                onLoginClick()
+                onLoginClick(event.isNewUser)
             }
         }
     }
