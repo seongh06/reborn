@@ -31,7 +31,7 @@ fun NavGraphBuilder.introNavGraph(
     }
 }
 
-// Setting의 "관리자 초대" 버튼에서 진입하는 페어링 코드 화면 — Intro 온보딩 플로우와 별개의 최상위 라우트
+// Setting의 "관리자 초대" 버튼에서 진입하는 관리자 초대 코드 화면 — Intro 온보딩 플로우와 별개의 최상위 라우트
 fun NavGraphBuilder.introAdminCodeNavGraph(
     onBackClick: () -> Unit
 ) {
@@ -39,8 +39,7 @@ fun NavGraphBuilder.introAdminCodeNavGraph(
         val route = backStackEntry.toRoute<Route.Admin.InviteCode>()
         IntroAdminCodeScreen(
             placeId = route.placeId.toLong(),
-            onBackClick = onBackClick,
-            onNextClick = onBackClick
+            onBackClick = onBackClick
         )
     }
 }

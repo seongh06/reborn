@@ -68,6 +68,7 @@ fun IntroAdminPlaceSelectScreen(
                 is IntroEvent.ExitIntro,
                 is IntroEvent.LoginSuccess,
                 is IntroEvent.AdminCodeIssued,
+                is IntroEvent.PairingCodeIssued,
                 is IntroEvent.InviteCodeVerified,
                 is IntroEvent.InviteCodeInvalid -> {}
             }

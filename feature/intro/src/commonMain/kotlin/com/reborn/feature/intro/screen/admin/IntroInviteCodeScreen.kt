@@ -23,8 +23,8 @@ fun IntroInviteCodeScreen(
     viewModel: IntroViewModel = koinViewModel()
 ) {
     var inviteCode by remember { mutableStateOf("") }
-    // 서버 관리자 초대 코드는 8자리(A-Z0-9) - PlaceService.ADMIN_CODE_LENGTH와 동일
-    val maxCount = 8
+    // 서버 관리자 초대 코드는 6자리(A-Z0-9) - PlaceService.ADMIN_CODE_LENGTH와 동일(#110에서 8→6 통일)
+    val maxCount = 6
 
     var pairingCodeError by remember { mutableStateOf(false) }
 
@@ -40,7 +40,8 @@ fun IntroInviteCodeScreen(
                 is IntroEvent.LoginSuccess,
                 is IntroEvent.ShowErrorSnackbar,
                 is IntroEvent.PlaceRegistered,
-                is IntroEvent.AdminCodeIssued -> {}
+                is IntroEvent.AdminCodeIssued,
+                is IntroEvent.PairingCodeIssued -> {}
             }
         }
     }

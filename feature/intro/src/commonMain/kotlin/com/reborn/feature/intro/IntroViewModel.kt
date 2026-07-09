@@ -3,6 +3,7 @@ package com.reborn.feature.intro
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
+import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
@@ -30,6 +31,8 @@ sealed class IntroEvent {
     data class ShowErrorSnackbar(val throwable: Throwable) : IntroEvent()
     data class PlaceRegistered(val placeId: Long) : IntroEvent()
     data class AdminCodeIssued(val code: String, val remainingSeconds: Int) : IntroEvent()
+    // 장소 생성 직후 공기계를 연결하기 위한 페어링 코드(#08) 발급 결과 - 관리자 초대 코드와는 별개
+    data class PairingCodeIssued(val code: String, val remainingSeconds: Int) : IntroEvent()
     data object InviteCodeVerified : IntroEvent()
     data object InviteCodeInvalid : IntroEvent()
 }
@@ -40,6 +43,7 @@ class IntroViewModel(
     private val registerPlaceUseCase: RegisterPlaceUseCase,
     private val generateAdminCodeUseCase: GenerateAdminCodeUseCase,
     private val redeemAdminCodeUseCase: RedeemAdminCodeUseCase,
+    private val generatePairingCodeUseCase: GeneratePairingCodeUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<IntroUiState>(IntroUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -69,7 +73,7 @@ class IntroViewModel(
             is IntroIntent.NavigateToAdminPlaceSelect -> navigateTo(IntroUiState.AdminPlaceSelect)
             is IntroIntent.NavigateToAerometerPairing -> navigateTo(IntroUiState.AerometerPairing)
             is IntroIntent.NavigateToInviteCode -> navigateTo(IntroUiState.InviteCode)
-            is IntroIntent.NavigateToAdminCode -> navigateTo(IntroUiState.AdminCode)
+            is IntroIntent.NavigateToDevicePairing -> navigateTo(IntroUiState.DevicePairing)
             is IntroIntent.NavigateToAerometerDeviceName -> navigateTo(IntroUiState.AerometerDeviceName)
             is IntroIntent.NavigateBack -> navigateBack()
             is IntroIntent.PermissionsGranted -> onPermissionsGranted()
@@ -197,6 +201,22 @@ class IntroViewModel(
         }
     }
 
+    // 공기계 페어링 코드 생성/재발급 공용 - DevicePairing 화면 진입 시와 "재발급" 클릭 시 모두 호출됨
+    fun generatePairingCode(placeId: Long) {
+        viewModelScope.launch {
+            generatePairingCodeUseCase(placeId)
+                .onSuccess { code ->
+                    // 서버 응답의 expiresAt(LocalDateTime 문자열)을 파싱할 날짜 라이브러리가 없어,
+                    // 발급 직후 시점이라는 전제로 서버 TTL 상수를 그대로 남은 시간으로 사용한다.
+                    _event.emit(IntroEvent.PairingCodeIssued(code.code, PAIRING_CODE_TTL_SECONDS))
+                }
+                .onFailure {
+                    println("IntroViewModel: 페어링 코드 생성 실패 - ${it.message}")
+                    _event.emit(IntroEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
+
     fun verifyInviteCode(code: String) {
         viewModelScope.launch {
             redeemAdminCodeUseCase(code)
@@ -217,5 +237,8 @@ class IntroViewModel(
     companion object {
         // 서버 PlaceService.ADMIN_INVITE_TTL_MINUTES(30분)와 동일
         const val ADMIN_CODE_TTL_SECONDS = 30 * 60
+
+        // 서버 DeviceService.PAIRING_TTL_MINUTES(10분)와 동일
+        const val PAIRING_CODE_TTL_SECONDS = 10 * 60
     }
 }

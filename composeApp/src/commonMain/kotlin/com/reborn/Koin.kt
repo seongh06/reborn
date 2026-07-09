@@ -6,6 +6,7 @@ import com.reborn.core.datastore.di.dataStoreModule
 import com.reborn.core.datastore.di.platformDataStoreModule
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
+import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
@@ -40,6 +41,7 @@ val appDependenciesModule = module {
     factory { GetPlaceListUseCase(get()) }
     factory { GetPlaceDetailUseCase(get()) }
     factory { DeletePlaceUseCase(get()) }
+    factory { GeneratePairingCodeUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)
