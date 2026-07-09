@@ -43,9 +43,21 @@ fun IntroAdminCodeScreen(
         viewModel.generateAdminCode(placeId)
 
         viewModel.event.collect { event ->
-            if (event is IntroEvent.AdminCodeIssued) {
-                code = event.code
-                timeLeft = event.remainingSeconds
+            when (event) {
+                is IntroEvent.AdminCodeIssued -> {
+                    code = event.code
+                    timeLeft = event.remainingSeconds
+                }
+                // 코드 발급 실패 시 로딩 화면에 갇히지 않도록 이전 화면으로 돌아간다(에러 자체는 전역 스낵바가 표시)
+                is IntroEvent.ShowErrorSnackbar -> onBackClick()
+                is IntroEvent.NavigateToAdmin,
+                is IntroEvent.NavigateToAerometer,
+                is IntroEvent.PermissionGranted,
+                is IntroEvent.ExitIntro,
+                is IntroEvent.LoginSuccess,
+                is IntroEvent.PlaceRegistered,
+                is IntroEvent.InviteCodeVerified,
+                is IntroEvent.InviteCodeInvalid -> {}
             }
         }
     }

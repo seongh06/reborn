@@ -62,7 +62,14 @@ fun IntroAdminPlaceSelectScreen(
             when (event) {
                 is IntroEvent.PlaceRegistered -> onNextClick()
                 is IntroEvent.ShowErrorSnackbar -> isRegistering = false
-                else -> {}
+                is IntroEvent.NavigateToAdmin,
+                is IntroEvent.NavigateToAerometer,
+                is IntroEvent.PermissionGranted,
+                is IntroEvent.ExitIntro,
+                is IntroEvent.LoginSuccess,
+                is IntroEvent.AdminCodeIssued,
+                is IntroEvent.InviteCodeVerified,
+                is IntroEvent.InviteCodeInvalid -> {}
             }
         }
     }

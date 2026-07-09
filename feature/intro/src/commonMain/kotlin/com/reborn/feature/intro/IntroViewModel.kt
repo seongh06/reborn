@@ -7,6 +7,7 @@ import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
+import com.reborn.core.model.DomainException
 import com.reborn.core.model.Login
 import com.reborn.core.notification.getFcmToken
 import com.reborn.feature.intro.model.IntroIntent
@@ -202,7 +203,13 @@ class IntroViewModel(
                 .onSuccess { _event.emit(IntroEvent.InviteCodeVerified) }
                 .onFailure {
                     println("IntroViewModel: 초대 코드 검증 실패 - ${it.message}")
-                    _event.emit(IntroEvent.InviteCodeInvalid)
+                    // 코드 자체가 잘못됐거나 만료된 경우(400)만 인라인 에러로 처리하고,
+                    // 그 외(네트워크/인증/서버 오류 등)는 registerPlace/generateAdminCode와 동일하게 스낵바로 알린다.
+                    if (it is DomainException.InvalidInputException) {
+                        _event.emit(IntroEvent.InviteCodeInvalid)
+                    } else {
+                        _event.emit(IntroEvent.ShowErrorSnackbar(it))
+                    }
                 }
         }
     }

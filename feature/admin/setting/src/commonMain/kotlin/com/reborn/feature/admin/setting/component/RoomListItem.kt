@@ -33,7 +33,7 @@ fun RoomListItem(
     placeId: Int,
     roomName: String,
     adminCount: Int,
-    deviceCount: Int,
+    deviceCount: Int?,
     onDeleteClick: () -> Unit,
     onAddAdminClick: () -> Unit,
     onAddDeviceClick: () -> Unit
@@ -102,7 +102,7 @@ fun RoomListItem(
 private fun RoomInformChip(
     modifier: Modifier = Modifier,
     type: RoomInformType,
-    value: Int,
+    value: Int?,
 ) {
     val style = getUiStyleForType(type)
     Row(
@@ -119,7 +119,8 @@ private fun RoomInformChip(
             tint = RebornTheme.color.grayScale900
         )
         Text(
-            value.toString(),
+            // 조회 실패(null)는 "-"로 표시 - 0대와 혼동되지 않도록
+            value?.toString() ?: "-",
             style = RebornTheme.typography.labelLarge,
             color = RebornTheme.color.grayScale900
         )

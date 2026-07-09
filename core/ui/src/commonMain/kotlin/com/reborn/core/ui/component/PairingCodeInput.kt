@@ -48,8 +48,9 @@ fun PairingCodeInput(
             value = value,
             onValueChange = { newValue ->
                 if (isError) onErrorReset()
-                // 서버 코드(관리자 초대·기기 페어링)는 A-Z0-9 영숫자 조합(generateRandomCode)이라 숫자만 허용하면 안 됨
-                val filtered = newValue.filter { it.isLetterOrDigit() }.uppercase()
+                // 서버 코드(관리자 초대·기기 페어링)는 A-Z0-9 영숫자 조합(generateRandomCode)이라
+                // ASCII 영숫자만 허용 (isLetterOrDigit()는 한글 등 Unicode 문자도 통과시켜 서버가 거부함)
+                val filtered = newValue.filter { it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' }.uppercase()
                 if (filtered.length <= maxCount) {
                     onValueChange(filtered)
                 }

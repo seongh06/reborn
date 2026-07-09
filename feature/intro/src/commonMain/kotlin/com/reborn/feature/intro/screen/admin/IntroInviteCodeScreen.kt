@@ -33,7 +33,14 @@ fun IntroInviteCodeScreen(
             when (event) {
                 is IntroEvent.InviteCodeVerified -> onNextClick()
                 is IntroEvent.InviteCodeInvalid -> pairingCodeError = true
-                else -> {}
+                is IntroEvent.NavigateToAdmin,
+                is IntroEvent.NavigateToAerometer,
+                is IntroEvent.PermissionGranted,
+                is IntroEvent.ExitIntro,
+                is IntroEvent.LoginSuccess,
+                is IntroEvent.ShowErrorSnackbar,
+                is IntroEvent.PlaceRegistered,
+                is IntroEvent.AdminCodeIssued -> {}
             }
         }
     }
