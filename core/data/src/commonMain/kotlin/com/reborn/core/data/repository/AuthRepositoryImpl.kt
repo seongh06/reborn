@@ -5,6 +5,7 @@ import com.reborn.core.data.mapper.toResult
 import com.reborn.core.domain.repository.AuthRepository
 import com.reborn.core.model.LoginResult
 import com.reborn.core.network.datasource.AuthDataSource
+import com.reborn.core.network.model.request.auth.FcmTokenUpdateRequest
 import com.reborn.core.network.model.request.auth.LoginRequest
 
 class AuthRepositoryImpl(
@@ -23,4 +24,9 @@ class AuthRepositoryImpl(
         remote.logout(local.getAccessToken().orEmpty())
             .toResult()
             .mapCatching { local.clearTokens() }
+
+    override suspend fun updateFcmToken(fcmToken: String): Result<Unit> =
+        remote.updateFcmToken(local.getAccessToken().orEmpty(), FcmTokenUpdateRequest(fcmToken))
+            .toResult()
+            .mapCatching { }
 }
