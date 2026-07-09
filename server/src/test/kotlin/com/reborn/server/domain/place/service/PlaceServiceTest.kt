@@ -3,6 +3,7 @@ package com.reborn.server.domain.place.service
 import com.reborn.server.domain.auth.OAuthProvider
 import com.reborn.server.domain.auth.User
 import com.reborn.server.domain.auth.UserRepository
+import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.PlaceType
@@ -52,6 +53,9 @@ class PlaceServiceTest {
     private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
 
     @Mock
+    private lateinit var deviceRepository: DeviceRepository
+
+    @Mock
     private lateinit var redisUtil: RedisUtil
 
     @InjectMocks
@@ -63,7 +67,7 @@ class PlaceServiceTest {
     @BeforeEach
     fun setUp() {
         user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
-        place = Place(name = "우리집", qrCode = "qr-uuid", type = PlaceType.HOME, id = 501)
+        place = Place(name = "우리집", qrCode = "qr-uuid", type = PlaceType.HOME, id = 501).apply { prePersist() }
     }
 
     @Test
@@ -121,7 +125,7 @@ class PlaceServiceTest {
 
     @Test
     fun `generateAdminCode - ADMIN이면 코드를 생성한다`() {
-        given(placeRepository.existsById(501L)).willReturn(true)
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
             .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
         given(redisUtil.setIfAbsent(anyString(), anyString(), anyDuration())).willReturn(true)
@@ -173,5 +177,88 @@ class PlaceServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `getList - 사용자가 속한 장소 목록을 권한과 함께 반환한다`() {
+        val mapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN)
+        given(userPlaceMappingRepository.findAllByUserId(1L)).willReturn(listOf(mapping))
+
+        val response = placeService.getList(1L)
+
+        assertThat(response.places).hasSize(1)
+        assertThat(response.places[0].placeId).isEqualTo(501L)
+        assertThat(response.places[0].name).isEqualTo("우리집")
+        assertThat(response.places[0].type).isEqualTo("HOME")
+        assertThat(response.places[0].accessLevel).isEqualTo("ADMIN")
+    }
+
+    @Test
+    fun `getDetail - 접근 권한이 있으면 장소 상세 정보를 반환한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
+            .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.USER))
+        given(deviceRepository.countByPlaceId(501L)).willReturn(3L)
+
+        val response = placeService.getDetail(1L, 501L)
+
+        assertThat(response.placeId).isEqualTo(501L)
+        assertThat(response.accessLevel).isEqualTo("USER")
+        assertThat(response.deviceCount).isEqualTo(3)
+        assertThat(response.qrCode).isEqualTo("qr-uuid")
+    }
+
+    @Test
+    fun `getDetail - 존재하지 않는 장소면 예외가 발생한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.empty())
+
+        assertThatThrownBy { placeService.getDetail(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `getDetail - 접근 권한이 없으면 예외가 발생한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(null)
+
+        assertThatThrownBy { placeService.getDetail(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `deletePlace - ADMIN이면 장소를 삭제한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
+            .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
+
+        placeService.deletePlace(1L, 501L)
+
+        verify(placeRepository).delete(place)
+    }
+
+    @Test
+    fun `deletePlace - 존재하지 않는 장소면 예외가 발생한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.empty())
+
+        assertThatThrownBy { placeService.deletePlace(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `deletePlace - ADMIN 권한이 없으면 예외가 발생한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
+            .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.USER))
+
+        assertThatThrownBy { placeService.deletePlace(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
     }
 }

@@ -12,6 +12,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -79,6 +82,60 @@ class PlaceController(
         authentication: Authentication,
     ): ApiResponse<PlaceDto.AdminInviteResponse> =
         ApiResponse.success(placeService.redeemAdminCode(extractUserId(authentication), request))
+
+    @Operation(
+        summary = "장소 목록 조회",
+        description = "인증된 사용자가 속한 모든 장소 목록을 내 권한(ADMIN/USER)과 함께 조회합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공 — placeId, name, type, accessLevel, createdAt 목록 반환"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping
+    fun getList(authentication: Authentication): ApiResponse<PlaceDto.ListResponse> =
+        ApiResponse.success(placeService.getList(extractUserId(authentication)))
+
+    @Operation(
+        summary = "장소 상세 조회",
+        description = "특정 장소의 상세 정보(이름, 유형, 내 권한, 등록된 기기 수, QR 코드)를 조회합니다. 해당 장소에 대한 접근 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(
+            responseCode = "200",
+            description = "조회 성공 — placeId, name, type, accessLevel, deviceCount, qrCode, createdAt 반환",
+        ),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "해당 장소 접근 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{placeId}")
+    fun getDetail(
+        @PathVariable placeId: Long,
+        authentication: Authentication,
+    ): ApiResponse<PlaceDto.DetailResponse> =
+        ApiResponse.success(placeService.getDetail(extractUserId(authentication), placeId))
+
+    @Operation(
+        summary = "장소 삭제",
+        description = "등록된 장소를 삭제합니다. 삭제 시 기기·사용자 매핑 정보가 CASCADE로 함께 삭제됩니다. (ADMIN 권한 필요)",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "삭제 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/{placeId}")
+    fun delete(
+        @PathVariable placeId: Long,
+        authentication: Authentication,
+    ): ApiResponse<Nothing> {
+        placeService.deletePlace(extractUserId(authentication), placeId)
+        return ApiResponse.success("장소가 삭제되었습니다.")
+    }
 
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long

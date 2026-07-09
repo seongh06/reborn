@@ -13,4 +13,6 @@ interface DeviceRepository : JpaRepository<Device, Long> {
     fun findAllByPlaceIdAndDeviceType(placeId: Long, deviceType: DeviceType): List<Device>
 
     fun existsByDeviceKey(deviceKey: String): Boolean
+
+    fun countByPlaceId(placeId: Long): Long
 }

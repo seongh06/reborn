@@ -31,4 +31,26 @@ class PlaceDto {
         val placeName: String,
         val accessLevel: String,
     )
+
+    data class PlaceItem(
+        val placeId: Long,
+        val name: String,
+        val type: String,
+        val accessLevel: String,
+        val createdAt: LocalDateTime,
+    )
+
+    data class ListResponse(
+        val places: List<PlaceItem>,
+    )
+
+    data class DetailResponse(
+        val placeId: Long,
+        val name: String,
+        val type: String,
+        val accessLevel: String,
+        val deviceCount: Int,
+        val qrCode: String,
+        val createdAt: LocalDateTime,
+    )
 }
