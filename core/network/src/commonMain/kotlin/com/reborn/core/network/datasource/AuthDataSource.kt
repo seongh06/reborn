@@ -6,4 +6,5 @@ import com.reborn.core.network.model.response.auth.LoginResponse
 
 interface AuthDataSource {
     suspend fun login(request: LoginRequest): ApiResponse<LoginResponse>
+    suspend fun logout(accessToken: String): ApiResponse<Unit?>
 }

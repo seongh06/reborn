@@ -15,14 +15,16 @@ fun NavGraphBuilder.adminSettingNavGraph(
     onBackClick: () -> Unit,
     onNavigateToInviteCode: (Int) -> Unit = {},
     onNavigateToAddDevice: (Int) -> Unit = {},
-    onNavigateToAddPlace: () -> Unit = {}
+    onNavigateToAddPlace: () -> Unit = {},
+    onLoggedOut: () -> Unit = {}
 ) {
     composable<Route.Admin.Setting> {
         AdminSettingRoute(
             onBackClick = onBackClick,
             onNavigateToInviteCode = onNavigateToInviteCode,
             onNavigateToAddDevice = onNavigateToAddDevice,
-            onNavigateToAddPlace = onNavigateToAddPlace
+            onNavigateToAddPlace = onNavigateToAddPlace,
+            onLoggedOut = onLoggedOut
         )
     }
 }

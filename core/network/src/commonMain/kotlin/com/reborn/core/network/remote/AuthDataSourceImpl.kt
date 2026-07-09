@@ -6,8 +6,10 @@ import com.reborn.core.network.model.request.auth.LoginRequest
 import com.reborn.core.network.model.response.auth.LoginResponse
 import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpHeaders
 
 class AuthDataSourceImpl(
 private val httpClient: HttpClient
@@ -16,6 +18,12 @@ private val httpClient: HttpClient
     override suspend fun login(request: LoginRequest): ApiResponse<LoginResponse> = runCatching {
         httpClient.post("/api/auth/login") {
             setBody(request)
+        }
+    }.asApiResponse()
+
+    override suspend fun logout(accessToken: String): ApiResponse<Unit?> = runCatching {
+        httpClient.post("/api/auth/logout") {
+            header(HttpHeaders.Authorization, "Bearer $accessToken")
         }
     }.asApiResponse()
 }

@@ -18,4 +18,9 @@ class AuthRepositoryImpl(
                 local.saveTokens(dto.accessToken, dto.refreshToken)
                 LoginResult(userId = dto.userId, name = dto.name, isNewUser = dto.isNewUser)
             }
+
+    override suspend fun logout(): Result<Unit> =
+        remote.logout(local.getAccessToken().orEmpty())
+            .toResult()
+            .mapCatching { local.clearTokens() }
 }

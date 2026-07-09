@@ -3,6 +3,7 @@ package com.reborn.feature.admin.setting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.LogoutUseCase
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
 import kotlinx.coroutines.delay
@@ -15,9 +16,12 @@ sealed class AdminSettingEvent {
     data class NavigateToInviteCode(val placeId: Int) : AdminSettingEvent()
     data class NavigateToAddDevice(val placeId: Int) : AdminSettingEvent()
     data object NavigateToAddPlace : AdminSettingEvent()
+    data object LoggedOut : AdminSettingEvent()
 }
 
-class AdminSettingViewModel : ViewModel() {
+class AdminSettingViewModel(
+    private val logoutUseCase: LogoutUseCase,
+) : ViewModel() {
     private val navigationManager = NavigationManager<AdminSettingUiState, AdminSettingEvent>(
         initialState = AdminSettingUiState.Loading,
         exitEvent = AdminSettingEvent.Exit,
@@ -43,6 +47,7 @@ class AdminSettingViewModel : ViewModel() {
             is AdminSettingIntent.ClickAddDevice ->
                 navigationManager.emitEvent(AdminSettingEvent.NavigateToAddDevice(intent.placeId))
             is AdminSettingIntent.ClickAddPlace -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddPlace)
+            is AdminSettingIntent.ClickLogout -> logout()
         }
     }
 
@@ -58,6 +63,18 @@ class AdminSettingViewModel : ViewModel() {
         rooms = rooms.filterNot { it.placeId == placeId }
         navigationManager.updateCurrentState { state ->
             (state as? AdminSettingUiState.Setting)?.copy(rooms = rooms) ?: state
+        }
+    }
+
+    private fun logout() {
+        viewModelScope.launch {
+            logoutUseCase()
+                .onSuccess {
+                    navigationManager.emitEvent(AdminSettingEvent.LoggedOut)
+                }
+                .onFailure {
+                    navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
+                }
         }
     }
 }

@@ -218,6 +218,12 @@ fun App() {
                         onNavigateToAddPlace = {
                             introSkipToAdminModeSelect = true
                             navController.navigate(Route.Intro)
+                        },
+                        onLoggedOut = {
+                            introSkipToAdminModeSelect = false
+                            navController.navigate(Route.Intro) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                            }
                         }
                     )
                 }
