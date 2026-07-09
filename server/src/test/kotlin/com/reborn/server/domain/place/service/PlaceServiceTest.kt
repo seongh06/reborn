@@ -132,7 +132,7 @@ class PlaceServiceTest {
 
         val response = placeService.generateAdminCode(1L, 501L)
 
-        assertThat(response.adminCode).hasSize(8)
+        assertThat(response.adminCode).hasSize(6)
         assertThat(response.expiresAt).isAfter(LocalDateTime.now())
     }
 
