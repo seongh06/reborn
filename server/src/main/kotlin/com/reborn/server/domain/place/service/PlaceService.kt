@@ -1,6 +1,7 @@
 package com.reborn.server.domain.place.service
 
 import com.reborn.server.domain.auth.UserRepository
+import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
@@ -25,6 +26,7 @@ class PlaceService(
     private val userRepository: UserRepository,
     private val placeRepository: PlaceRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
+    private val deviceRepository: DeviceRepository,
     private val redisUtil: RedisUtil,
 ) {
 
@@ -85,14 +87,37 @@ class PlaceService(
         )
     }
 
-    private fun requireAdmin(userId: Long, placeId: Long) {
-        if (!placeRepository.existsById(placeId)) {
-            throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+    fun getList(userId: Long): PlaceDto.ListResponse =
+        PlaceDto.ListResponse(
+            places = userPlaceMappingRepository.findAllByUserId(userId).map(PlaceConverter::toPlaceItem),
+        )
+
+    fun getDetail(userId: Long, placeId: Long): PlaceDto.DetailResponse {
+        val place = placeRepository.findById(placeId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        }
+        val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
+            ?: throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "권한이 없습니다.")
+
+        val deviceCount = deviceRepository.countByPlaceId(placeId).toInt()
+        return PlaceConverter.toDetailResponse(place, mapping.accessLevel, deviceCount)
+    }
+
+    @Transactional
+    fun deletePlace(userId: Long, placeId: Long) {
+        val place = requireAdmin(userId, placeId)
+        placeRepository.delete(place)
+    }
+
+    private fun requireAdmin(userId: Long, placeId: Long): Place {
+        val place = placeRepository.findById(placeId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
         }
         val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
         if (mapping == null || mapping.accessLevel != AccessLevel.ADMIN) {
             throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.")
         }
+        return place
     }
 
     private fun reserveUniqueCode(prefix: String, length: Int, value: String): String {
