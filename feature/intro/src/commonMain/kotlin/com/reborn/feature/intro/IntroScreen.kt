@@ -65,6 +65,10 @@ fun IntroRoute(
                 is IntroEvent.PermissionGranted -> {}
                 is IntroEvent.ExitIntro -> onBackClick()
                 is IntroEvent.LoginSuccess -> {} // IntroAdminLoginScreen에서 자체적으로 처리
+                is IntroEvent.PlaceRegistered -> {} // IntroAdminPlaceSelectScreen에서 자체적으로 처리
+                is IntroEvent.AdminCodeIssued -> {} // IntroAdminCodeScreen에서 자체적으로 처리
+                is IntroEvent.InviteCodeVerified -> {} // IntroInviteCodeScreen에서 자체적으로 처리
+                is IntroEvent.InviteCodeInvalid -> {} // IntroInviteCodeScreen에서 자체적으로 처리
             }
         }
     }
@@ -126,7 +130,9 @@ fun IntroRoute(
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.AdminCode -> IntroAdminCodeScreen(
-                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
+                placeId = viewModel.registeredPlaceId,
+                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) },
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) }
             )
         }
     }

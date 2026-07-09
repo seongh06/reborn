@@ -2,7 +2,10 @@ package com.reborn.feature.intro
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
+import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
+import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.model.Login
 import com.reborn.core.notification.getFcmToken
@@ -24,11 +27,18 @@ sealed class IntroEvent {
     data object ExitIntro : IntroEvent()
     data class LoginSuccess(val isNewUser: Boolean) : IntroEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : IntroEvent()
+    data class PlaceRegistered(val placeId: Long) : IntroEvent()
+    data class AdminCodeIssued(val code: String, val remainingSeconds: Int) : IntroEvent()
+    data object InviteCodeVerified : IntroEvent()
+    data object InviteCodeInvalid : IntroEvent()
 }
 
 class IntroViewModel(
     private val loginUseCase: LoginUseCase,
     private val updateFcmTokenUseCase: UpdateFcmTokenUseCase,
+    private val registerPlaceUseCase: RegisterPlaceUseCase,
+    private val generateAdminCodeUseCase: GenerateAdminCodeUseCase,
+    private val redeemAdminCodeUseCase: RedeemAdminCodeUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<IntroUiState>(IntroUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -37,6 +47,14 @@ class IntroViewModel(
     val event = _event.asSharedFlow()
 
     private val backStack = mutableListOf<IntroUiState>()
+
+    // 장소 등록(이름 입력 → 유형 선택)이 두 화면에 걸쳐 있어, 등록 API 호출 시점(유형 선택 완료)까지 이름을 들고 있어야 함
+    private var pendingPlaceName: String = ""
+
+    // Setting의 "관리자 초대"(기존 장소)는 route로 placeId를 직접 받으므로 이 값을 쓰지 않고,
+    // 온보딩 흐름(방금 등록한 장소)에서 AdminCode 화면에 placeId를 넘겨주기 위한 용도로만 쓰인다.
+    var registeredPlaceId: Long? = null
+        private set
 
     fun onIntent(intent: IntroIntent){
         when(intent){
@@ -144,4 +162,53 @@ class IntroViewModel(
         }
     }
 
+    fun setPlaceName(name: String) {
+        pendingPlaceName = name
+    }
+
+    fun registerPlace(type: String) {
+        viewModelScope.launch {
+            registerPlaceUseCase(pendingPlaceName, type)
+                .onSuccess { place ->
+                    registeredPlaceId = place.placeId
+                    _event.emit(IntroEvent.PlaceRegistered(place.placeId))
+                }
+                .onFailure {
+                    println("IntroViewModel: 장소 등록 실패 - ${it.message}")
+                    _event.emit(IntroEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
+
+    // 관리자 초대 코드 생성/재발급 공용 - AdminCode 화면 진입 시와 "재발급" 클릭 시 모두 호출됨
+    fun generateAdminCode(placeId: Long) {
+        viewModelScope.launch {
+            generateAdminCodeUseCase(placeId)
+                .onSuccess { code ->
+                    // 서버 응답의 expiresAt(LocalDateTime 문자열)을 파싱할 날짜 라이브러리가 없어,
+                    // 발급 직후 시점이라는 전제로 서버 TTL 상수를 그대로 남은 시간으로 사용한다.
+                    _event.emit(IntroEvent.AdminCodeIssued(code.code, ADMIN_CODE_TTL_SECONDS))
+                }
+                .onFailure {
+                    println("IntroViewModel: 관리자 코드 생성 실패 - ${it.message}")
+                    _event.emit(IntroEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
+
+    fun verifyInviteCode(code: String) {
+        viewModelScope.launch {
+            redeemAdminCodeUseCase(code)
+                .onSuccess { _event.emit(IntroEvent.InviteCodeVerified) }
+                .onFailure {
+                    println("IntroViewModel: 초대 코드 검증 실패 - ${it.message}")
+                    _event.emit(IntroEvent.InviteCodeInvalid)
+                }
+        }
+    }
+
+    companion object {
+        // 서버 PlaceService.ADMIN_INVITE_TTL_MINUTES(30분)와 동일
+        const val ADMIN_CODE_TTL_SECONDS = 30 * 60
+    }
 }

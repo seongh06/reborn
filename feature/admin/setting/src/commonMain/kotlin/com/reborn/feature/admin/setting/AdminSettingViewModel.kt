@@ -3,10 +3,15 @@ package com.reborn.feature.admin.setting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.DeletePlaceUseCase
+import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
+import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 sealed class AdminSettingEvent {
@@ -21,6 +26,9 @@ sealed class AdminSettingEvent {
 
 class AdminSettingViewModel(
     private val logoutUseCase: LogoutUseCase,
+    private val getPlaceListUseCase: GetPlaceListUseCase,
+    private val getPlaceDetailUseCase: GetPlaceDetailUseCase,
+    private val deletePlaceUseCase: DeletePlaceUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminSettingUiState, AdminSettingEvent>(
         initialState = AdminSettingUiState.Loading,
@@ -32,12 +40,6 @@ class AdminSettingViewModel(
     val event = navigationManager.event
 
     private var isLoggingOut = false
-
-    // TODO: 서버 place 목록 조회 API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
-    private var rooms: List<AdminSettingUiState.RoomItem> = listOf(
-        AdminSettingUiState.RoomItem(placeId = 1, roomName = "Home 01", adminCount = 3, deviceCount = 3),
-        AdminSettingUiState.RoomItem(placeId = 2, roomName = "Cafe", adminCount = 2, deviceCount = 5)
-    )
 
     fun onIntent(intent: AdminSettingIntent) {
         when (intent) {
@@ -56,15 +58,46 @@ class AdminSettingViewModel(
     private fun checkInitialState() {
         navigationManager.clearAndReset(AdminSettingUiState.Loading)
         viewModelScope.launch {
-            delay(500)
-            navigationManager.clearAndReset(AdminSettingUiState.Setting(rooms = rooms))
+            getPlaceListUseCase()
+                .onSuccess { places ->
+                    // 장소 목록(#27)에는 deviceCount가 없어 장소별로 상세(#28)를 추가 조회해 채운다.
+                    val rooms = coroutineScope {
+                        places.map { place ->
+                            async {
+                                val deviceCount = getPlaceDetailUseCase(place.placeId).getOrNull()?.deviceCount ?: 0
+                                AdminSettingUiState.RoomItem(
+                                    // Route 인자(Route.Admin.InviteCode/AddDevice)가 Int라 기존 관례를 따라 Int로 보관
+                                    placeId = place.placeId.toInt(),
+                                    roomName = place.name,
+                                    // TODO: 장소별 관리자 수를 반환하는 API가 아직 없어 0으로 표시 (#106 범위 밖)
+                                    adminCount = 0,
+                                    deviceCount = deviceCount,
+                                )
+                            }
+                        }.awaitAll()
+                    }
+                    navigationManager.clearAndReset(AdminSettingUiState.Setting(rooms = rooms))
+                }
+                .onFailure {
+                    navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
+                    navigationManager.clearAndReset(AdminSettingUiState.Setting(rooms = emptyList()))
+                }
         }
     }
 
     private fun deleteRoom(placeId: Int) {
-        rooms = rooms.filterNot { it.placeId == placeId }
-        navigationManager.updateCurrentState { state ->
-            (state as? AdminSettingUiState.Setting)?.copy(rooms = rooms) ?: state
+        viewModelScope.launch {
+            deletePlaceUseCase(placeId.toLong())
+                .onSuccess {
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminSettingUiState.Setting)
+                            ?.copy(rooms = state.rooms.filterNot { it.placeId == placeId })
+                            ?: state
+                    }
+                }
+                .onFailure {
+                    navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
+                }
         }
     }
 

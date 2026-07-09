@@ -69,7 +69,10 @@ fun IntroAdminPlaceNameScreen(
         RebornButton(
             text = "다음",
             enabled = placeName.isNotBlank(),
-            onClick = { onNextClick() }
+            onClick = {
+                viewModel.setPlaceName(placeName)
+                onNextClick()
+            }
         )
     }
 }

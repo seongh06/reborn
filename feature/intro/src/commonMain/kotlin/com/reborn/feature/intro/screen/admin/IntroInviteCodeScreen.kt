@@ -12,6 +12,7 @@ import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.component.PairingCodeInput
 import com.reborn.core.ui.ext.rebornDefault
+import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -22,19 +23,24 @@ fun IntroInviteCodeScreen(
     viewModel: IntroViewModel = koinViewModel()
 ) {
     var inviteCode by remember { mutableStateOf("") }
-    val maxCount = 6
+    // 서버 관리자 초대 코드는 8자리(A-Z0-9) - PlaceService.ADMIN_CODE_LENGTH와 동일
+    val maxCount = 8
 
     var pairingCodeError by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when (event) {
+                is IntroEvent.InviteCodeVerified -> onNextClick()
+                is IntroEvent.InviteCodeInvalid -> pairingCodeError = true
+                else -> {}
+            }
+        }
+    }
+
     LaunchedEffect(inviteCode) {
         if (inviteCode.length == maxCount) {
-            // TODO: viewModel.onIntent(IntroIntent.VerifyInviteCode(inviteCode)) 호출
-            // 임시
-            if (inviteCode == "123456") {
-                onNextClick()
-            } else {
-                pairingCodeError = true
-            }
+            viewModel.verifyInviteCode(inviteCode)
         }
     }
 
