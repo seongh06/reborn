@@ -3,6 +3,7 @@ package com.reborn.feature.intro
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
+import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
@@ -26,7 +27,8 @@ sealed class IntroEvent {
     data object NavigateToAerometer : IntroEvent()
     data object PermissionGranted : IntroEvent()
     data object ExitIntro : IntroEvent()
-    data class LoginSuccess(val isNewUser: Boolean) : IntroEvent()
+    // isNewUser뿐 아니라 "소속 장소가 하나도 없는 기존 유저"도 true - 관리자 등록 절차를 거쳐야 하는지 여부
+    data class LoginSuccess(val needsPlaceSetup: Boolean) : IntroEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : IntroEvent()
     data class PlaceRegistered(val placeId: Long) : IntroEvent()
     data class AdminCodeIssued(val code: String, val remainingSeconds: Int) : IntroEvent()
@@ -40,6 +42,7 @@ class IntroViewModel(
     private val registerPlaceUseCase: RegisterPlaceUseCase,
     private val generateAdminCodeUseCase: GenerateAdminCodeUseCase,
     private val redeemAdminCodeUseCase: RedeemAdminCodeUseCase,
+    private val getPlaceListUseCase: GetPlaceListUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<IntroUiState>(IntroUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -135,7 +138,8 @@ class IntroViewModel(
         viewModelScope.launch {
             loginUseCase(Login(provider, token))
                 .onSuccess { result ->
-                    _event.emit(IntroEvent.LoginSuccess(result.isNewUser))
+                    val needsPlaceSetup = resolveNeedsPlaceSetup(result.isNewUser)
+                    _event.emit(IntroEvent.LoginSuccess(needsPlaceSetup))
                     // 기존 유저는 LoginSuccess 직후 네비게이션으로 IntroViewModel의 viewModelScope가
                     // 취소될 수 있어(#103 CodeRabbit 리뷰), FCM 등록만은 취소되지 않도록 보호한다.
                     withContext(NonCancellable) {
@@ -147,6 +151,20 @@ class IntroViewModel(
                     _event.emit(IntroEvent.ShowErrorSnackbar(it))
                 }
         }
+    }
+
+    // 신규 유저는 정의상 장소가 없으니 API 호출 없이 바로 등록 절차로 보낸다.
+    // 기존 유저는 모든 장소에서 나가는 등으로 소속 장소가 0개일 수 있어 실제 목록을 조회해서 판단한다(#108).
+    private suspend fun resolveNeedsPlaceSetup(isNewUser: Boolean): Boolean {
+        if (isNewUser) return true
+        return getPlaceListUseCase().fold(
+            onSuccess = { places -> places.isEmpty() },
+            // 조회 실패 시, 장소 없는 유저가 빈 홈 화면을 보게 되는 것보다는 등록 절차로 보내는 쪽이 안전하다.
+            onFailure = {
+                println("IntroViewModel: 장소 목록 조회 실패 - ${it.message}")
+                true
+            },
+        )
     }
 
     // 로그인 성공 직후(accessToken 확보 이후)에만 서버로 FCM 토큰을 보낼 수 있어 이 시점에 호출.
