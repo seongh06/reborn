@@ -20,7 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -53,6 +55,29 @@ fun IntroAdminPlaceSelectScreen(
     viewModel: IntroViewModel = koinViewModel()
 ) {
     val placeTypes = remember { listOf("HOME", "STORE", "COMPANY") }
+    var isRegistering by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when (event) {
+                is IntroEvent.PlaceRegistered -> onNextClick()
+                is IntroEvent.ShowErrorSnackbar -> isRegistering = false
+                is IntroEvent.NavigateToAdmin,
+                is IntroEvent.NavigateToAerometer,
+                is IntroEvent.PermissionGranted,
+                is IntroEvent.ExitIntro,
+                is IntroEvent.LoginSuccess,
+                is IntroEvent.AdminCodeIssued,
+                is IntroEvent.InviteCodeVerified,
+                is IntroEvent.InviteCodeInvalid -> {}
+            }
+        }
+    }
+
+    if (isRegistering) {
+        RebornLoadingScreen()
+        return
+    }
 
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
@@ -71,7 +96,8 @@ fun IntroAdminPlaceSelectScreen(
                 PlaceTypeList(
                     placeType = type,
                     onClick = {
-                        onNextClick()
+                        isRegistering = true
+                        viewModel.registerPlace(type)
                     }
                 )
             }

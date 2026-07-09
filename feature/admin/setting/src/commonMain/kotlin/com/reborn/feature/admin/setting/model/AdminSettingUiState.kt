@@ -13,7 +13,8 @@ sealed interface AdminSettingUiState {
         val placeId: Int,
         val roomName: String,
         val adminCount: Int,
-        val deviceCount: Int
+        // 상세 조회(#28) 실패 시 null - 실제 0대와 구분해서 표시
+        val deviceCount: Int?
     )
 }
 

@@ -1,85 +1,98 @@
 package com.reborn.feature.intro.screen.admin
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.reborn.core.common.PermissionHandler
-import com.reborn.core.common.PermissionType
-import com.reborn.core.common.rememberPermissionManager
 import com.reborn.core.designsystem.component.RebornButton
-import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
+import com.reborn.feature.intro.IntroViewModel.Companion.ADMIN_CODE_TTL_SECONDS
 import com.reborn.feature.intro.component.PairingCodeIssued
-import com.reborn.feature.intro.component.PermissionSection
-import com.reborn.feature.intro.component.SocialLoginButton
-import com.reborn.feature.intro.component.TermSection
-import com.reborn.feature.intro.model.IntroIntent
-import com.reborn.feature.intro.model.IntroUiState
-import com.reborn.feature.intro.model.PermissionItem
-import com.reborn.feature.intro.model.TermItem
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun IntroAdminCodeScreen(
-    onBackClick:() -> Unit,
+    placeId: Long?,
+    onBackClick: () -> Unit,
+    onNextClick: () -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
-    val totalTime = 300
-
     val waitTime = 60
 
-    var timeLeft by remember { mutableStateOf(totalTime) }
+    var code by remember { mutableStateOf<String?>(null) }
+    var timeLeft by remember { mutableStateOf(ADMIN_CODE_TTL_SECONDS) }
 
-    LaunchedEffect(key1 = timeLeft) {
+    if (placeId == null) {
+        // 정상 흐름에서는 발생하지 않음 - 방금 등록한 장소(온보딩) 또는 route 인자(Setting)로 항상 채워짐
+        LaunchedEffect(Unit) { onBackClick() }
+        return
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.generateAdminCode(placeId)
+
+        viewModel.event.collect { event ->
+            when (event) {
+                is IntroEvent.AdminCodeIssued -> {
+                    code = event.code
+                    timeLeft = event.remainingSeconds
+                }
+                // 코드 발급 실패 시 로딩 화면에 갇히지 않도록 이전 화면으로 돌아간다(에러 자체는 전역 스낵바가 표시)
+                is IntroEvent.ShowErrorSnackbar -> onBackClick()
+                is IntroEvent.NavigateToAdmin,
+                is IntroEvent.NavigateToAerometer,
+                is IntroEvent.PermissionGranted,
+                is IntroEvent.ExitIntro,
+                is IntroEvent.LoginSuccess,
+                is IntroEvent.PlaceRegistered,
+                is IntroEvent.InviteCodeVerified,
+                is IntroEvent.InviteCodeInvalid -> {}
+            }
+        }
+    }
+
+    LaunchedEffect(timeLeft) {
         if (timeLeft > 0) {
-            kotlinx.coroutines.delay(1000L)
+            delay(1000L)
             timeLeft -= 1
         }
     }
 
-    val canReissue = (totalTime - timeLeft) >= waitTime
+    val canReissue = (ADMIN_CODE_TTL_SECONDS - timeLeft) >= waitTime
+
+    val issuedCode = code
+    if (issuedCode == null) {
+        RebornLoadingScreen()
+        return
+    }
 
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
         RebornTopAppBar(onBackClick = { onBackClick() })
-        RebornTopAppBar(title = "페어링")
-        PairingCodeIssued(123456, timeLeft)
+        RebornTopAppBar(title = "관리자 초대 코드")
+        PairingCodeIssued(issuedCode, timeLeft)
         Spacer(modifier = Modifier.weight(1f))
 
         RebornButton(
-            text = "페어링 코드 재발급",
+            text = "코드 재발급",
             enabled = canReissue,
-            onClick = {
-                timeLeft = totalTime
-            }
+            onClick = { viewModel.generateAdminCode(placeId) }
+        )
+        RebornButton(
+            text = "완료",
+            onClick = { onNextClick() }
         )
     }
 }

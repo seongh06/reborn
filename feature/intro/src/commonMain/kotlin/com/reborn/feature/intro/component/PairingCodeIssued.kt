@@ -33,7 +33,7 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun PairingCodeIssued(
-    pairingCode: Int,
+    pairingCode: String,
     initialSeconds: Int
 ) {
     val minutes = initialSeconds / 60
@@ -45,7 +45,7 @@ fun PairingCodeIssued(
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
     ) {
         Text(
-            text = pairingCode.toString(),
+            text = pairingCode,
             style = RebornTheme.typography.displayLarge,
             color = RebornTheme.color.grayScale900
         )

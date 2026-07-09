@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
@@ -47,12 +48,17 @@ fun PairingCodeInput(
             value = value,
             onValueChange = { newValue ->
                 if (isError) onErrorReset()
-                val filtered = newValue.filter { it.isDigit() }
+                // 서버 코드(관리자 초대·기기 페어링)는 A-Z0-9 영숫자 조합(generateRandomCode)이라
+                // ASCII 영숫자만 허용 (isLetterOrDigit()는 한글 등 Unicode 문자도 통과시켜 서버가 거부함)
+                val filtered = newValue.filter { it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' }.uppercase()
                 if (filtered.length <= maxCount) {
                     onValueChange(filtered)
                 }
             },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                capitalization = KeyboardCapitalization.Characters,
+            ),
             modifier = modifier,
             decorationBox = {
                 Row(

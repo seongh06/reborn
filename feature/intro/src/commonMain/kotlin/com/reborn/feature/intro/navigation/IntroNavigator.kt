@@ -5,6 +5,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.reborn.core.navigation.Route
 import com.reborn.feature.intro.IntroRoute
 import com.reborn.feature.intro.IntroScreen
@@ -34,7 +35,12 @@ fun NavGraphBuilder.introNavGraph(
 fun NavGraphBuilder.introAdminCodeNavGraph(
     onBackClick: () -> Unit
 ) {
-    composable<Route.Admin.InviteCode> {
-        IntroAdminCodeScreen(onBackClick = onBackClick)
+    composable<Route.Admin.InviteCode> { backStackEntry ->
+        val route = backStackEntry.toRoute<Route.Admin.InviteCode>()
+        IntroAdminCodeScreen(
+            placeId = route.placeId.toLong(),
+            onBackClick = onBackClick,
+            onNextClick = onBackClick
+        )
     }
 }
