@@ -105,8 +105,8 @@ class PlaceService(
 
     @Transactional
     fun deletePlace(userId: Long, placeId: Long) {
-        val place = requireAdmin(userId, placeId)
-        placeRepository.delete(place)
+        requireAdmin(userId, placeId)
+        placeRepository.deleteByIdInBulk(placeId)
     }
 
     private fun requireAdmin(userId: Long, placeId: Long): Place {

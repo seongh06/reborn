@@ -237,7 +237,7 @@ class PlaceServiceTest {
 
         placeService.deletePlace(1L, 501L)
 
-        verify(placeRepository).delete(place)
+        verify(placeRepository).deleteByIdInBulk(501L)
     }
 
     @Test
