@@ -5,7 +5,13 @@ import androidx.compose.runtime.Immutable
 @Immutable
 sealed interface AdminHomeUiState{
     data object Loading: AdminHomeUiState
-    data object Home: AdminHomeUiState
+    data class Home(
+        val placeName: String = "",
+        val temperature: Int = 0,
+        val humidity: Int = 0,
+        val illuminance: Int = 0,
+        val peopleCount: Int = 0,
+    ): AdminHomeUiState
     data class Alarm(
         val alarm: List<AlarmItem> = emptyList()
     ): AdminHomeUiState
