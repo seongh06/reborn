@@ -119,9 +119,9 @@ fun Scope.createAuthHttpClient(
                     return@refreshTokens null
                 }
 
-                val body = response.body<BaseResponse<RefreshResponse>>()
-                val data = body.data
-                if (!body.isSuccess || data == null) {
+                val body = runCatching { response.body<BaseResponse<RefreshResponse>>() }.getOrNull()
+                val data = body?.data
+                if (body == null || !body.isSuccess || data == null) {
                     tokenLocalDataSource.clear()
                     return@refreshTokens null
                 }
