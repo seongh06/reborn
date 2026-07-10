@@ -1,6 +1,14 @@
 -- ================================================
 -- ReBorn Database Schema
 -- Based on JPA Entity definitions
+--
+-- ⚠️ CREATE TABLE IF NOT EXISTS 한계 (2026-07-10, #118):
+-- 이 파일을 수정해도 이미 테이블이 존재하는 환경(특히 운영)에는 반영되지 않는다.
+-- 운영 DB의 device/user_place_mapping 테이블이 과거 Hibernate ddl-auto로 생성된 채
+-- 남아있어 device_type enum이 옛 값(KIOSK)에 고정되고 FK에 CASCADE가 빠져있던 사고가
+-- 있었음 — server/deployment/migration/001_fix_device_place_schema_drift.sql로 수정.
+-- 기존 테이블의 컬럼/제약을 바꾸는 변경은 이 파일 수정만으로 끝나지 않고,
+-- server/deployment/migration/에 별도 ALTER 스크립트를 추가하고 운영에 수동 적용해야 한다.
 -- ================================================
 
 -- ------------------------------------------------
