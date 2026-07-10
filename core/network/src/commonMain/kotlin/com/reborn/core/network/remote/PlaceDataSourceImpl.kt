@@ -13,58 +13,42 @@ import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.http.HttpHeaders
 
+// "auth" 클라이언트(#121) 사용 - Authorization 헤더는 Auth 플러그인이 자동으로 붙인다.
 class PlaceDataSourceImpl(
     private val httpClient: HttpClient,
 ) : PlaceDataSource {
 
-    override suspend fun register(
-        accessToken: String,
-        request: RegisterPlaceRequest,
-    ): ApiResponse<PlaceResponse> = runCatching {
+    override suspend fun register(request: RegisterPlaceRequest): ApiResponse<PlaceResponse> = runCatching {
         httpClient.post("/api/place") {
-            header(HttpHeaders.Authorization, "Bearer $accessToken")
             setBody(request)
         }
     }.asApiResponse()
 
-    override suspend fun generateAdminCode(accessToken: String, placeId: Long): ApiResponse<AdminCodeResponse> = runCatching {
+    override suspend fun generateAdminCode(placeId: Long): ApiResponse<AdminCodeResponse> = runCatching {
         httpClient.post("/api/place/admin/code") {
-            header(HttpHeaders.Authorization, "Bearer $accessToken")
             parameter("placeId", placeId)
         }
     }.asApiResponse()
 
-    override suspend fun redeemAdminCode(
-        accessToken: String,
-        request: AdminInviteRequest,
-    ): ApiResponse<AdminInviteResponse> = runCatching {
+    override suspend fun redeemAdminCode(request: AdminInviteRequest): ApiResponse<AdminInviteResponse> = runCatching {
         httpClient.post("/api/place/admin") {
-            header(HttpHeaders.Authorization, "Bearer $accessToken")
             setBody(request)
         }
     }.asApiResponse()
 
-    override suspend fun getList(accessToken: String): ApiResponse<PlaceListResponse> = runCatching {
-        httpClient.get("/api/place") {
-            header(HttpHeaders.Authorization, "Bearer $accessToken")
-        }
+    override suspend fun getList(): ApiResponse<PlaceListResponse> = runCatching {
+        httpClient.get("/api/place")
     }.asApiResponse()
 
-    override suspend fun getDetail(accessToken: String, placeId: Long): ApiResponse<PlaceDetailResponse> = runCatching {
-        httpClient.get("/api/place/$placeId") {
-            header(HttpHeaders.Authorization, "Bearer $accessToken")
-        }
+    override suspend fun getDetail(placeId: Long): ApiResponse<PlaceDetailResponse> = runCatching {
+        httpClient.get("/api/place/$placeId")
     }.asApiResponse()
 
-    override suspend fun delete(accessToken: String, placeId: Long): ApiResponse<Unit?> = runCatching {
-        httpClient.delete("/api/place/$placeId") {
-            header(HttpHeaders.Authorization, "Bearer $accessToken")
-        }
+    override suspend fun delete(placeId: Long): ApiResponse<Unit?> = runCatching {
+        httpClient.delete("/api/place/$placeId")
     }.asApiResponse()
 }

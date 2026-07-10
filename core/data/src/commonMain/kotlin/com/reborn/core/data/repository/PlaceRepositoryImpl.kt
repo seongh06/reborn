@@ -1,6 +1,5 @@
 package com.reborn.core.data.repository
 
-import com.reborn.core.data.datasource.AuthLocalDataSource
 import com.reborn.core.data.mapper.toAdminInviteCode
 import com.reborn.core.data.mapper.toPlace
 import com.reborn.core.data.mapper.toPlaceDetail
@@ -17,30 +16,29 @@ import com.reborn.core.network.model.request.place.RegisterPlaceRequest
 
 class PlaceRepositoryImpl(
     private val remote: PlaceDataSource,
-    private val local: AuthLocalDataSource,
 ) : PlaceRepository {
 
     override suspend fun register(name: String, type: String): Result<Place> =
-        remote.register(local.getAccessToken().orEmpty(), RegisterPlaceRequest(name, type))
+        remote.register(RegisterPlaceRequest(name, type))
             .toResult { it.toPlace() }
 
     override suspend fun generateAdminCode(placeId: Long): Result<AdminInviteCode> =
-        remote.generateAdminCode(local.getAccessToken().orEmpty(), placeId)
+        remote.generateAdminCode(placeId)
             .toResult { it.toAdminInviteCode() }
 
     override suspend fun redeemAdminCode(adminCode: String): Result<PlaceMembership> =
-        remote.redeemAdminCode(local.getAccessToken().orEmpty(), AdminInviteRequest(adminCode))
+        remote.redeemAdminCode(AdminInviteRequest(adminCode))
             .toResult { it.toPlaceMembership() }
 
     override suspend fun getList(): Result<List<Place>> =
-        remote.getList(local.getAccessToken().orEmpty())
+        remote.getList()
             .toResult { response -> response.places.map { it.toPlace() } }
 
     override suspend fun getDetail(placeId: Long): Result<PlaceDetail> =
-        remote.getDetail(local.getAccessToken().orEmpty(), placeId)
+        remote.getDetail(placeId)
             .toResult { it.toPlaceDetail() }
 
     override suspend fun delete(placeId: Long): Result<Unit> =
-        remote.delete(local.getAccessToken().orEmpty(), placeId)
+        remote.delete(placeId)
             .toResult { }
 }
