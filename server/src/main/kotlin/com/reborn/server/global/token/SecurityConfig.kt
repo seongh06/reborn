@@ -63,6 +63,9 @@ class SecurityConfig(
                     // Arduino 기기 인증 (Device Key 헤더) — JWT 불필요
                     .requestMatchers("/api/metric/collect", "/api/metric/current").permitAll()
 
+                    // 공기계 앱은 별도 로그인을 하지 않음 — 페어링 코드 자체가 유일한 인가 수단(JWT 불필요)
+                    .requestMatchers(HttpMethod.POST, "/api/device/pairing").permitAll()
+
                     // QR 웹페이지에서 비로그인 방문자가 제출 — 조회/상태변경은 anyRequest().authenticated()로 보호
                     .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
 

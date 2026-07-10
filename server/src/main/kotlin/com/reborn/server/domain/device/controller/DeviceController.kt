@@ -66,15 +66,14 @@ class DeviceController(
 
     @Operation(
         summary = "페어링 코드 입력",
-        description = "공기계 앱에서 페어링 코드를 입력해 장소와 기기를 연결합니다. 검증 성공 시 AEROMETER 기기가 등록되고 appToken이 발급됩니다.",
+        description = "공기계 앱에서 페어링 코드를 입력해 장소와 기기를 연결합니다. 공기계 앱은 별도 로그인을 하지 않으므로 " +
+            "인증이 필요 없으며, 페어링 코드 자체가 유일한 인가 수단입니다. 검증 성공 시 AEROMETER 기기가 등록되고 appToken이 발급됩니다.",
     )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "페어링 성공 — deviceId, placeId, appToken 반환"),
         SwaggerApiResponse(responseCode = "400", description = "코드 누락 또는 만료된 코드"),
-        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
         SwaggerApiResponse(responseCode = "409", description = "이미 등록된 기기"),
     )
-    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/pairing")
     fun pairDevice(@Valid @RequestBody request: DeviceDto.PairingRequest): ApiResponse<DeviceDto.PairingResponse> =
         ApiResponse.success(deviceService.pairDevice(request))
