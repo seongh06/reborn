@@ -34,4 +34,16 @@ class DeviceDto {
         val placeId: Long,
         val appToken: String,
     )
+
+    data class ListResponse(
+        val devices: List<DeviceItem>,
+    )
+
+    data class DeviceItem(
+        val deviceId: String,
+        val deviceName: String?,
+        val deviceType: String,
+        val isOnline: Boolean,
+        val createdAt: LocalDateTime,
+    )
 }

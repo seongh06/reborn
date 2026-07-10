@@ -12,4 +12,13 @@ object DeviceConverter {
             deviceType = entity.deviceType.name,
             createdAt = requireNotNull(entity.createdAt),
         )
+
+    fun toDeviceItem(entity: Device): DeviceDto.DeviceItem =
+        DeviceDto.DeviceItem(
+            deviceId = entity.deviceKey,
+            deviceName = entity.name,
+            deviceType = entity.deviceType.name,
+            isOnline = entity.isOnline,
+            createdAt = requireNotNull(entity.createdAt),
+        )
 }

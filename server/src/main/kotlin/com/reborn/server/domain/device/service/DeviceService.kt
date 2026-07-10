@@ -109,6 +109,16 @@ class DeviceService(
         return DeviceDto.PairingResponse(deviceId = device.deviceKey, placeId = place.id, appToken = appToken)
     }
 
+    fun getList(userId: Long, placeId: Long): DeviceDto.ListResponse {
+        if (!placeRepository.existsById(placeId)) {
+            throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        }
+        requireAdmin(userId, placeId)
+
+        val devices = deviceRepository.findAllByPlaceId(placeId).map { DeviceConverter.toDeviceItem(it) }
+        return DeviceDto.ListResponse(devices = devices)
+    }
+
     private fun requireAdmin(userId: Long, placeId: Long) {
         val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
         if (mapping == null || mapping.accessLevel != AccessLevel.ADMIN) {
