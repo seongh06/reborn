@@ -126,8 +126,8 @@ class PlaceServiceTest {
     @Test
     fun `generateAdminCode - ADMIN이면 코드를 생성한다`() {
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
-        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
-            .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.ADMIN)
         given(redisUtil.setIfAbsent(anyString(), anyString(), anyDuration())).willReturn(true)
 
         val response = placeService.generateAdminCode(1L, 501L)
@@ -196,8 +196,8 @@ class PlaceServiceTest {
     @Test
     fun `getDetail - 접근 권한이 있으면 장소 상세 정보를 반환한다`() {
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
-        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
-            .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.USER))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.USER)
         given(deviceRepository.countByPlaceId(501L)).willReturn(3L)
 
         val response = placeService.getDetail(1L, 501L)
@@ -221,7 +221,7 @@ class PlaceServiceTest {
     @Test
     fun `getDetail - 접근 권한이 없으면 예외가 발생한다`() {
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
-        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(null)
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L)).willReturn(null)
 
         assertThatThrownBy { placeService.getDetail(1L, 501L) }
             .isInstanceOf(BusinessAlertException::class.java)
@@ -232,12 +232,12 @@ class PlaceServiceTest {
     @Test
     fun `deletePlace - ADMIN이면 장소를 삭제한다`() {
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
-        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
-            .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.ADMIN)
 
         placeService.deletePlace(1L, 501L)
 
-        verify(placeRepository).delete(place)
+        verify(placeRepository).deleteByIdInBulk(501L)
     }
 
     @Test
@@ -253,8 +253,8 @@ class PlaceServiceTest {
     @Test
     fun `deletePlace - ADMIN 권한이 없으면 예외가 발생한다`() {
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
-        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L))
-            .willReturn(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.USER))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.USER)
 
         assertThatThrownBy { placeService.deletePlace(1L, 501L) }
             .isInstanceOf(BusinessAlertException::class.java)
