@@ -7,19 +7,18 @@ import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
 import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.http.HttpHeaders
 
+// "auth" 클라이언트(#121) 사용 - generatePairingCode의 Authorization 헤더는 Auth 플러그인이 자동으로
+// 붙인다. pairDevice는 애초에 인증 대상이 아니라 헤더를 붙이지 않는다(#113).
 class DeviceDataSourceImpl(
     private val httpClient: HttpClient,
 ) : DeviceDataSource {
 
-    override suspend fun generatePairingCode(accessToken: String, placeId: Long): ApiResponse<PairingCodeResponse> = runCatching {
+    override suspend fun generatePairingCode(placeId: Long): ApiResponse<PairingCodeResponse> = runCatching {
         httpClient.post("/api/device/pairing/code") {
-            header(HttpHeaders.Authorization, "Bearer $accessToken")
             parameter("placeId", placeId)
         }
     }.asApiResponse()

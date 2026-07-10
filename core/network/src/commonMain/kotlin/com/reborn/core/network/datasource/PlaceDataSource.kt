@@ -10,10 +10,10 @@ import com.reborn.core.network.model.response.place.PlaceListResponse
 import com.reborn.core.network.model.response.place.PlaceResponse
 
 interface PlaceDataSource {
-    suspend fun register(accessToken: String, request: RegisterPlaceRequest): ApiResponse<PlaceResponse>
-    suspend fun generateAdminCode(accessToken: String, placeId: Long): ApiResponse<AdminCodeResponse>
-    suspend fun redeemAdminCode(accessToken: String, request: AdminInviteRequest): ApiResponse<AdminInviteResponse>
-    suspend fun getList(accessToken: String): ApiResponse<PlaceListResponse>
-    suspend fun getDetail(accessToken: String, placeId: Long): ApiResponse<PlaceDetailResponse>
-    suspend fun delete(accessToken: String, placeId: Long): ApiResponse<Unit?>
+    suspend fun register(request: RegisterPlaceRequest): ApiResponse<PlaceResponse>
+    suspend fun generateAdminCode(placeId: Long): ApiResponse<AdminCodeResponse>
+    suspend fun redeemAdminCode(request: AdminInviteRequest): ApiResponse<AdminInviteResponse>
+    suspend fun getList(): ApiResponse<PlaceListResponse>
+    suspend fun getDetail(placeId: Long): ApiResponse<PlaceDetailResponse>
+    suspend fun delete(placeId: Long): ApiResponse<Unit?>
 }

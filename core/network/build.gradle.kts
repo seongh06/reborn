@@ -40,7 +40,7 @@ kotlin {
             implementation(projects.core.domain)
             implementation(projects.core.common)
             //implementation(projects.core.notification)
-            //implementation(project(":core:datastore"))
+            implementation(projects.core.datastore)
         }
         iosMain.dependencies {
             //Todo: iOS 카카오 로그인 구현하기

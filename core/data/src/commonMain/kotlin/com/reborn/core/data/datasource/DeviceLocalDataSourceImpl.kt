@@ -13,4 +13,6 @@ class DeviceLocalDataSourceImpl(
     override suspend fun getDeviceId(): String? = tokenLocalDataSource.getDeviceId()
 
     override suspend fun getAppToken(): String? = tokenLocalDataSource.getAppToken()
+
+    override suspend fun isAerometerDevice(): Boolean = tokenLocalDataSource.isAerometerDevice()
 }
