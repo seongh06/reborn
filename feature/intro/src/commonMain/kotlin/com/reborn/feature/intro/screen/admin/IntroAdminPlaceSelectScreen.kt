@@ -70,7 +70,8 @@ fun IntroAdminPlaceSelectScreen(
                 is IntroEvent.AdminCodeIssued,
                 is IntroEvent.PairingCodeIssued,
                 is IntroEvent.InviteCodeVerified,
-                is IntroEvent.InviteCodeInvalid -> {}
+                is IntroEvent.InviteCodeInvalid,
+                is IntroEvent.DevicePaired -> {}
             }
         }
     }

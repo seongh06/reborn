@@ -60,7 +60,8 @@ fun IntroDevicePairingCodeScreen(
                 is IntroEvent.PlaceRegistered,
                 is IntroEvent.AdminCodeIssued,
                 is IntroEvent.InviteCodeVerified,
-                is IntroEvent.InviteCodeInvalid -> {}
+                is IntroEvent.InviteCodeInvalid,
+                is IntroEvent.DevicePaired -> {}
             }
         }
     }

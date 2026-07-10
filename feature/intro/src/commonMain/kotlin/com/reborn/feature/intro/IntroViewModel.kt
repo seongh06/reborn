@@ -6,6 +6,7 @@ import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
+import com.reborn.core.domain.usecase.PairDeviceUseCase
 import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
@@ -37,6 +38,7 @@ sealed class IntroEvent {
     data class PairingCodeIssued(val code: String, val remainingSeconds: Int) : IntroEvent()
     data object InviteCodeVerified : IntroEvent()
     data object InviteCodeInvalid : IntroEvent()
+    data object DevicePaired : IntroEvent()
 }
 
 class IntroViewModel(
@@ -47,6 +49,7 @@ class IntroViewModel(
     private val redeemAdminCodeUseCase: RedeemAdminCodeUseCase,
     private val generatePairingCodeUseCase: GeneratePairingCodeUseCase,
     private val getPlaceListUseCase: GetPlaceListUseCase,
+    private val pairDeviceUseCase: PairDeviceUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<IntroUiState>(IntroUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -58,6 +61,10 @@ class IntroViewModel(
 
     // 장소 등록(이름 입력 → 유형 선택)이 두 화면에 걸쳐 있어, 등록 API 호출 시점(유형 선택 완료)까지 이름을 들고 있어야 함
     private var pendingPlaceName: String = ""
+
+    // 공기계 페어링(코드 입력 → 기기 이름 입력)도 두 화면에 걸쳐 있어, pairDevice 호출 시점(기기 이름 입력 완료)까지
+    // 코드를 들고 있어야 함 - 별도 코드 검증 API가 없어 코드+이름을 한 번에 보내야 하기 때문(#113)
+    private var pendingPairingCode: String = ""
 
     // Setting의 "관리자 초대"(기존 장소)는 route로 placeId를 직접 받으므로 이 값을 쓰지 않고,
     // 온보딩 흐름(방금 등록한 장소)에서 AdminCode 화면에 placeId를 넘겨주기 위한 용도로만 쓰인다.
@@ -248,6 +255,21 @@ class IntroViewModel(
                     } else {
                         _event.emit(IntroEvent.ShowErrorSnackbar(it))
                     }
+                }
+        }
+    }
+
+    fun setPairingCode(code: String) {
+        pendingPairingCode = code
+    }
+
+    fun pairDevice(deviceName: String) {
+        viewModelScope.launch {
+            pairDeviceUseCase(pendingPairingCode, deviceName)
+                .onSuccess { _event.emit(IntroEvent.DevicePaired) }
+                .onFailure {
+                    println("IntroViewModel: 기기 페어링 실패 - ${it.message}")
+                    _event.emit(IntroEvent.ShowErrorSnackbar(it))
                 }
         }
     }
