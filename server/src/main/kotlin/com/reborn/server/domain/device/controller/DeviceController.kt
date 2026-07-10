@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -77,6 +78,24 @@ class DeviceController(
     @PostMapping("/pairing")
     fun pairDevice(@Valid @RequestBody request: DeviceDto.PairingRequest): ApiResponse<DeviceDto.PairingResponse> =
         ApiResponse.success(deviceService.pairDevice(request))
+
+    @Operation(
+        summary = "기기 목록 조회",
+        description = "특정 장소에 등록된 기기(ARDUINO/AEROMETER) 목록을 조회합니다. 해당 장소의 ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공 — 기기 목록 반환"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping
+    fun getList(
+        @RequestParam placeId: Long,
+        authentication: Authentication,
+    ): ApiResponse<DeviceDto.ListResponse> =
+        ApiResponse.success(deviceService.getList(extractUserId(authentication), placeId))
 
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long

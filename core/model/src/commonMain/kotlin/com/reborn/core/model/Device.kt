@@ -10,3 +10,11 @@ data class PairedDevice(
     val placeId: Long,
     val appToken: String,
 )
+
+data class Device(
+    val deviceId: String,
+    val deviceName: String?,
+    val deviceType: String,
+    val isOnline: Boolean,
+    val createdAt: String,
+)
