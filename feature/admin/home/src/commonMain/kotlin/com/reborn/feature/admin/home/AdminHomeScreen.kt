@@ -64,6 +64,7 @@ fun AdminHomeRoute(
         when(val state = uiState) {
             is AdminHomeUiState.Loading -> RebornLoadingScreen()
             is AdminHomeUiState.Home -> AdminHomeScreen(
+                state = state,
                 onAlarmClick = {viewModel.onIntent(AdminHomeIntent.NavigateToAlarm)},
                 onSettingClick = {viewModel.onIntent(AdminHomeIntent.NavigateToSetting)},
                 onFeedbackClick = {viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(1))}
@@ -80,6 +81,7 @@ fun AdminHomeRoute(
 
 @Composable
 fun AdminHomeScreen(
+    state: AdminHomeUiState.Home,
     onAlarmClick: () -> Unit,
     onSettingClick: () -> Unit,
     onFeedbackClick: () -> Unit
@@ -92,7 +94,7 @@ fun AdminHomeScreen(
             onNavigateAlert = onAlarmClick,
             onNavigateSetting = onSettingClick
         )
-        Dashboard("거실", 20, 20, 20, 20)
+        Dashboard(state.placeName, state.temperature, state.humidity, state.illuminance, state.peopleCount)
         Text(
             "실시간 피드백",
             modifier = Modifier.padding(16.dp),
