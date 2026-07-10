@@ -41,7 +41,8 @@ fun IntroInviteCodeScreen(
                 is IntroEvent.ShowErrorSnackbar,
                 is IntroEvent.PlaceRegistered,
                 is IntroEvent.AdminCodeIssued,
-                is IntroEvent.PairingCodeIssued -> {}
+                is IntroEvent.PairingCodeIssued,
+                is IntroEvent.DevicePaired -> {}
             }
         }
     }

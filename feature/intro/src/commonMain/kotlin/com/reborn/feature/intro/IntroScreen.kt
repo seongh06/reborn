@@ -70,6 +70,7 @@ fun IntroRoute(
                 is IntroEvent.PairingCodeIssued -> {} // IntroDevicePairingCodeScreen에서 자체적으로 처리
                 is IntroEvent.InviteCodeVerified -> {} // IntroInviteCodeScreen에서 자체적으로 처리
                 is IntroEvent.InviteCodeInvalid -> {} // IntroInviteCodeScreen에서 자체적으로 처리
+                is IntroEvent.DevicePaired -> {} // IntroAerometerDeviceNameScreen에서 자체적으로 처리
             }
         }
     }

@@ -11,6 +11,7 @@ import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
+import com.reborn.core.domain.usecase.PairDeviceUseCase
 import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
@@ -42,6 +43,7 @@ val appDependenciesModule = module {
     factory { GetPlaceDetailUseCase(get()) }
     factory { DeletePlaceUseCase(get()) }
     factory { GeneratePairingCodeUseCase(get()) }
+    factory { PairDeviceUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)

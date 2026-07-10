@@ -17,6 +17,14 @@ class TokenLocalDataSource(
         dataStore.updateData { it.copy(accessToken = accessToken, refreshToken = refreshToken) }
     }
 
+    suspend fun getDeviceId(): String? = dataStore.data.first().deviceId
+
+    suspend fun getAppToken(): String? = dataStore.data.first().appToken
+
+    suspend fun saveDeviceCredentials(deviceId: String, appToken: String) {
+        dataStore.updateData { it.copy(deviceId = deviceId, appToken = appToken) }
+    }
+
     suspend fun clear() {
         dataStore.updateData { AuthTokens() }
     }
