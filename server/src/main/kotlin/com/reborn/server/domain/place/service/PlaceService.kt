@@ -96,25 +96,25 @@ class PlaceService(
         val place = placeRepository.findById(placeId).orElseThrow {
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
         }
-        val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
+        val accessLevel = userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(userId, placeId)
             ?: throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "권한이 없습니다.")
 
         val deviceCount = deviceRepository.countByPlaceId(placeId).toInt()
-        return PlaceConverter.toDetailResponse(place, mapping.accessLevel, deviceCount)
+        return PlaceConverter.toDetailResponse(place, accessLevel, deviceCount)
     }
 
     @Transactional
     fun deletePlace(userId: Long, placeId: Long) {
-        val place = requireAdmin(userId, placeId)
-        placeRepository.delete(place)
+        requireAdmin(userId, placeId)
+        placeRepository.deleteByIdInBulk(placeId)
     }
 
     private fun requireAdmin(userId: Long, placeId: Long): Place {
         val place = placeRepository.findById(placeId).orElseThrow {
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
         }
-        val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
-        if (mapping == null || mapping.accessLevel != AccessLevel.ADMIN) {
+        val accessLevel = userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(userId, placeId)
+        if (accessLevel != AccessLevel.ADMIN) {
             throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.")
         }
         return place
