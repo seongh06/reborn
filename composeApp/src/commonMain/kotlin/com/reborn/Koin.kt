@@ -9,6 +9,8 @@ import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
+import com.reborn.core.domain.usecase.GetFeedbackCountUseCase
+import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetMetricHistoryUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
@@ -18,6 +20,7 @@ import com.reborn.core.domain.usecase.PairDeviceUseCase
 import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
+import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
 import com.reborn.core.network.di.dataSourceModule
 import com.reborn.core.network.di.networkModule
 import com.reborn.feature.admin.adjust.AdminAdjustViewModel
@@ -50,6 +53,9 @@ val appDependenciesModule = module {
     factory { GetDeviceListUseCase(get()) }
     factory { GetCurrentMetricUseCase(get()) }
     factory { GetMetricHistoryUseCase(get()) }
+    factory { GetFeedbackListUseCase(get()) }
+    factory { GetFeedbackCountUseCase(get()) }
+    factory { UpdateFeedbackStatusUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)

@@ -83,8 +83,8 @@ fun AdminFeedbackRoute(
             is AdminFeedbackUiState.FeedbackDetail -> AdminFeedbackDetailScreen(
                 state = state,
                 onBackClick = onBackClick,
-                onRejectClick = {},
-                onApproveClick = {}
+                onRejectClick = { viewModel.onIntent(AdminFeedbackIntent.RejectFeedback(state.feedbackId)) },
+                onApproveClick = { viewModel.onIntent(AdminFeedbackIntent.ApproveFeedback(state.feedbackId)) }
             )
         }
     }

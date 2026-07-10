@@ -6,10 +6,12 @@ import com.reborn.core.data.datasource.DeviceLocalDataSource
 import com.reborn.core.data.datasource.DeviceLocalDataSourceImpl
 import com.reborn.core.data.repository.AuthRepositoryImpl
 import com.reborn.core.data.repository.DeviceRepositoryImpl
+import com.reborn.core.data.repository.FeedbackRepositoryImpl
 import com.reborn.core.data.repository.MetricRepositoryImpl
 import com.reborn.core.data.repository.PlaceRepositoryImpl
 import com.reborn.core.domain.repository.AuthRepository
 import com.reborn.core.domain.repository.DeviceRepository
+import com.reborn.core.domain.repository.FeedbackRepository
 import com.reborn.core.domain.repository.MetricRepository
 import com.reborn.core.domain.repository.PlaceRepository
 import org.koin.dsl.module
@@ -23,5 +25,6 @@ val repositoryModule = module {
     single<PlaceRepository> { PlaceRepositoryImpl(get()) }
     single<DeviceRepository> { DeviceRepositoryImpl(get(), get()) }
     single<MetricRepository> { MetricRepositoryImpl(get()) }
+    single<FeedbackRepository> { FeedbackRepositoryImpl(get()) }
 
 }

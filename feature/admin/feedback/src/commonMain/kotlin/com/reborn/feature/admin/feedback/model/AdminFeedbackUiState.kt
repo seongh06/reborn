@@ -45,4 +45,6 @@ sealed interface AdminFeedbackIntent{
     data class NavigateToQR(val placeId: Int) : AdminFeedbackIntent
     data class NavigateToFeedbackDetail(val feedbackId : Int) : AdminFeedbackIntent
     data class ClickTab(val tab: AdminFeedbackUiState.FeedbackFiltering) : AdminFeedbackIntent
+    data class ApproveFeedback(val feedbackId: Int) : AdminFeedbackIntent
+    data class RejectFeedback(val feedbackId: Int) : AdminFeedbackIntent
 }
