@@ -33,13 +33,13 @@ import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.navigation.MainTab
 import com.reborn.core.navigation.Route
 import com.reborn.feature.admin.adjust.navigation.adjustNavGraph
-import com.reborn.feature.admin.adjust.navigation.adminAddDeviceNavGraph
 import com.reborn.feature.admin.data.navigation.adminDataNavGraph
 import com.reborn.feature.admin.feedback.navigation.adminFeedbackNavGraph
 import com.reborn.feature.admin.home.navigation.adminHomeNavGraph
 import com.reborn.feature.admin.setting.navigation.adminSettingNavGraph
 import com.reborn.feature.aerometer.navigation.aerometerNavGraph
 import com.reborn.feature.intro.navigation.introAdminCodeNavGraph
+import com.reborn.feature.intro.navigation.introDevicePairingNavGraph
 import com.reborn.feature.intro.navigation.introNavGraph
 import moe.tlaster.precompose.PreComposeApp
 import org.jetbrains.compose.resources.painterResource
@@ -164,6 +164,11 @@ fun App() {
                             navController.popBackStack()
                         }
                     )
+                    introDevicePairingNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
+                    )
                     aerometerNavGraph(
                         onBackClick = {
                             navController.popBackStack()
@@ -189,11 +194,6 @@ fun App() {
                         },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
-                        }
-                    )
-                    adminAddDeviceNavGraph(
-                        onBackClick = {
-                            navController.popBackStack()
                         }
                     )
                     adminFeedbackNavGraph(
