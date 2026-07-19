@@ -96,9 +96,10 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 | `user` | 사용자 | refreshToken 없음 → Redis 관리, email nullable(카카오 이메일 동의 미사용) |
 | `place` | 장소 | qrCode UNIQUE 추가 |
 | `user_place_mapping` | 사용자-장소 권한 (ADMIN/USER) | - |
-| `device` | 기기 (ARDUINO/AEROMETER) | deviceType, appToken, isOnline 추가 |
-| `metric_logs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (device_id, created_at DESC) 인덱스 |
+| `device` | 기기 (ARDUINO/AEROMETER/SMART_THINGS) | deviceType, appToken, isOnline 추가. SMART_THINGS는 2026-07-19 추가 — deviceKey에 SmartThings deviceId 저장, appToken 불필요 |
+| `metric_logs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (device_id, created_at DESC) 인덱스. SMART_THINGS 기기는 Arduino의 push(POST /api/metric/collect) 대신 서버가 주기적으로 pull(SmartThings API 폴링)해서 동일 테이블에 적재 |
 | `feedback` | 방문자 피드백 | userAgent, sessionToken 추가 |
+| `smart_things_credential` | 장소별 SmartThings OAuth 토큰 (2026-07-19 신설) | place_id UNIQUE FK, accessToken, refreshToken, expiresAt — 서버가 보유, 공기계/관리자 앱은 접근 안 함 |
 
 ### 테이블 관계
 
@@ -135,7 +136,11 @@ user ──< user_place_mapping >── place ──< device ──< metric_logs
 | POST | `/api/device` | Arduino 기기 등록 | ✅ ADMIN |
 | POST | `/api/device/pairing/code` | 공기계 페어링 코드 생성 | ✅ ADMIN |
 | POST | `/api/device/pairing` | 공기계 페어링 코드 입력·등록 | ✅ |
-| WS | `/ws/control` | WebSocket 제어 명령 중계 | ✅ |
+| ~~WS~~ | ~~`/ws/control`~~ | ~~WebSocket 제어 명령 중계~~ | 2026-07-19 폐기 — SmartThings 제어가 서버 직접 호출로 바뀌며 중계 불필요해짐 |
+| GET | `/api/smartthings/oauth/authorize` | SmartThings 계정 연동 시작(장소별, ADMIN) | ✅ ADMIN |
+| GET | `/api/smartthings/oauth/callback` | SmartThings OAuth 콜백 (인가 코드 → 토큰 교환) | ❌(SmartThings가 호출) |
+| GET | `/api/smartthings/devices` | 연동된 SmartThings 계정의 기기 목록 조회 (등록용) | ✅ ADMIN |
+| POST | `/api/device/{deviceId}/control` | IoT 기기 제어 명령 (서버가 SmartThings 직접 호출) | ✅ ADMIN |
 
 ---
 
@@ -154,10 +159,18 @@ QR 웹 → POST /api/feedback → feedback 저장
 
 ### 실시간 IoT 제어 흐름
 ```
-관리자 앱 → WebSocket(/ws/control) → 서버 중계
-         → 공기계 앱(AEROMETER) → SmartThings API 호출 → IoT 기기 제어
+관리자 앱 → 서버(REST) → SmartThings Cloud API(서버가 직접 호출) → IoT 기기 제어
 ```
-> 2026-07-06 확정: 공기계 앱이 SmartThings Cloud API를 직접 호출하여 기기를 제어함(로컬 Wi-Fi 직접 제어 아님). 서버는 SmartThings 자격증명을 갖지 않고 WebSocket 중계까지만 담당.
+> 2026-07-19 확정(2026-07-06 결정 번복): SmartThings OAuth는 PKCE(공개 클라이언트)를 지원하지 않아 client_secret이 반드시 서버에 있어야 함. 이에 따라 **서버가 SmartThings 자격증명(장소별 OAuth accessToken/refreshToken)을 직접 보유하고 SmartThings API를 호출**하는 구조로 변경. 공기계 앱은 이 제어 흐름에서 완전히 제외됨 — 기존 계획(공기계 앱이 SmartThings PAT를 들고 직접 호출, WebSocket은 중계만 담당)은 폐기.
+> 인증은 Personal Access Token이 아니라 **OAuth 2.0 Authorization Code Grant**(SmartThings Developer Workspace에 앱 등록 필요) 사용 — 관리자가 장소마다 최초 1회 SmartThings 계정 연동(동의 화면 통과) → 서버가 발급받은 토큰을 `smart_things_credential`에 저장, 만료 시 refreshToken으로 갱신.
+> `/ws/control` 엔드포인트(#76)는 이 흐름에서 더 이상 필요하지 않음 — 서버가 SmartThings를 동기 호출하므로 관리자↔서버 구간도 일반 REST 요청/응답으로 충분.
+
+### SmartThings 온습도 폴링 흐름 (공기계·Arduino 미보유 장소, 2026-07-19 신설)
+```
+서버(스케줄러) → GET /v1/devices/{id}/status (SmartThings) → temperatureMeasurement/relativeHumidityMeasurement capability 파싱
+              → metric_logs 저장 (device_id = deviceType SMART_THINGS인 Device row)
+```
+> 모든 장소가 Arduino/공기계를 두는 게 아니므로, SmartThings에 연동된 에어컨 등 기기가 자체 온습도 센서를 제공하는 경우 서버가 주기적으로 상태를 폴링해 `metric_logs`를 채운다. Arduino의 push 방식과 소스만 다를 뿐 저장 스키마는 동일하게 재사용.
 
 ---
 
