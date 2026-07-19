@@ -3,9 +3,11 @@ package com.reborn.core.network.remote
 import com.reborn.core.network.datasource.DeviceDataSource
 import com.reborn.core.network.model.ApiResponse
 import com.reborn.core.network.model.request.device.PairingRequest
+import com.reborn.core.network.model.request.device.RegisterDeviceRequest
 import com.reborn.core.network.model.response.device.DeviceListResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
+import com.reborn.core.network.model.response.device.RegisterDeviceResponse
 import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -34,6 +36,12 @@ class DeviceDataSourceImpl(
     override suspend fun getList(placeId: Long): ApiResponse<DeviceListResponse> = runCatching {
         httpClient.get("/api/device") {
             parameter("placeId", placeId)
+        }
+    }.asApiResponse()
+
+    override suspend fun registerDevice(request: RegisterDeviceRequest): ApiResponse<RegisterDeviceResponse> = runCatching {
+        httpClient.post("/api/device") {
+            setBody(request)
         }
     }.asApiResponse()
 }

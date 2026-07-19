@@ -36,7 +36,8 @@ fun RoomListItem(
     deviceCount: Int?,
     onDeleteClick: () -> Unit,
     onAddAdminClick: () -> Unit,
-    onAddDeviceClick: () -> Unit
+    onAddDeviceClick: () -> Unit,
+    onAddArduinoClick: () -> Unit
 ){
     Column(
         modifier = Modifier
@@ -88,9 +89,16 @@ fun RoomListItem(
             )
             RebornButton(
                 modifier = Modifier.weight(1f),
-                text = "디바이스 추가",
+                text = "공기계 추가",
                 backgroundColor = RebornTheme.color.grayScale300,
                 onClick = onAddDeviceClick,
+                contentPadding = PaddingValues(8.dp)
+            )
+            RebornButton(
+                modifier = Modifier.weight(1f),
+                text = "아두이노 추가",
+                backgroundColor = RebornTheme.color.grayScale300,
+                onClick = onAddArduinoClick,
                 contentPadding = PaddingValues(8.dp)
             )
 

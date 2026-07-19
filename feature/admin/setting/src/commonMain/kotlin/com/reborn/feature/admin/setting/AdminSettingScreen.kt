@@ -40,6 +40,7 @@ fun AdminSettingRoute(
     onBackClick: () -> Unit,
     onNavigateToInviteCode: (Int) -> Unit = {},
     onNavigateToAddDevice: (Int) -> Unit = {},
+    onNavigateToAddArduino: (Int) -> Unit = {},
     onNavigateToAddPlace: () -> Unit = {},
     onLoggedOut: () -> Unit = {}
 ) {
@@ -62,6 +63,7 @@ fun AdminSettingRoute(
                 is AdminSettingEvent.Exit -> onBackClick()
                 is AdminSettingEvent.NavigateToInviteCode -> onNavigateToInviteCode(event.placeId)
                 is AdminSettingEvent.NavigateToAddDevice -> onNavigateToAddDevice(event.placeId)
+                is AdminSettingEvent.NavigateToAddArduino -> onNavigateToAddArduino(event.placeId)
                 is AdminSettingEvent.NavigateToAddPlace -> onNavigateToAddPlace()
                 is AdminSettingEvent.LoggedOut -> onLoggedOut()
             }
@@ -79,6 +81,7 @@ fun AdminSettingRoute(
                 onDeleteRoomClick = { placeId -> viewModel.onIntent(AdminSettingIntent.DeleteRoom(placeId)) },
                 onAddAdminClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAdmin(placeId)) },
                 onAddDeviceClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddDevice(placeId)) },
+                onAddArduinoClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddArduino(placeId)) },
                 onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) },
                 onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) }
             )
@@ -93,6 +96,7 @@ fun AdminSettingScreen(
     onDeleteRoomClick: (Int) -> Unit,
     onAddAdminClick: (Int) -> Unit,
     onAddDeviceClick: (Int) -> Unit,
+    onAddArduinoClick: (Int) -> Unit,
     onAddPlaceClick: () -> Unit,
     onLogoutClick: () -> Unit
 
@@ -122,7 +126,8 @@ fun AdminSettingScreen(
                     deviceCount = room.deviceCount,
                     onDeleteClick = { onDeleteRoomClick(room.placeId) },
                     onAddAdminClick = { onAddAdminClick(room.placeId) },
-                    onAddDeviceClick = { onAddDeviceClick(room.placeId) }
+                    onAddDeviceClick = { onAddDeviceClick(room.placeId) },
+                    onAddArduinoClick = { onAddArduinoClick(room.placeId) }
                 )
             }
             RebornButton(

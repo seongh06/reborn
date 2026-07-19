@@ -36,6 +36,7 @@ import com.reborn.feature.admin.adjust.navigation.adjustNavGraph
 import com.reborn.feature.admin.data.navigation.adminDataNavGraph
 import com.reborn.feature.admin.feedback.navigation.adminFeedbackNavGraph
 import com.reborn.feature.admin.home.navigation.adminHomeNavGraph
+import com.reborn.feature.admin.setting.navigation.adminAddArduinoNavGraph
 import com.reborn.feature.admin.setting.navigation.adminSettingNavGraph
 import com.reborn.feature.aerometer.navigation.aerometerNavGraph
 import com.reborn.feature.intro.navigation.introAdminCodeNavGraph
@@ -72,7 +73,8 @@ fun App() {
                     val isAdminSetting = currentDestination?.hasRoute<Route.Admin.Setting>() == true
                     val isAdminInviteCode = currentDestination?.hasRoute<Route.Admin.InviteCode>() == true
                     val isAdminAddDevice = currentDestination?.hasRoute<Route.Admin.AddDevice>() == true
-                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice &&
+                    val isAdminAddArduino = currentDestination?.hasRoute<Route.Admin.AddArduino>() == true
+                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice && !isAdminAddArduino &&
                         (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
                     ) {
                         Surface(
@@ -215,6 +217,9 @@ fun App() {
                         onNavigateToAddDevice = { placeId ->
                             navController.navigate(Route.Admin.AddDevice(placeId))
                         },
+                        onNavigateToAddArduino = { placeId ->
+                            navController.navigate(Route.Admin.AddArduino(placeId))
+                        },
                         onNavigateToAddPlace = {
                             introSkipToAdminModeSelect = true
                             navController.navigate(Route.Intro)
@@ -224,6 +229,11 @@ fun App() {
                             navController.navigate(Route.Intro) {
                                 popUpTo(navController.graph.id) { inclusive = true }
                             }
+                        }
+                    )
+                    adminAddArduinoNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
                         }
                     )
                 }
