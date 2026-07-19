@@ -2,6 +2,7 @@ package com.reborn.server.domain.device.controller
 
 import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.device.service.DeviceService
+import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.ApiResponse
 import com.reborn.server.global.model.CommonErrorCode
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/device")
 class DeviceController(
     private val deviceService: DeviceService,
+    private val smartThingsDeviceService: SmartThingsDeviceService,
 ) {
 
     @Operation(
@@ -96,6 +99,28 @@ class DeviceController(
         authentication: Authentication,
     ): ApiResponse<DeviceDto.ListResponse> =
         ApiResponse.success(deviceService.getList(extractUserId(authentication), placeId))
+
+    @Operation(
+        summary = "IoT 기기 제어",
+        description = "SmartThings로 등록된 기기(SMART_THINGS 타입)에 제어 명령을 보냅니다. 서버가 해당 " +
+            "장소의 SmartThings 토큰으로 SmartThings API를 직접 호출합니다(#132). 전원/운전모드/온도/풍량 중 " +
+            "보낸 필드만 반영됩니다. 해당 장소의 ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "제어 명령 전달 완료"),
+        SwaggerApiResponse(responseCode = "400", description = "제어할 항목 없음 또는 SmartThings 기기가 아님"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기 또는 이 장소에 SmartThings 미연동"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/{deviceId}/control")
+    fun control(
+        @PathVariable deviceId: String,
+        @RequestBody request: DeviceDto.ControlRequest,
+        authentication: Authentication,
+    ): ApiResponse<DeviceDto.ControlResponse> =
+        ApiResponse.success(smartThingsDeviceService.control(extractUserId(authentication), deviceId, request))
 
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long

@@ -140,6 +140,7 @@ user ──< user_place_mapping >── place ──< device ──< metric_logs
 | GET | `/api/smartthings/oauth/authorize` | SmartThings 계정 연동 시작(장소별, ADMIN) | ✅ ADMIN |
 | GET | `/api/smartthings/oauth/callback` | SmartThings OAuth 콜백 (인가 코드 → 토큰 교환) | ❌(SmartThings가 호출) |
 | GET | `/api/smartthings/devices` | 연동된 SmartThings 계정의 기기 목록 조회 (등록용) | ✅ ADMIN |
+| POST | `/api/smartthings/devices` | SmartThings 기기를 이 장소의 제어 대상으로 등록 (device 테이블에 SMART_THINGS로 저장) | ✅ ADMIN |
 | POST | `/api/device/{deviceId}/control` | IoT 기기 제어 명령 (서버가 SmartThings 직접 호출) | ✅ ADMIN |
 
 ---

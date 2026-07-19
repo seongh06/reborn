@@ -1,5 +1,7 @@
 package com.reborn.server.domain.device.dto
 
+import com.reborn.server.domain.device.OperationMode
+import com.reborn.server.domain.device.WindSpeed
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import java.time.LocalDateTime
@@ -45,5 +47,18 @@ class DeviceDto {
         val deviceType: String,
         val isOnline: Boolean,
         val createdAt: LocalDateTime,
+    )
+
+    // 전부 optional — 보낸 필드만 SmartThings 커맨드로 매핑되어 전송된다(#132).
+    data class ControlRequest(
+        val isPowerOn: Boolean? = null,
+        val operationMode: OperationMode? = null,
+        val windSpeed: WindSpeed? = null,
+        val temperature: Int? = null,
+    )
+
+    data class ControlResponse(
+        val deviceId: String,
+        val sentAt: LocalDateTime,
     )
 }
