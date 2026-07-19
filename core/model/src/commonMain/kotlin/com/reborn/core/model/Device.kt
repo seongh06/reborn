@@ -18,3 +18,10 @@ data class Device(
     val isOnline: Boolean,
     val createdAt: String,
 )
+
+data class RegisteredDevice(
+    val deviceId: String,
+    val deviceName: String?,
+    val deviceType: String,
+    val createdAt: String,
+)

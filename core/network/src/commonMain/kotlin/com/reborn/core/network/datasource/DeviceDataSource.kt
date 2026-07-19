@@ -2,9 +2,11 @@ package com.reborn.core.network.datasource
 
 import com.reborn.core.network.model.ApiResponse
 import com.reborn.core.network.model.request.device.PairingRequest
+import com.reborn.core.network.model.request.device.RegisterDeviceRequest
 import com.reborn.core.network.model.response.device.DeviceListResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
+import com.reborn.core.network.model.response.device.RegisterDeviceResponse
 
 interface DeviceDataSource {
     suspend fun generatePairingCode(placeId: Long): ApiResponse<PairingCodeResponse>
@@ -13,4 +15,7 @@ interface DeviceDataSource {
     suspend fun pairDevice(request: PairingRequest): ApiResponse<PairingResponse>
 
     suspend fun getList(placeId: Long): ApiResponse<DeviceListResponse>
+
+    // Arduino 기기 등록 - 펌웨어에 하드코딩한 deviceId를 관리자가 직접 입력해 서버에 매칭시킨다.
+    suspend fun registerDevice(request: RegisterDeviceRequest): ApiResponse<RegisterDeviceResponse>
 }

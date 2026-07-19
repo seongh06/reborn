@@ -24,6 +24,7 @@ sealed interface AdminSettingIntent {
     data class DeleteRoom(val placeId: Int) : AdminSettingIntent
     data class ClickAddAdmin(val placeId: Int) : AdminSettingIntent
     data class ClickAddDevice(val placeId: Int) : AdminSettingIntent
+    data class ClickAddArduino(val placeId: Int) : AdminSettingIntent
     data object ClickAddPlace : AdminSettingIntent
     data object ClickLogout : AdminSettingIntent
 }

@@ -4,7 +4,9 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.reborn.core.navigation.Route
+import com.reborn.feature.admin.setting.AdminAddArduinoRoute
 import com.reborn.feature.admin.setting.AdminSettingRoute
 
 fun NavController.navigateAdminSetting(navOptions: NavOptions) {
@@ -15,6 +17,7 @@ fun NavGraphBuilder.adminSettingNavGraph(
     onBackClick: () -> Unit,
     onNavigateToInviteCode: (Int) -> Unit = {},
     onNavigateToAddDevice: (Int) -> Unit = {},
+    onNavigateToAddArduino: (Int) -> Unit = {},
     onNavigateToAddPlace: () -> Unit = {},
     onLoggedOut: () -> Unit = {}
 ) {
@@ -23,8 +26,21 @@ fun NavGraphBuilder.adminSettingNavGraph(
             onBackClick = onBackClick,
             onNavigateToInviteCode = onNavigateToInviteCode,
             onNavigateToAddDevice = onNavigateToAddDevice,
+            onNavigateToAddArduino = onNavigateToAddArduino,
             onNavigateToAddPlace = onNavigateToAddPlace,
             onLoggedOut = onLoggedOut
+        )
+    }
+}
+
+fun NavGraphBuilder.adminAddArduinoNavGraph(
+    onBackClick: () -> Unit,
+) {
+    composable<Route.Admin.AddArduino> { backStackEntry ->
+        val route = backStackEntry.toRoute<Route.Admin.AddArduino>()
+        AdminAddArduinoRoute(
+            placeId = route.placeId.toLong(),
+            onBackClick = onBackClick,
         )
     }
 }
