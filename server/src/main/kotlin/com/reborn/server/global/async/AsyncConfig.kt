@@ -7,12 +7,14 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.task.TaskDecorator
 import org.springframework.scheduling.annotation.AsyncConfigurer
 import org.springframework.scheduling.annotation.EnableAsync
+import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Executor
 import java.util.concurrent.ThreadPoolExecutor
 
 @Configuration
 @EnableAsync
+@EnableScheduling // SmartThingsMetricPollingScheduler(#133) 등 @Scheduled 사용을 위해 필요
 class AsyncConfig : AsyncConfigurer {
 
     @Bean(ASYNC_EXECUTOR)
