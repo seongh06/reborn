@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS `device`
 (
     `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '기기 PK',
     `place_id`    BIGINT       NOT NULL COMMENT '장소 FK',
-    `device_type` VARCHAR(20)  NOT NULL COMMENT '기기 유형 (ARDUINO / AEROMETER)',
+    `device_type` VARCHAR(20)  NOT NULL COMMENT '기기 유형 (ARDUINO / AEROMETER / SMART_THINGS)',
     `device_key`  VARCHAR(255) NOT NULL COMMENT '인증용 고유 키',
     `name`        VARCHAR(100) NULL COMMENT '기기 이름',
     `app_token`   VARCHAR(512) NULL COMMENT 'FCM 앱 토큰 (AEROMETER 전용)',
@@ -149,3 +149,26 @@ CREATE TABLE IF NOT EXISTS `feedback`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '방문자 피드백';
+
+-- ------------------------------------------------
+-- 7. smart_things_credential (2026-07-19, #130)
+-- 장소별 SmartThings OAuth 토큰. PKCE 미지원으로 client_secret이 서버에만
+-- 있어야 해서, 서버가 이 토큰으로 SmartThings Cloud API를 직접 호출한다.
+-- ------------------------------------------------
+CREATE TABLE IF NOT EXISTS `smart_things_credential`
+(
+    `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '자격증명 PK',
+    `place_id`      BIGINT       NOT NULL COMMENT '장소 FK (장소당 1개)',
+    `access_token`  VARCHAR(1024) NOT NULL COMMENT 'SmartThings OAuth AccessToken',
+    `refresh_token` VARCHAR(1024) NOT NULL COMMENT 'SmartThings OAuth RefreshToken',
+    `expires_at`    DATETIME(6)  NOT NULL COMMENT 'AccessToken 만료 시각',
+    `created_at`    DATETIME(6)  NOT NULL COMMENT '연동일시',
+    `updated_at`    DATETIME(6)  NOT NULL COMMENT '수정일시',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_smart_things_credential_place` (`place_id`),
+    CONSTRAINT `fk_smart_things_credential_place`
+        FOREIGN KEY (`place_id`) REFERENCES `place` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT = '장소별 SmartThings OAuth 자격증명';

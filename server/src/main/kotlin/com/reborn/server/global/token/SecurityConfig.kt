@@ -73,6 +73,10 @@ class SecurityConfig(
                     // WebSocketAuthChannelInterceptor가 담당 (관리자: JWT / 공기계: deviceKey+appToken)
                     .requestMatchers("/ws/control/**").permitAll()
 
+                    // SmartThings가 사용자 동의 후 브라우저를 직접 리다이렉트하는 엔드포인트 — JWT 불필요.
+                    // state 파라미터(Redis 저장, #130)가 유일한 인가 수단이며 /authorize는 그대로 JWT 필요.
+                    .requestMatchers("/api/smartthings/oauth/callback").permitAll()
+
                     .anyRequest().authenticated()
             }
             .addFilterBefore(JwtFilter(jwtProvider), UsernamePasswordAuthenticationFilter::class.java)
