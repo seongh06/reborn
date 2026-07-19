@@ -26,7 +26,10 @@ smartthings:
   redirect-uri: ${SMARTTHINGS_REDIRECT_URI:https://www.reborn-energy.com/api/smartthings/oauth/callback}
   authorize-url: https://api.smartthings.com/oauth/authorize
   token-url: https://api.smartthings.com/oauth/token
+  api-base-url: https://api.smartthings.com/v1
   scope: "r:devices:* x:devices:*"
+  # Arduino/공기계 미보유 장소용 온습도 폴링 주기(#133) — 기본 10분
+  metric-poll-interval-ms: ${SMARTTHINGS_METRIC_POLL_INTERVAL_MS:600000}
 
 spring:
   datasource:
