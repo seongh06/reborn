@@ -15,12 +15,15 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.web.PageableDefault
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -48,6 +51,36 @@ class FeedbackController(
         httpRequest: HttpServletRequest,
     ): ApiResponse<FeedbackDto.SubmitResponse> =
         ApiResponse.success(feedbackService.submit(request, httpRequest.getHeader("User-Agent")))
+
+    @Operation(
+        summary = "음성 피드백 제출 (AI 스피커)",
+        description = "ATOM ECHO 등 AI 스피커 기기가 녹음한 오디오를 업로드하면 Gemini로 분석해 " +
+            "feedback을 저장하고, 인식 성공/실패에 따른 고정 안내 음성(TTS)을 응답 바디로 그대로 반환합니다. " +
+            "X-Device-Id 헤더로 기기를 식별하며, 결과는 X-Feedback-Recognized/X-Feedback-Id 헤더로 함께 전달합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "처리 성공 — 응답 바디는 TTS 오디오"),
+        SwaggerApiResponse(responseCode = "400", description = "오디오 데이터가 비어있음"),
+        SwaggerApiResponse(responseCode = "404", description = "등록되지 않은 AI 스피커 기기"),
+    )
+    @PostMapping("/voice", consumes = [MediaType.ALL_VALUE])
+    fun submitVoice(
+        @RequestHeader("X-Device-Id") deviceId: String,
+        @RequestHeader(value = "Content-Type", required = false) contentType: String?,
+        @RequestBody audioBytes: ByteArray,
+    ): ResponseEntity<ByteArray> {
+        val result = feedbackService.submitVoice(deviceId, audioBytes, contentType ?: "audio/wav")
+
+        val builder = ResponseEntity.ok()
+            .contentType(resolveAudioMediaType(result.audio.mimeType))
+            .header("X-Feedback-Recognized", result.recognized.toString())
+        result.feedbackId?.let { builder.header("X-Feedback-Id", it.toString()) }
+
+        return builder.body(result.audio.audioBytes)
+    }
+
+    private fun resolveAudioMediaType(mimeType: String): MediaType =
+        runCatching { MediaType.parseMediaType(mimeType) }.getOrDefault(MediaType.parseMediaType("audio/wav"))
 
     @Operation(
         summary = "피드백 조회",

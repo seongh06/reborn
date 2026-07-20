@@ -31,6 +31,7 @@ object FeedbackConverter {
             deviceId = entity.device?.deviceKey ?: "",
             deviceName = entity.device?.name,
             content = entity.content,
+            source = entity.source.name,
             status = entity.status.name,
             createdAt = requireNotNull(entity.createdAt),
         )

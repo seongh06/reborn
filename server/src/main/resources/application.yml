@@ -31,6 +31,14 @@ smartthings:
   # Arduino/공기계 미보유 장소용 온습도 폴링 주기(#133) — 기본 10분
   metric-poll-interval-ms: ${SMARTTHINGS_METRIC_POLL_INTERVAL_MS:600000}
 
+# Gemini API(#142, AI 스피커 음성 피드백 분석/TTS). 미설정 시 GeminiClient가 fail-closed로 처리한다.
+# 모델은 비용 최소화 목적으로 flash-lite 계열 사용(오디오 이해는 텍스트 대비 토큰 단가가 더 높음에 유의).
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+  model: ${GEMINI_MODEL:gemini-2.5-flash-lite}
+  tts-model: ${GEMINI_TTS_MODEL:gemini-2.5-flash-preview-tts}
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true}

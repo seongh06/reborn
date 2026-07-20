@@ -1,9 +1,14 @@
 package com.reborn.server.domain.feedback.service
 
+import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.feedback.Feedback
 import com.reborn.server.domain.feedback.FeedbackRepository
+import com.reborn.server.domain.feedback.FeedbackSource
 import com.reborn.server.domain.feedback.FeedbackStatus
+import com.reborn.server.domain.feedback.client.GeminiClient
+import com.reborn.server.domain.feedback.client.GeminiSpeechResult
+import com.reborn.server.domain.feedback.client.VoiceTtsCache
 import com.reborn.server.domain.feedback.converter.FeedbackConverter
 import com.reborn.server.domain.feedback.dto.FeedbackDto
 import com.reborn.server.domain.place.AccessLevel
@@ -18,6 +23,12 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+data class VoiceFeedbackResult(
+    val recognized: Boolean,
+    val feedbackId: Long?,
+    val audio: GeminiSpeechResult,
+)
+
 @Service
 @Transactional(readOnly = true)
 class FeedbackService(
@@ -26,7 +37,15 @@ class FeedbackService(
     private val feedbackRepository: FeedbackRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
     private val fcmClient: FcmClient,
+    private val geminiClient: GeminiClient,
+    private val voiceTtsCache: VoiceTtsCache,
 ) {
+
+    companion object {
+        // AI 스피커(#142) 응답 고정 문구 — 2종뿐이라 VoiceTtsCache가 최초 생성 후 재사용한다.
+        private const val VOICE_SUCCESS_MESSAGE = "소중한 의견 감사합니다. 잘 전달했어요."
+        private const val VOICE_RETRY_MESSAGE = "죄송해요, 잘 듣지 못했어요. 버튼을 다시 누르고 말씀해 주세요."
+    }
 
     @Transactional
     fun submit(request: FeedbackDto.SubmitRequest, userAgent: String?): FeedbackDto.SubmitResponse {
@@ -56,6 +75,37 @@ class FeedbackService(
         notifyAdmins(place, feedback)
 
         return FeedbackConverter.toSubmitResponse(feedback)
+    }
+
+    @Transactional
+    fun submitVoice(deviceId: String, audioBytes: ByteArray, mimeType: String): VoiceFeedbackResult {
+        if (audioBytes.isEmpty()) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "오디오 데이터가 비어있습니다.")
+        }
+        val device = deviceRepository.findByDeviceKey(deviceId)
+            ?.takeIf { it.deviceType == DeviceType.AI_SPEAKER }
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "등록되지 않은 AI 스피커 기기입니다.")
+
+        val analysis = geminiClient.analyzeAudio(audioBytes, mimeType)
+
+        if (!analysis.recognized || analysis.summary.isBlank()) {
+            return VoiceFeedbackResult(
+                recognized = false,
+                feedbackId = null,
+                audio = voiceTtsCache.get(VOICE_RETRY_MESSAGE),
+            )
+        }
+
+        val feedback = feedbackRepository.save(
+            Feedback(device = device, content = analysis.summary, source = FeedbackSource.VOICE),
+        )
+        notifyAdmins(device.place, feedback)
+
+        return VoiceFeedbackResult(
+            recognized = true,
+            feedbackId = feedback.id,
+            audio = voiceTtsCache.get(VOICE_SUCCESS_MESSAGE),
+        )
     }
 
     private fun notifyAdmins(place: Place, feedback: Feedback) {
