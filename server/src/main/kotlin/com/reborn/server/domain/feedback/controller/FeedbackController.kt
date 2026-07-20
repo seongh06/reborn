@@ -63,6 +63,9 @@ class FeedbackController(
         SwaggerApiResponse(responseCode = "400", description = "오디오 데이터가 비어있음"),
         SwaggerApiResponse(responseCode = "404", description = "등록되지 않은 AI 스피커 기기"),
     )
+    // 이 엔드포인트만 ApiResponse<T> 공통 래퍼를 쓰지 않고 오디오 바이트를 응답 바디로 그대로
+    // 반환한다 — ATOM ECHO가 JSON 파싱·base64 디코딩 없이 응답을 바로 I2S로 스트리밍 재생해야
+    // 하기 때문에(PSRAM 없는 보드) 의도된 예외다. (CodeRabbit 리뷰, PR #144)
     @PostMapping("/voice", consumes = [MediaType.ALL_VALUE])
     fun submitVoice(
         @RequestHeader("X-Device-Id") deviceId: String,

@@ -80,7 +80,10 @@ class GeminiClient(
             .path("candidates").path(0).path("content").path("parts").path(0).path("text")
             .asText("")
         if (text.isBlank()) {
-            log.warn("Gemini 오디오 분석 응답이 비어있음: {}", response)
+            // 응답 전체(response)는 candidate 텍스트 등 사용자 음성 관련 내용이 담길 수 있어 로그에 남기지 않고,
+            // 진단에 필요한 최소 필드(종료 사유)만 남긴다.
+            val finishReason = response.path("candidates").path(0).path("finishReason").asText("UNKNOWN")
+            log.warn("Gemini 오디오 분석 응답이 비어있음 (finishReason={})", finishReason)
             return GeminiAudioAnalysis(recognized = false, summary = "")
         }
 
@@ -121,7 +124,9 @@ class GeminiClient(
             throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "TTS 응답이 비어있습니다.")
         }
 
-        return GeminiSpeechResult(audioBytes = Base64.getDecoder().decode(base64Audio), mimeType = mimeType)
+        val audioBytes = runCatching { Base64.getDecoder().decode(base64Audio) }.getOrNull()
+            ?: throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "TTS 오디오 디코딩에 실패했습니다.")
+        return GeminiSpeechResult(audioBytes = audioBytes, mimeType = mimeType)
     }
 
     private fun post(modelName: String, body: Map<String, Any>): JsonNode {

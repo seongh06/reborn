@@ -4,7 +4,6 @@ import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.feedback.Feedback
 import com.reborn.server.domain.feedback.FeedbackRepository
-import com.reborn.server.domain.feedback.FeedbackSource
 import com.reborn.server.domain.feedback.FeedbackStatus
 import com.reborn.server.domain.feedback.client.GeminiClient
 import com.reborn.server.domain.feedback.client.GeminiSpeechResult
@@ -21,6 +20,7 @@ import com.reborn.server.global.model.CommonErrorCode
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 data class VoiceFeedbackResult(
@@ -39,12 +39,17 @@ class FeedbackService(
     private val fcmClient: FcmClient,
     private val geminiClient: GeminiClient,
     private val voiceTtsCache: VoiceTtsCache,
+    private val voiceFeedbackPersister: VoiceFeedbackPersister,
 ) {
 
     companion object {
         // AI 스피커(#142) 응답 고정 문구 — 2종뿐이라 VoiceTtsCache가 최초 생성 후 재사용한다.
         private const val VOICE_SUCCESS_MESSAGE = "소중한 의견 감사합니다. 잘 전달했어요."
         private const val VOICE_RETRY_MESSAGE = "죄송해요, 잘 듣지 못했어요. 버튼을 다시 누르고 말씀해 주세요."
+
+        // 10분(16kHz*16bit mono)치 WAV보다 넉넉한 상한 — Gemini 호출을 트리거하기 전에
+        // 대용량 페이로드를 걸러 비용/메모리 남용을 줄인다(CodeRabbit 리뷰, PR #144).
+        private const val MAX_VOICE_AUDIO_BYTES = 10 * 1024 * 1024
     }
 
     @Transactional
@@ -77,10 +82,24 @@ class FeedbackService(
         return FeedbackConverter.toSubmitResponse(feedback)
     }
 
-    @Transactional
+    // ⚠️ 인증 범위 관련(CodeRabbit 리뷰, PR #144): X-Device-Id 외에 별도 비밀값 검증이 없다는
+    // 지적은 유효하지만, AI_SPEAKER는 DeviceType.kt 주석대로 "등록 방식이 ARDUINO와 동일"하도록
+    // 의도적으로 설계됐다 — Arduino의 POST /api/metric/collect도 동일하게 deviceId만으로 신뢰하는
+    // 하드웨어 기기 모델이라, 이 기기 유형만 appToken 발급/검증(공기계 AEROMETER 방식)을 새로
+    // 붙이는 건 이 PR 스코프를 넘는 아키텍처 확장이라 보류. 대신 비용에 직결되는 부분(대용량
+    // 페이로드로 Gemini를 반복 호출시키는 남용)은 크기 상한으로 막는다.
+    //
+    // 트랜잭션 경계(CodeRabbit 리뷰): Gemini 호출(analyzeAudio/TTS, 최대 수십 초)은 DB 트랜잭션
+    // 밖에서 수행하고, 실제 저장·알림은 VoiceFeedbackPersister의 짧은 트랜잭션에 위임한다 —
+    // 그래서 이 메서드 자체는 클래스 기본(@Transactional(readOnly = true))을 걷어내고
+    // NOT_SUPPORTED로 명시한다.
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     fun submitVoice(deviceId: String, audioBytes: ByteArray, mimeType: String): VoiceFeedbackResult {
         if (audioBytes.isEmpty()) {
             throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "오디오 데이터가 비어있습니다.")
+        }
+        if (audioBytes.size > MAX_VOICE_AUDIO_BYTES) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "오디오 데이터가 너무 큽니다.")
         }
         val device = deviceRepository.findByDeviceKey(deviceId)
             ?.takeIf { it.deviceType == DeviceType.AI_SPEAKER }
@@ -96,10 +115,7 @@ class FeedbackService(
             )
         }
 
-        val feedback = feedbackRepository.save(
-            Feedback(device = device, content = analysis.summary, source = FeedbackSource.VOICE),
-        )
-        notifyAdmins(device.place, feedback)
+        val feedback = voiceFeedbackPersister.persistAndNotify(device.id, analysis.summary)
 
         return VoiceFeedbackResult(
             recognized = true,

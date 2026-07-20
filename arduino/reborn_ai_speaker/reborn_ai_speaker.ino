@@ -98,7 +98,16 @@ static uint8_t streamBuf[STREAM_CHUNK_BYTES];
 // 열어 휴대폰이 그 AP에 접속해 웹 폼으로 값을 입력하게 한다. Nano33 IoT(WiFiNINA) 쪽은 WiFi
 // 스택이 달라 이 구현을 그대로 재사용할 수 없음 — 같은 패턴(설정 없으면 AP+웹폼, 저장 후 재부팅)을
 // WiFiNINA API로 별도 이식해야 함(다음 세션 TODO, Obsidian 이슈노트 참고).
-#define PROVISION_AP_PASSWORD "reborn1234" // 최소 8자 — WPA2 AP 요구사항
+//
+// CodeRabbit 리뷰(PR #144) 지적 반영: 프로비저닝 AP 비밀번호를 모든 기기 공통 고정값으로 두면
+// 설정 대기 상태(부팅 3초 홀드로 언제든 재진입 가능)인 임의의 기기 근처에서 그 값을 알고 있는
+// 공격자가 접속해 WiFi/기기 ID를 재기록할 수 있다 — 기기별 MAC 기반 고유 비밀번호로 변경.
+String buildDeviceApPassword() {
+  uint64_t mac = ESP.getEfuseMac();
+  char buf[15];
+  snprintf(buf, sizeof(buf), "rb-%012llx", (unsigned long long)mac); // "rb-" + MAC 12자리 = 15자(WPA2 8자 이상 충족)
+  return String(buf);
+}
 
 bool loadProvisioning() {
   Preferences prefs;
@@ -158,8 +167,9 @@ void runProvisioningPortal() {
   setLed(20, 0, 20); // 보라 계열 = 설정 대기
 
   String apSsid = "ReBorn-Setup-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFUL), HEX);
+  String apPassword = buildDeviceApPassword();
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(apSsid.c_str(), PROVISION_AP_PASSWORD);
+  WiFi.softAP(apSsid.c_str(), apPassword.c_str());
   IPAddress apIp = WiFi.softAPIP();
 
   DNSServer dns;
@@ -184,7 +194,7 @@ void runProvisioningPortal() {
   });
   server.begin();
 
-  Serial.printf("프로비저닝 포털 시작 — SSID: %s (PW: %s), http://%s\n", apSsid.c_str(), PROVISION_AP_PASSWORD, apIp.toString().c_str());
+  Serial.printf("프로비저닝 포털 시작 — SSID: %s (PW: %s), http://%s\n", apSsid.c_str(), apPassword.c_str(), apIp.toString().c_str());
 
   while (true) {
     dns.processNextRequest();
@@ -200,19 +210,29 @@ void setLed(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 // ===== WiFi =====
-void connectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) return;
+// CodeRabbit 리뷰 지적 반영: 기존엔 WL_CONNECTED가 될 때까지 무한 대기해서, 자격 증명이
+// 잘못됐거나 AP가 사라지면 기기가 영원히 멈췄다(재부팅+3초 홀드로만 복구 가능) — 타임아웃을
+// 두고 실패 시 false를 반환해 호출부가 재시도/프로비저닝 포털 폴백을 결정하게 한다.
+bool connectWiFi(unsigned long timeoutMs) {
+  if (WiFi.status() == WL_CONNECTED) return true;
 
   Serial.print("WiFi 연결 중");
   WiFi.begin(g_wifiSsid.c_str(), g_wifiPassword.c_str());
   setLed(20, 0, 20); // 보라 = WiFi 연결 중
+  unsigned long start = millis();
   while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - start > timeoutMs) {
+      Serial.println();
+      Serial.println("WiFi 연결 타임아웃");
+      return false;
+    }
     delay(500);
     Serial.print(".");
   }
   Serial.println();
   Serial.print("WiFi 연결됨, IP: ");
   Serial.println(WiFi.localIP());
+  return true;
 }
 
 // ===== I2S =====
@@ -308,14 +328,20 @@ VoiceResponseMeta readResponseHeaders(WiFiClientSecure &client) {
   }
 
   String contentType = "";
-  while (client.connected()) {
+  bool headersEnded = false;
+  unsigned long lastDataAt = millis(); // streamPlayback과 동일한 5초 정체 타임아웃 패턴
+  while (client.connected() && millis() - lastDataAt < 5000UL) {
     if (!client.available()) {
       delay(5);
       continue;
     }
+    lastDataAt = millis();
     String line = client.readStringUntil('\n');
     line.trim();
-    if (line.length() == 0) break; // 헤더 끝
+    if (line.length() == 0) {
+      headersEnded = true;
+      break; // 헤더 끝
+    }
 
     String lower = line;
     lower.toLowerCase();
@@ -329,6 +355,10 @@ VoiceResponseMeta readResponseHeaders(WiFiClientSecure &client) {
       v.trim();
       meta.recognized = v.equalsIgnoreCase("true");
     }
+  }
+  if (!headersEnded) {
+    Serial.println("응답 헤더 수신 중 타임아웃/연결 끊김");
+    return meta; // meta.ok는 false로 유지된 채 반환
   }
 
   meta.sampleRate = parseSampleRate(contentType);
@@ -358,11 +388,42 @@ void streamPlayback(WiFiClientSecure &client, long contentLength) {
   }
 }
 
+// CodeRabbit 리뷰 지적 반영: setInsecure()는 인증서 검증을 생략해 MITM이 업로드되는 음성이나
+// 응답 TTS·기기 식별자를 가로채거나 조작할 수 있다(reborn_dht22.ino와 같은 정책이었으나, 그쪽은
+// 온습도 push뿐이라 상대적으로 영향이 작고 이쪽은 사용자 음성이 실려서 더 민감). www.reborn-energy.com이
+// 실제 사용하는 체인의 루트(Google Trust Services "GTS Root R4", 2026-07-21 openssl s_client로 확인,
+// 유효기간 ~2028-01-28)를 핀닝한다. 서버가 리프+중간(WE1) 인증서를 함께 보내주므로 루트만 신뢰하면
+// mbedTLS가 전체 체인을 검증할 수 있다. ⚠️ 루트 인증서가 교체되면(자주 있는 일은 아님) 이 상수도
+// 갱신해야 함 — 그때까지는 기기가 서버에 연결하지 못하게 된다.
+const char *SERVER_ROOT_CA_PEM = R"CERT(
+-----BEGIN CERTIFICATE-----
+MIIDejCCAmKgAwIBAgIQf+UwvzMTQ77dghYQST2KGzANBgkqhkiG9w0BAQsFADBX
+MQswCQYDVQQGEwJCRTEZMBcGA1UEChMQR2xvYmFsU2lnbiBudi1zYTEQMA4GA1UE
+CxMHUm9vdCBDQTEbMBkGA1UEAxMSR2xvYmFsU2lnbiBSb290IENBMB4XDTIzMTEx
+NTAzNDMyMVoXDTI4MDEyODAwMDA0MlowRzELMAkGA1UEBhMCVVMxIjAgBgNVBAoT
+GUdvb2dsZSBUcnVzdCBTZXJ2aWNlcyBMTEMxFDASBgNVBAMTC0dUUyBSb290IFI0
+MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE83Rzp2iLYK5DuDXFgTB7S0md+8Fhzube
+Rr1r1WEYNa5A3XP3iZEwWus87oV8okB2O6nGuEfYKueSkWpz6bFyOZ8pn6KY019e
+WIZlD6GEZQbR3IvJx3PIjGov5cSr0R2Ko4H/MIH8MA4GA1UdDwEB/wQEAwIBhjAd
+BgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAd
+BgNVHQ4EFgQUgEzW63T/STaj1dj8tT7FavCUHYwwHwYDVR0jBBgwFoAUYHtmGkUN
+l8qJUC99BM00qP/8/UswNgYIKwYBBQUHAQEEKjAoMCYGCCsGAQUFBzAChhpodHRw
+Oi8vaS5wa2kuZ29vZy9nc3IxLmNydDAtBgNVHR8EJjAkMCKgIKAehhxodHRwOi8v
+Yy5wa2kuZ29vZy9yL2dzcjEuY3JsMBMGA1UdIAQMMAowCAYGZ4EMAQIBMA0GCSqG
+SIb3DQEBCwUAA4IBAQAYQrsPBtYDh5bjP2OBDwmkoWhIDDkic574y04tfzHpn+cJ
+odI2D4SseesQ6bDrarZ7C30ddLibZatoKiws3UL9xnELz4ct92vID24FfVbiI1hY
++SW6FoVHkNeWIP0GCbaM4C6uVdF5dTUsMVs/ZbzNnIdCp5Gxmx5ejvEau8otR/Cs
+kGN+hr/W5GvT1tMBjgWKZ1i4//emhA1JG1BbPzoLJQvyEotc03lXjTaCzv8mEbep
+8RqZ7a2CPsgRbuvTPBwcOMBBmuFeU88+FSBX6+7iP0il8b4Z0QFqIwwMHfs/L6K1
+vepuoxtGzi4CZ68zJpiq1UvSqTbFJjtbD4seiMHl
+-----END CERTIFICATE-----
+)CERT";
+
 // ===== 녹음 → 스트리밍 업로드 → 응답 재생 (한 사이클) =====
 // 반환값: 인식 성공 여부. 네트워크 오류 시 false.
 bool recordUploadAndPlay(unsigned long recordWindowMs) {
   WiFiClientSecure client;
-  client.setInsecure(); // 간단 연결용(루트 CA 핀닝은 추후 고려) — reborn_dht22.ino와 동일 정책
+  client.setCACert(SERVER_ROOT_CA_PEM);
 
   setLed(0, 0, 40); // 파랑 = 녹음 중
   Serial.println("녹음 시작");
@@ -464,14 +525,17 @@ void setup() {
   }
 
   i2sInstall();
-  connectWiFi();
+  if (!connectWiFi(20000UL)) {
+    Serial.println("WiFi 연결 실패 — 저장된 자격 증명이 잘못됐을 수 있어 프로비저닝 포털로 폴백");
+    runProvisioningPortal(); // 저장 완료 시 내부에서 재부팅되어 반환하지 않음
+  }
 
   setLed(0, 0, 0); // 대기 = LED 꺼짐
   Serial.println("대기 중 — 버튼을 눌러 피드백을 남겨주세요");
 }
 
 void loop() {
-  connectWiFi(); // 끊겼으면 재연결(블로킹) — dht22 스케치와 동일 패턴
+  connectWiFi(5000UL); // 끊겼으면 재연결 시도(최대 5초) — 실패해도 다음 loop()에서 다시 시도
 
   switch (state) {
     case SpeakerState::IDLE: {
