@@ -7,4 +7,5 @@ data class RegisterDeviceRequest(
     val placeId: Long,
     val deviceId: String,
     val deviceName: String,
+    val deviceType: String,
 )

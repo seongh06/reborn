@@ -17,5 +17,6 @@ sealed interface Route {
         @Serializable data class InviteCode(val placeId: Int) : Admin
         @Serializable data class AddDevice(val placeId: Int) : Admin
         @Serializable data class AddArduino(val placeId: Int) : Admin
+        @Serializable data class AddAiSpeaker(val placeId: Int) : Admin
     }
 }

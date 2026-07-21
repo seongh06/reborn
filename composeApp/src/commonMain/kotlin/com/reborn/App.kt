@@ -36,6 +36,7 @@ import com.reborn.feature.admin.adjust.navigation.adjustNavGraph
 import com.reborn.feature.admin.data.navigation.adminDataNavGraph
 import com.reborn.feature.admin.feedback.navigation.adminFeedbackNavGraph
 import com.reborn.feature.admin.home.navigation.adminHomeNavGraph
+import com.reborn.feature.admin.setting.navigation.adminAddAiSpeakerNavGraph
 import com.reborn.feature.admin.setting.navigation.adminAddArduinoNavGraph
 import com.reborn.feature.admin.setting.navigation.adminSettingNavGraph
 import com.reborn.feature.aerometer.navigation.aerometerNavGraph
@@ -74,7 +75,8 @@ fun App() {
                     val isAdminInviteCode = currentDestination?.hasRoute<Route.Admin.InviteCode>() == true
                     val isAdminAddDevice = currentDestination?.hasRoute<Route.Admin.AddDevice>() == true
                     val isAdminAddArduino = currentDestination?.hasRoute<Route.Admin.AddArduino>() == true
-                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice && !isAdminAddArduino &&
+                    val isAdminAddAiSpeaker = currentDestination?.hasRoute<Route.Admin.AddAiSpeaker>() == true
+                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice && !isAdminAddArduino && !isAdminAddAiSpeaker &&
                         (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
                     ) {
                         Surface(
@@ -220,6 +222,9 @@ fun App() {
                         onNavigateToAddArduino = { placeId ->
                             navController.navigate(Route.Admin.AddArduino(placeId))
                         },
+                        onNavigateToAddAiSpeaker = { placeId ->
+                            navController.navigate(Route.Admin.AddAiSpeaker(placeId))
+                        },
                         onNavigateToAddPlace = {
                             introSkipToAdminModeSelect = true
                             navController.navigate(Route.Intro)
@@ -232,6 +237,11 @@ fun App() {
                         }
                     )
                     adminAddArduinoNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
+                    )
+                    adminAddAiSpeakerNavGraph(
                         onBackClick = {
                             navController.popBackStack()
                         }

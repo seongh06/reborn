@@ -41,6 +41,7 @@ fun AdminSettingRoute(
     onNavigateToInviteCode: (Int) -> Unit = {},
     onNavigateToAddDevice: (Int) -> Unit = {},
     onNavigateToAddArduino: (Int) -> Unit = {},
+    onNavigateToAddAiSpeaker: (Int) -> Unit = {},
     onNavigateToAddPlace: () -> Unit = {},
     onLoggedOut: () -> Unit = {}
 ) {
@@ -64,6 +65,7 @@ fun AdminSettingRoute(
                 is AdminSettingEvent.NavigateToInviteCode -> onNavigateToInviteCode(event.placeId)
                 is AdminSettingEvent.NavigateToAddDevice -> onNavigateToAddDevice(event.placeId)
                 is AdminSettingEvent.NavigateToAddArduino -> onNavigateToAddArduino(event.placeId)
+                is AdminSettingEvent.NavigateToAddAiSpeaker -> onNavigateToAddAiSpeaker(event.placeId)
                 is AdminSettingEvent.NavigateToAddPlace -> onNavigateToAddPlace()
                 is AdminSettingEvent.LoggedOut -> onLoggedOut()
             }
@@ -82,6 +84,7 @@ fun AdminSettingRoute(
                 onAddAdminClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAdmin(placeId)) },
                 onAddDeviceClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddDevice(placeId)) },
                 onAddArduinoClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddArduino(placeId)) },
+                onAddAiSpeakerClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAiSpeaker(placeId)) },
                 onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) },
                 onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) }
             )
@@ -97,6 +100,7 @@ fun AdminSettingScreen(
     onAddAdminClick: (Int) -> Unit,
     onAddDeviceClick: (Int) -> Unit,
     onAddArduinoClick: (Int) -> Unit,
+    onAddAiSpeakerClick: (Int) -> Unit,
     onAddPlaceClick: () -> Unit,
     onLogoutClick: () -> Unit
 
@@ -127,7 +131,8 @@ fun AdminSettingScreen(
                     onDeleteClick = { onDeleteRoomClick(room.placeId) },
                     onAddAdminClick = { onAddAdminClick(room.placeId) },
                     onAddDeviceClick = { onAddDeviceClick(room.placeId) },
-                    onAddArduinoClick = { onAddArduinoClick(room.placeId) }
+                    onAddArduinoClick = { onAddArduinoClick(room.placeId) },
+                    onAddAiSpeakerClick = { onAddAiSpeakerClick(room.placeId) }
                 )
             }
             RebornButton(
