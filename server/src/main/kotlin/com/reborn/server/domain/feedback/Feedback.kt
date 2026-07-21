@@ -25,11 +25,15 @@ class Feedback(
     @Column(nullable = false, length = 1000)
     val content: String,
 
-    @Column(nullable = false)
-    val sessionToken: String,
+    @Column
+    val sessionToken: String? = null,
 
     @Column(length = 1024)
     val userAgent: String? = null,
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    val source: FeedbackSource = FeedbackSource.QR,
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)

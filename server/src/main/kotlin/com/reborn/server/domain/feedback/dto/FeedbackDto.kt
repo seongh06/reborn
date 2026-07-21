@@ -28,6 +28,7 @@ class FeedbackDto {
         val deviceId: String,
         val deviceName: String?,
         val content: String,
+        val source: String,
         val status: String,
         val createdAt: LocalDateTime,
     )
