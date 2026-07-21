@@ -38,6 +38,10 @@ class DeviceService(
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "기기 ID는 필수입니다.")
         val deviceName = request.deviceName?.takeIf { it.isNotBlank() }
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "기기 이름은 필수입니다.")
+        val deviceType = request.deviceType ?: DeviceType.ARDUINO
+        if (deviceType != DeviceType.ARDUINO && deviceType != DeviceType.AI_SPEAKER) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "이 엔드포인트로는 ARDUINO/AI_SPEAKER 기기만 등록할 수 있습니다.")
+        }
 
         val place = placeRepository.findById(placeId).orElseThrow {
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
@@ -51,7 +55,7 @@ class DeviceService(
 
         val device = try {
             deviceRepository.save(
-                Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = deviceKey, name = deviceName),
+                Device(place = place, deviceType = deviceType, deviceKey = deviceKey, name = deviceName),
             )
         } catch (e: DataIntegrityViolationException) {
             log.warn("register 기기 저장 중 무결성 위반: {}", e.message)

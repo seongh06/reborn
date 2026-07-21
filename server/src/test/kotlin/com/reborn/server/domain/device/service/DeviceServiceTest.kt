@@ -132,6 +132,47 @@ class DeviceServiceTest {
     }
 
     @Test
+    fun `register - deviceType이 AI_SPEAKER면 AI 스피커로 등록한다`() {
+        val request = DeviceDto.RegisterRequest(
+            placeId = 501,
+            deviceId = "speaker_room_01",
+            deviceName = "거실 스피커",
+            deviceType = DeviceType.AI_SPEAKER,
+        )
+        val savedDevice = Device(
+            place = place,
+            deviceType = DeviceType.AI_SPEAKER,
+            deviceKey = "speaker_room_01",
+            name = "거실 스피커",
+        ).apply { prePersist() }
+
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(deviceRepository.existsByDeviceKey("speaker_room_01")).willReturn(false)
+        given(deviceRepository.save(any())).willReturn(savedDevice)
+
+        val response = deviceService.register(1L, request)
+
+        assertThat(response.deviceId).isEqualTo("speaker_room_01")
+        assertThat(response.deviceType).isEqualTo("AI_SPEAKER")
+    }
+
+    @Test
+    fun `register - deviceType이 SMART_THINGS면 예외가 발생한다`() {
+        val request = DeviceDto.RegisterRequest(
+            placeId = 501,
+            deviceId = "device_01",
+            deviceName = "기기",
+            deviceType = DeviceType.SMART_THINGS,
+        )
+
+        assertThatThrownBy { deviceService.register(1L, request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
     fun `register - 필수 필드가 누락되면 예외가 발생한다`() {
         val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = " ", deviceName = "안방")
 

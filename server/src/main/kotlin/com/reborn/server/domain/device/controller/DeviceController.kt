@@ -30,13 +30,14 @@ class DeviceController(
 ) {
 
     @Operation(
-        summary = "Arduino 기기 등록",
-        description = "특정 장소에 Arduino IoT 기기를 등록합니다. 해당 장소의 ADMIN 권한이 필요하며, " +
-            "AEROMETER(공기계) 등록은 페어링 코드 방식으로 별도 처리됩니다.",
+        summary = "Arduino/AI 스피커 기기 등록",
+        description = "특정 장소에 Arduino IoT 기기 또는 AI 스피커(ATOM ECHO) 기기를 등록합니다. " +
+            "deviceType을 생략하면 ARDUINO로 등록되며, AI 스피커는 deviceType=AI_SPEAKER로 명시해야 합니다. " +
+            "해당 장소의 ADMIN 권한이 필요하며, AEROMETER(공기계)/SMART_THINGS 등록은 각각 페어링 코드/OAuth 방식으로 별도 처리됩니다.",
     )
     @ApiResponses(
-        SwaggerApiResponse(responseCode = "200", description = "등록 성공 — deviceId, 기기명, 기기 유형(ARDUINO), 등록일시 반환"),
-        SwaggerApiResponse(responseCode = "400", description = "필수 필드 누락 (placeId, deviceId, deviceName)"),
+        SwaggerApiResponse(responseCode = "200", description = "등록 성공 — deviceId, 기기명, 기기 유형(ARDUINO/AI_SPEAKER), 등록일시 반환"),
+        SwaggerApiResponse(responseCode = "400", description = "필수 필드 누락(placeId, deviceId, deviceName) 또는 지원하지 않는 deviceType"),
         SwaggerApiResponse(responseCode = "401", description = "인증 실패 (유효하지 않거나 만료된 AccessToken)"),
         SwaggerApiResponse(responseCode = "403", description = "해당 장소의 ADMIN 권한 없음"),
         SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소 ID"),

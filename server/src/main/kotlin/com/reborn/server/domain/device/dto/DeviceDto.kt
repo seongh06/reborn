@@ -1,5 +1,6 @@
 package com.reborn.server.domain.device.dto
 
+import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.OperationMode
 import com.reborn.server.domain.device.WindSpeed
 import jakarta.validation.constraints.NotBlank
@@ -12,6 +13,9 @@ class DeviceDto {
         @field:NotNull val placeId: Long? = null,
         @field:NotBlank val deviceId: String? = null,
         @field:NotBlank val deviceName: String? = null,
+        // 미지정 시 기존 호환을 위해 ARDUINO로 취급(#138 당시 앱이 이 필드를 안 보냄). AEROMETER/SMART_THINGS는
+        // 각각 페어링 코드/OAuth 연동으로 별도 등록되므로 이 엔드포인트에선 ARDUINO/AI_SPEAKER만 허용(#142, #143).
+        val deviceType: DeviceType? = null,
     )
 
     data class RegisterResponse(
