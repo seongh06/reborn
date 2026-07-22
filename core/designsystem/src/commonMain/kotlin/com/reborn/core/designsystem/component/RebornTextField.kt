@@ -37,7 +37,8 @@ fun RebornTextField(
     hint: String? = null,
     status: Int? = null,
     onDone: (() -> Unit)? = null,
-    maxLine: Int = 1
+    maxLine: Int = 1,
+    maxLength: Int? = null
 ) {
     val isNotEmpty = value.isNotEmpty()
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -67,7 +68,9 @@ fun RebornTextField(
             modifier = modifier.fillMaxWidth(),
             value = value,
             onValueChange = {
-                onValueChange(it)
+                if (maxLength == null || it.length <= maxLength) {
+                    onValueChange(it)
+                }
             },
             maxLines = maxLine,
             singleLine = maxLine == 1,
