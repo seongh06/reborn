@@ -39,6 +39,11 @@ gemini:
   model: ${GEMINI_MODEL:gemini-2.5-flash-lite}
   tts-model: ${GEMINI_TTS_MODEL:gemini-2.5-flash-preview-tts}
 
+# 판매용 기기(Arduino/AI 스피커) 시리얼 배치 발급(#147) 전용 운영자 키 — 장소/ADMIN과 무관하게
+# 서비스 운영자만 호출 가능해야 하므로 정적 시크릿으로 인가한다. 미설정 시 fail-closed.
+operator:
+  api-key: ${OPERATOR_API_KEY:}
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true}

@@ -21,6 +21,15 @@ class DeviceDto {
         val createdAt: LocalDateTime,
     )
 
+    data class SerialBatchRequest(
+        @field:NotBlank val deviceType: String? = null,
+        @field:NotNull val count: Int? = null,
+    )
+
+    data class SerialBatchResponse(
+        val serials: List<String>,
+    )
+
     data class PairingCodeResponse(
         val pairingCode: String,
         val expiresAt: LocalDateTime,

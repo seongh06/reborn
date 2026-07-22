@@ -69,6 +69,13 @@ class SecurityConfig(
                     // QR 웹페이지에서 비로그인 방문자가 제출 — 조회/상태변경은 anyRequest().authenticated()로 보호
                     .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
 
+                    // AI 스피커(#142)는 X-Device-Id로만 인증하고 JWT를 보내지 않는다 — "/api/feedback"
+                    // permitAll은 하위 경로("/voice")에 매칭되지 않아 누락돼 있었음.
+                    .requestMatchers(HttpMethod.POST, "/api/feedback/voice").permitAll()
+
+                    // 판매용 기기 시리얼 배치 발급(#147) — 장소/ADMIN과 무관, X-Operator-Key로 자체 인가.
+                    .requestMatchers(HttpMethod.POST, "/api/device/serials").permitAll()
+
                     // WebSocket 핸드셰이크(HTTP) 자체는 permitAll — 실제 인증은 STOMP CONNECT 프레임에서
                     // WebSocketAuthChannelInterceptor가 담당 (관리자: JWT / 공기계: deviceKey+appToken)
                     .requestMatchers("/ws/control/**").permitAll()

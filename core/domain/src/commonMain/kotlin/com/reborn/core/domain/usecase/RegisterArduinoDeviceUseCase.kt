@@ -7,6 +7,6 @@ class RegisterArduinoDeviceUseCase(
     private val deviceRepository: DeviceRepository
 ) {
     suspend operator fun invoke(placeId: Long, deviceId: String, deviceName: String): Result<RegisteredDevice> {
-        return deviceRepository.registerDevice(placeId, deviceId, deviceName, deviceType = "ARDUINO")
+        return deviceRepository.registerDevice(placeId, deviceId, deviceName)
     }
 }

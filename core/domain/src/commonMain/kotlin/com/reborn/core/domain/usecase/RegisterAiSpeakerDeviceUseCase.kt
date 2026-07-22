@@ -7,6 +7,6 @@ class RegisterAiSpeakerDeviceUseCase(
     private val deviceRepository: DeviceRepository
 ) {
     suspend operator fun invoke(placeId: Long, deviceId: String, deviceName: String): Result<RegisteredDevice> {
-        return deviceRepository.registerDevice(placeId, deviceId, deviceName, deviceType = "AI_SPEAKER")
+        return deviceRepository.registerDevice(placeId, deviceId, deviceName)
     }
 }

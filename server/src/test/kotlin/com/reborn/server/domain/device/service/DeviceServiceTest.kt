@@ -3,9 +3,11 @@ package com.reborn.server.domain.device.service
 import com.reborn.server.domain.auth.OAuthProvider
 import com.reborn.server.domain.auth.User
 import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.device.DeviceSerial
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.device.repository.DeviceRepository
+import com.reborn.server.domain.device.repository.DeviceSerialRepository
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
@@ -23,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
-import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.Mockito.verify
@@ -51,12 +52,16 @@ class DeviceServiceTest {
     private lateinit var deviceRepository: DeviceRepository
 
     @Mock
+    private lateinit var deviceSerialRepository: DeviceSerialRepository
+
+    @Mock
     private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
 
     @Mock
     private lateinit var redisUtil: RedisUtil
 
-    @InjectMocks
+    // @Value 문자열 필드(operatorApiKey)가 섞여있어 @InjectMocks 대신 직접 생성한다
+    // (SmartThingsServiceTest와 동일 패턴).
     private lateinit var deviceService: DeviceService
 
     private lateinit var place: Place
@@ -68,33 +73,43 @@ class DeviceServiceTest {
         place = Place(name = "테스트 거실", qrCode = "qr-test", type = PlaceType.HOME, id = 501)
         user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
         adminMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN)
+        deviceService = DeviceService(
+            placeRepository = placeRepository,
+            deviceRepository = deviceRepository,
+            deviceSerialRepository = deviceSerialRepository,
+            userPlaceMappingRepository = userPlaceMappingRepository,
+            redisUtil = redisUtil,
+            operatorApiKey = "test-operator-key",
+        )
     }
 
     @Test
-    fun `register - ADMIN이면 기기를 등록한다`() {
-        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "arduino_room_02", deviceName = "안방")
+    fun `register - 미할당 시리얼이면 시리얼의 기기 타입으로 등록한다`() {
+        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "AI7K2P9M", deviceName = "거실 스피커")
+        val serial = DeviceSerial(serial = "AI7K2P9M", deviceType = DeviceType.AI_SPEAKER)
         val savedDevice = Device(
             place = place,
-            deviceType = DeviceType.ARDUINO,
-            deviceKey = "arduino_room_02",
-            name = "안방",
+            deviceType = DeviceType.AI_SPEAKER,
+            deviceKey = "AI7K2P9M",
+            name = "거실 스피커",
         ).apply { prePersist() }
 
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
-        given(deviceRepository.existsByDeviceKey("arduino_room_02")).willReturn(false)
+        given(deviceSerialRepository.findBySerial("AI7K2P9M")).willReturn(serial)
         given(deviceRepository.save(any())).willReturn(savedDevice)
 
         val response = deviceService.register(1L, request)
 
-        assertThat(response.deviceId).isEqualTo("arduino_room_02")
-        assertThat(response.deviceName).isEqualTo("안방")
-        assertThat(response.deviceType).isEqualTo("ARDUINO")
+        assertThat(response.deviceId).isEqualTo("AI7K2P9M")
+        assertThat(response.deviceType).isEqualTo("AI_SPEAKER")
+        verify(deviceSerialRepository).save(serial)
+        assertThat(serial.assignedDevice).isEqualTo(savedDevice)
     }
 
     @Test
     fun `register - 존재하지 않는 장소면 예외가 발생한다`() {
-        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "arduino_room_02", deviceName = "안방")
+        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "AR7K2P9M", deviceName = "안방")
         given(placeRepository.findById(501L)).willReturn(Optional.empty())
 
         assertThatThrownBy { deviceService.register(1L, request) }
@@ -105,7 +120,7 @@ class DeviceServiceTest {
 
     @Test
     fun `register - ADMIN 권한이 없으면 예외가 발생한다`() {
-        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "arduino_room_02", deviceName = "안방")
+        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "AR7K2P9M", deviceName = "안방")
         val userMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.USER)
 
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
@@ -118,12 +133,28 @@ class DeviceServiceTest {
     }
 
     @Test
-    fun `register - 이미 등록된 deviceId면 예외가 발생한다`() {
-        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "arduino_room_02", deviceName = "안방")
+    fun `register - 발급되지 않은 시리얼이면 예외가 발생한다`() {
+        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "AR000000", deviceName = "안방")
 
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
-        given(deviceRepository.existsByDeviceKey("arduino_room_02")).willReturn(true)
+        given(deviceSerialRepository.findBySerial("AR000000")).willReturn(null)
+
+        assertThatThrownBy { deviceService.register(1L, request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `register - 이미 할당된 시리얼이면 예외가 발생한다`() {
+        val request = DeviceDto.RegisterRequest(placeId = 501, deviceId = "AR7K2P9M", deviceName = "안방")
+        val otherDevice = Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = "AR7K2P9M", id = 99)
+        val serial = DeviceSerial(serial = "AR7K2P9M", deviceType = DeviceType.ARDUINO, assignedDevice = otherDevice)
+
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(deviceSerialRepository.findBySerial("AR7K2P9M")).willReturn(serial)
 
         assertThatThrownBy { deviceService.register(1L, request) }
             .isInstanceOf(BusinessAlertException::class.java)
@@ -139,6 +170,53 @@ class DeviceServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `generateSerialBatch - 운영자 키가 맞으면 지정 개수만큼 시리얼을 생성한다`() {
+        given(deviceSerialRepository.save(any())).willAnswer { it.arguments[0] }
+
+        val response = deviceService.generateSerialBatch("test-operator-key", DeviceType.AI_SPEAKER, 3)
+
+        assertThat(response.serials).hasSize(3)
+        response.serials.forEach {
+            assertThat(it).hasSize(8)
+            assertThat(it).startsWith("AI")
+        }
+    }
+
+    @Test
+    fun `generateSerialBatch - 운영자 키가 다르면 예외가 발생한다`() {
+        assertThatThrownBy { deviceService.generateSerialBatch("wrong-key", DeviceType.ARDUINO, 3) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `generateSerialBatch - 시리얼 발급 대상이 아닌 기기 유형이면 예외가 발생한다`() {
+        assertThatThrownBy { deviceService.generateSerialBatch("test-operator-key", DeviceType.AEROMETER, 3) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `generateSerialBatch - 개수가 범위를 벗어나면 예외가 발생한다`() {
+        assertThatThrownBy { deviceService.generateSerialBatch("test-operator-key", DeviceType.ARDUINO, 0) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `generateSerialBatch - 충돌이 반복되면 예외가 발생한다`() {
+        given(deviceSerialRepository.save(any())).willThrow(DataIntegrityViolationException("duplicate"))
+
+        assertThatThrownBy { deviceService.generateSerialBatch("test-operator-key", DeviceType.ARDUINO, 1) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INTERNAL_SERVER_ERROR)
     }
 
     @Test
