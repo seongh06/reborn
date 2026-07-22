@@ -137,7 +137,8 @@ device_serial ──(assignedDeviceId, 등록 시 1회 연결)──> device
 | POST | `/api/place` | 장소 등록 | ✅ ADMIN |
 | GET | `/api/device` | 기기 목록 조회 | ✅ |
 | POST | `/api/device` | Arduino/AI 스피커 기기 등록 (deviceId=사전 발급 시리얼) | ✅ ADMIN |
-| POST | `/api/device/serials` | 판매용 기기 시리얼 배치 발급 (2026-07-22 신설, #147) | X-Operator-Key 헤더 |
+| POST | `/api/device/serials` | 판매용 기기 시리얼 배치 발급(재고, 장소 무관) (2026-07-22 신설, #147) | X-Operator-Key 헤더 |
+| POST | `/api/device/serials/register` | 시리얼 발급 + 지정 장소로 기기 등록 동시 처리 (2026-07-22 신설, #150) | X-Operator-Key 헤더 |
 | POST | `/api/device/pairing/code` | 공기계 페어링 코드 생성 | ✅ ADMIN |
 | POST | `/api/device/pairing` | 공기계 페어링 코드 입력·등록 | ✅ |
 | POST | `/api/feedback/voice` | 음성 피드백 제출 (AI 스피커, #142) | X-Device-Id 헤더 |
