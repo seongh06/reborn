@@ -14,6 +14,7 @@ import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
 import com.reborn.core.domain.usecase.PairDeviceUseCase
 import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
+import com.reborn.core.domain.usecase.RegisterAiSpeakerDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
@@ -23,6 +24,7 @@ import com.reborn.feature.admin.adjust.AdminAdjustViewModel
 import com.reborn.feature.admin.data.AdminDataViewModel
 import com.reborn.feature.admin.feedback.AdminFeedbackViewModel
 import com.reborn.feature.admin.home.AdminHomeViewModel
+import com.reborn.feature.admin.setting.AdminAddAiSpeakerViewModel
 import com.reborn.feature.admin.setting.AdminAddArduinoViewModel
 import com.reborn.feature.admin.setting.AdminSettingViewModel
 import com.reborn.feature.aerometer.AerometerViewModel
@@ -49,6 +51,7 @@ val appDependenciesModule = module {
     factory { PairDeviceUseCase(get()) }
     factory { GetDeviceListUseCase(get()) }
     factory { RegisterArduinoDeviceUseCase(get()) }
+    factory { RegisterAiSpeakerDeviceUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)
@@ -57,6 +60,7 @@ val appDependenciesModule = module {
     viewModelOf(::AdminDataViewModel)
     viewModelOf(::AdminSettingViewModel)
     viewModelOf(::AdminAddArduinoViewModel)
+    viewModelOf(::AdminAddAiSpeakerViewModel)
     viewModelOf(::AerometerViewModel)
 }
 fun initKoin(

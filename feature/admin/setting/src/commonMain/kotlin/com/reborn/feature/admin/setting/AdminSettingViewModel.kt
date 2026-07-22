@@ -23,6 +23,7 @@ sealed class AdminSettingEvent {
     data class NavigateToInviteCode(val placeId: Int) : AdminSettingEvent()
     data class NavigateToAddDevice(val placeId: Int) : AdminSettingEvent()
     data class NavigateToAddArduino(val placeId: Int) : AdminSettingEvent()
+    data class NavigateToAddAiSpeaker(val placeId: Int) : AdminSettingEvent()
     data object NavigateToAddPlace : AdminSettingEvent()
     data object LoggedOut : AdminSettingEvent()
 }
@@ -55,6 +56,8 @@ class AdminSettingViewModel(
                 navigationManager.emitEvent(AdminSettingEvent.NavigateToAddDevice(intent.placeId))
             is AdminSettingIntent.ClickAddArduino ->
                 navigationManager.emitEvent(AdminSettingEvent.NavigateToAddArduino(intent.placeId))
+            is AdminSettingIntent.ClickAddAiSpeaker ->
+                navigationManager.emitEvent(AdminSettingEvent.NavigateToAddAiSpeaker(intent.placeId))
             is AdminSettingIntent.ClickAddPlace -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddPlace)
             is AdminSettingIntent.ClickLogout -> logout()
         }

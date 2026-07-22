@@ -37,7 +37,8 @@ fun RoomListItem(
     onDeleteClick: () -> Unit,
     onAddAdminClick: () -> Unit,
     onAddDeviceClick: () -> Unit,
-    onAddArduinoClick: () -> Unit
+    onAddArduinoClick: () -> Unit,
+    onAddAiSpeakerClick: () -> Unit
 ){
     Column(
         modifier = Modifier
@@ -76,32 +77,47 @@ fun RoomListItem(
                 RoomInformChip(type = RoomInformType.IoT, value = deviceCount)
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ){
-            RebornButton(
-                modifier = Modifier.weight(1f),
-                text = "관리자 초대",
-                backgroundColor = RebornTheme.color.grayScale300,
-                onClick = onAddAdminClick,
-                contentPadding = PaddingValues(8.dp)
-            )
-            RebornButton(
-                modifier = Modifier.weight(1f),
-                text = "공기계 추가",
-                backgroundColor = RebornTheme.color.grayScale300,
-                onClick = onAddDeviceClick,
-                contentPadding = PaddingValues(8.dp)
-            )
-            RebornButton(
-                modifier = Modifier.weight(1f),
-                text = "아두이노 추가",
-                backgroundColor = RebornTheme.color.grayScale300,
-                onClick = onAddArduinoClick,
-                contentPadding = PaddingValues(8.dp)
-            )
-
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ){
+                RebornButton(
+                    modifier = Modifier.weight(1f),
+                    text = "관리자 초대",
+                    backgroundColor = RebornTheme.color.grayScale300,
+                    onClick = onAddAdminClick,
+                    contentPadding = PaddingValues(8.dp)
+                )
+                RebornButton(
+                    modifier = Modifier.weight(1f),
+                    text = "공기계 추가",
+                    backgroundColor = RebornTheme.color.grayScale300,
+                    onClick = onAddDeviceClick,
+                    contentPadding = PaddingValues(8.dp)
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ){
+                RebornButton(
+                    modifier = Modifier.weight(1f),
+                    text = "아두이노 추가",
+                    backgroundColor = RebornTheme.color.grayScale300,
+                    onClick = onAddArduinoClick,
+                    contentPadding = PaddingValues(8.dp)
+                )
+                RebornButton(
+                    modifier = Modifier.weight(1f),
+                    text = "AI 스피커 추가",
+                    backgroundColor = RebornTheme.color.grayScale300,
+                    onClick = onAddAiSpeakerClick,
+                    contentPadding = PaddingValues(8.dp)
+                )
+            }
         }
     }
 }

@@ -33,7 +33,7 @@ class DeviceRepositoryImpl(
         remote.getList(placeId)
             .toResult { response -> response.devices.map { it.toDevice() } }
 
-    override suspend fun registerDevice(placeId: Long, deviceId: String, deviceName: String): Result<RegisteredDevice> =
-        remote.registerDevice(RegisterDeviceRequest(placeId, deviceId, deviceName))
+    override suspend fun registerDevice(placeId: Long, deviceId: String, deviceName: String, deviceType: String): Result<RegisteredDevice> =
+        remote.registerDevice(RegisterDeviceRequest(placeId, deviceId, deviceName, deviceType))
             .toResult { it.toRegisteredDevice() }
 }
