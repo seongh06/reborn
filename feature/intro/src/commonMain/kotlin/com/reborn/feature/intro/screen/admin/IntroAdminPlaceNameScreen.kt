@@ -62,7 +62,8 @@ fun IntroAdminPlaceNameScreen(
             modifier = Modifier.fillMaxWidth().padding(16.dp,8.dp),
             value = placeName,
             onValueChange = { placeName = it },
-            hint = "장소 이름 입력"
+            hint = "장소 이름 입력",
+            maxLength = 255 // DB place.name VARCHAR(255) — 넘으면 저장 시 서버 오류(#149 참고)
         )
         Spacer(modifier = Modifier.weight(1f))
 
