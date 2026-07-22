@@ -470,11 +470,14 @@ bool recordUploadAndPlay(unsigned long recordWindowMs) {
 
   VoiceResponseMeta meta = readResponseHeaders(client);
   if (!meta.ok) {
+    Serial.println("서버 응답 처리 실패 - 헤더 파싱 실패 또는 타임아웃");
     client.stop();
     setLed(40, 0, 0);
     delay(500);
     return false;
   }
+
+  Serial.printf("서버 응답 수신 - 인식 결과: %s\n", meta.recognized ? "성공" : "실패(재시도 필요)");
 
   i2sSetTxRate(meta.sampleRate);
   setLed(meta.recognized ? 0 : 40, meta.recognized ? 40 : 20, 0); // 초록=성공, 주황=재시도 안내
@@ -540,6 +543,7 @@ void loop() {
   switch (state) {
     case SpeakerState::IDLE: {
       if (isButtonJustPressed()) {
+        Serial.println("버튼 눌림 감지 - 녹음 시작");
         currentRecordWindowMs = BASE_RECORD_MS;
         bool recognized = recordUploadAndPlay(currentRecordWindowMs);
         if (recognized) {
@@ -561,6 +565,7 @@ void loop() {
         break;
       }
       if (isButtonJustPressed()) {
+        Serial.println("버튼 눌림 감지 - 재시도 녹음 시작");
         currentRecordWindowMs += RETRY_EXTRA_MS;
         bool recognized = recordUploadAndPlay(currentRecordWindowMs);
         if (recognized) {
