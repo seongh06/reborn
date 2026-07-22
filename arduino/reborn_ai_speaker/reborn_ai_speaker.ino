@@ -21,8 +21,8 @@
 //    포맷이어야 할 가능성이 있음 — 미검증). 첫 업로드 후 스피커에서 피치가 이상하거나 잡음이 나면
 //    이 부분(TX를 STEREO로 명시하고 좌우 동일 샘플을 복제해서 쓰는 방식)부터 의심할 것.
 //
-// 서버 등록 선행 필요: DEVICE_ID가 서버 device 테이블에 deviceType=AI_SPEAKER로 미리 등록돼 있어야
-// POST /api/feedback/voice 가 성공합니다.
+// 서버 등록 선행 필요(#147): 프로비저닝 포털에 입력하는 값은 실물에 부착된 8자리 시리얼 번호이며,
+// 관리자 앱에서 그 시리얼로 기기를 등록해야 POST /api/feedback/voice 가 성공합니다.
 //
 // ⚠️ 중요한 설계 제약 (PSRAM 없음):
 //   오디오를 통째로 버퍼링하면 안 되고, I2S에서 읽은 작은 청크(RECORD_CHUNK_BYTES)를 즉시
@@ -156,7 +156,7 @@ String buildProvisioningFormHtml() {
     "<form action=\"/save\" method=\"POST\">"
     "WiFi SSID (2.4GHz만 지원)<br><input type=\"text\" name=\"ssid\" required><br><br>"
     "WiFi 비밀번호<br><input type=\"password\" name=\"password\"><br><br>"
-    "기기 ID (관리자 앱에 등록한 deviceKey)<br><input type=\"text\" name=\"device_id\" required><br><br>"
+    "시리얼 번호 (기기 하단에 부착된 8자리 코드)<br><input type=\"text\" name=\"device_id\" required><br><br>"
     "<button type=\"submit\">저장하고 재부팅</button>"
     "</form></body></html>"
   );

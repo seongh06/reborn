@@ -173,3 +173,27 @@ CREATE TABLE IF NOT EXISTS `smart_things_credential`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '장소별 SmartThings OAuth 자격증명';
+
+-- ------------------------------------------------
+-- 8. device_serial (2026-07-22, #147)
+-- 판매용 Arduino/AI 스피커 실물에 인쇄할 시리얼 재고. place 매핑 전 상태를
+-- 표현해야 해서 device(place_id NOT NULL)와 별도 테이블로 둔다.
+-- ------------------------------------------------
+CREATE TABLE IF NOT EXISTS `device_serial`
+(
+    `id`                 BIGINT      NOT NULL AUTO_INCREMENT COMMENT '시리얼 PK',
+    `serial`             VARCHAR(8)  NOT NULL COMMENT '8자리 시리얼(앞 2자리 타입 프리픽스 AR/AI)',
+    `device_type`        VARCHAR(20) NOT NULL COMMENT '시리얼이 발급된 기기 타입 (ARDUINO / AI_SPEAKER)',
+    `assigned_device_id` BIGINT      NULL COMMENT '등록 완료 시 연결된 device.id (미할당이면 NULL)',
+    `assigned_at`        DATETIME(6) NULL COMMENT '등록(할당) 시각',
+    `created_at`         DATETIME(6) NOT NULL COMMENT '발급일시',
+    `updated_at`         DATETIME(6) NOT NULL COMMENT '수정일시',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_device_serial_serial` (`serial`),
+    UNIQUE KEY `uk_device_serial_assigned_device` (`assigned_device_id`),
+    CONSTRAINT `fk_device_serial_device`
+        FOREIGN KEY (`assigned_device_id`) REFERENCES `device` (`id`) ON DELETE SET NULL
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT = '판매용 기기 사전 발급 시리얼 재고';

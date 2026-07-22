@@ -24,7 +24,8 @@
 //   WiFiNINA는 ESP32의 setInsecure() 같은 검증 생략 옵션이 없어서, NINA 모듈에 루트 인증서를
 //   미리 올려둬야 HTTPS 연결이 됩니다. 이 과정 없이 업로드하면 서버 연결에서 계속 실패합니다.
 //
-// 서버 등록 선행 필요: DEVICE_ID가 서버 device 테이블에 미리 등록돼 있어야 POST가 성공합니다.
+// 서버 등록 선행 필요(#147): DEVICE_ID는 실물에 부착된 8자리 시리얼 번호이며, 관리자 앱에서
+// 그 시리얼로 기기를 등록해야 POST가 성공합니다.
 //
 // WiFi는 2.4GHz만 지원 — SSID가 "_5G"로 끝나는 5GHz 전용 네트워크는 연결 안 됨(같은 공유기의
 // 2.4GHz용 SSID를 따로 찾아서 사용).
@@ -43,7 +44,7 @@ const char *WIFI_PASSWORD = "JWU52@2119";
 
 const char *SERVER_HOST = "www.reborn-energy.com";
 const int SERVER_PORT = 443;
-const char *DEVICE_ID = "arduino_test_01"; // 서버에 등록된 deviceKey와 반드시 일치해야 함
+const char *DEVICE_ID = "arduino_test_01"; // 실물에 부착된 시리얼 번호와 반드시 일치해야 함
 
 #define DHTPIN 2 // DHT22 Signal 핀 — Nano 33 IoT의 D2 (특별 기능 없는 안전한 범용 핀)
 #define DHTTYPE DHT22

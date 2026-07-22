@@ -58,7 +58,7 @@ fun AdminAddAiSpeakerRoute(
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
             ) {
                 Text(
-                    "기기 ID",
+                    "시리얼 번호",
                     style = RebornTheme.typography.titleMedium,
                     color = RebornTheme.color.grayScale900
                 )
@@ -66,7 +66,7 @@ fun AdminAddAiSpeakerRoute(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp),
                     value = deviceId,
                     onValueChange = { deviceId = it },
-                    hint = "기기 프로비저닝 시 입력한 기기 ID와 동일하게 (예: speaker_livingroom_01)"
+                    hint = "기기 하단에 부착된 8자리 시리얼 번호 (예: AI7K2P9M)"
                 )
                 Text(
                     "기기 이름",

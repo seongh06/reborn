@@ -58,7 +58,7 @@ fun AdminAddArduinoRoute(
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
             ) {
                 Text(
-                    "기기 ID",
+                    "시리얼 번호",
                     style = RebornTheme.typography.titleMedium,
                     color = RebornTheme.color.grayScale900
                 )
@@ -66,7 +66,7 @@ fun AdminAddArduinoRoute(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp),
                     value = deviceId,
                     onValueChange = { deviceId = it },
-                    hint = "펌웨어에 넣은 DEVICE_ID와 동일하게 (예: arduino_livingroom_01)"
+                    hint = "기기에 부착된 8자리 시리얼 번호 (예: AR7K2P9M)"
                 )
                 Text(
                     "기기 이름",

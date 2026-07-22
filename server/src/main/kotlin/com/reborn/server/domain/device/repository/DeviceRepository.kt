@@ -14,7 +14,5 @@ interface DeviceRepository : JpaRepository<Device, Long> {
 
     fun findAllByDeviceType(deviceType: DeviceType): List<Device>
 
-    fun existsByDeviceKey(deviceKey: String): Boolean
-
     fun countByPlaceId(placeId: Long): Long
 }

@@ -96,16 +96,19 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 | `user` | 사용자 | refreshToken 없음 → Redis 관리, email nullable(카카오 이메일 동의 미사용) |
 | `place` | 장소 | qrCode UNIQUE 추가 |
 | `user_place_mapping` | 사용자-장소 권한 (ADMIN/USER) | - |
-| `device` | 기기 (ARDUINO/AEROMETER/SMART_THINGS) | deviceType, appToken, isOnline 추가. SMART_THINGS는 2026-07-19 추가 — deviceKey에 SmartThings deviceId 저장, appToken 불필요 |
+| `device` | 기기 (ARDUINO/AEROMETER/SMART_THINGS/AI_SPEAKER) | deviceType, appToken, isOnline 추가. SMART_THINGS는 2026-07-19 추가 — deviceKey에 SmartThings deviceId 저장, appToken 불필요. ARDUINO/AI_SPEAKER는 2026-07-22(#147)부터 deviceKey가 사전 발급 시리얼(device_serial)에서 옴 — 관리자가 임의로 정하지 않음 |
 | `metric_logs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (device_id, created_at DESC) 인덱스. SMART_THINGS 기기는 Arduino의 push(POST /api/metric/collect) 대신 서버가 주기적으로 pull(SmartThings API 폴링)해서 동일 테이블에 적재 |
-| `feedback` | 방문자 피드백 | userAgent, sessionToken 추가 |
+| `feedback` | 방문자 피드백 | userAgent, sessionToken 추가. source(QR/VOICE) — AI 스피커(#142) 음성 피드백은 sessionToken 없이 VOICE로 저장 |
 | `smart_things_credential` | 장소별 SmartThings OAuth 토큰 (2026-07-19 신설) | place_id UNIQUE FK, accessToken, refreshToken, expiresAt — 서버가 보유, 공기계/관리자 앱은 접근 안 함 |
+| `device_serial` | 판매용 ARDUINO/AI_SPEAKER 사전 발급 시리얼 재고 (2026-07-22 신설, #147) | serial UNIQUE(8자리, 앞 2자리 타입 프리픽스 AR/AI), assignedDeviceId — place 매핑 전 재고 상태를 표현해야 해서 device와 별도 테이블 |
 
 ### 테이블 관계
 
 ```
 user ──< user_place_mapping >── place ──< device ──< metric_logs
                                                  └──< feedback
+
+device_serial ──(assignedDeviceId, 등록 시 1회 연결)──> device
 ```
 
 ### Redis 관리 항목
@@ -133,9 +136,11 @@ user ──< user_place_mapping >── place ──< device ──< metric_logs
 | GET | `/api/place` | 장소 목록 조회 | ✅ |
 | POST | `/api/place` | 장소 등록 | ✅ ADMIN |
 | GET | `/api/device` | 기기 목록 조회 | ✅ |
-| POST | `/api/device` | Arduino 기기 등록 | ✅ ADMIN |
+| POST | `/api/device` | Arduino/AI 스피커 기기 등록 (deviceId=사전 발급 시리얼) | ✅ ADMIN |
+| POST | `/api/device/serials` | 판매용 기기 시리얼 배치 발급 (2026-07-22 신설, #147) | X-Operator-Key 헤더 |
 | POST | `/api/device/pairing/code` | 공기계 페어링 코드 생성 | ✅ ADMIN |
 | POST | `/api/device/pairing` | 공기계 페어링 코드 입력·등록 | ✅ |
+| POST | `/api/feedback/voice` | 음성 피드백 제출 (AI 스피커, #142) | X-Device-Id 헤더 |
 | ~~WS~~ | ~~`/ws/control`~~ | ~~WebSocket 제어 명령 중계~~ | 2026-07-19 폐기 — SmartThings 제어가 서버 직접 호출로 바뀌며 중계 불필요해짐 |
 | GET | `/api/smartthings/oauth/authorize` | SmartThings 계정 연동 시작(장소별, ADMIN) | ✅ ADMIN |
 | GET | `/api/smartthings/oauth/callback` | SmartThings OAuth 콜백 (인가 코드 → 토큰 교환) | ❌(SmartThings가 호출) |

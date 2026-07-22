@@ -1,5 +1,6 @@
 package com.reborn.server.domain.device.controller
 
+import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.device.service.DeviceService
 import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -30,17 +32,19 @@ class DeviceController(
 ) {
 
     @Operation(
-        summary = "Arduino 기기 등록",
-        description = "특정 장소에 Arduino IoT 기기를 등록합니다. 해당 장소의 ADMIN 권한이 필요하며, " +
-            "AEROMETER(공기계) 등록은 페어링 코드 방식으로 별도 처리됩니다.",
+        summary = "Arduino/AI 스피커 기기 등록",
+        description = "특정 장소에 판매용 Arduino/AI 스피커 기기를 등록합니다. deviceId는 실물에 부착된 " +
+            "사전 발급 시리얼 번호여야 하며(#147), 기기 유형은 클라이언트가 지정하지 않고 시리얼의 발급 " +
+            "이력에서 서버가 그대로 가져옵니다. 해당 장소의 ADMIN 권한이 필요하며, AEROMETER(공기계) 등록은 " +
+            "페어링 코드 방식으로 별도 처리됩니다.",
     )
     @ApiResponses(
-        SwaggerApiResponse(responseCode = "200", description = "등록 성공 — deviceId, 기기명, 기기 유형(ARDUINO), 등록일시 반환"),
+        SwaggerApiResponse(responseCode = "200", description = "등록 성공 — deviceId, 기기명, 기기 유형, 등록일시 반환"),
         SwaggerApiResponse(responseCode = "400", description = "필수 필드 누락 (placeId, deviceId, deviceName)"),
         SwaggerApiResponse(responseCode = "401", description = "인증 실패 (유효하지 않거나 만료된 AccessToken)"),
         SwaggerApiResponse(responseCode = "403", description = "해당 장소의 ADMIN 권한 없음"),
-        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소 ID"),
-        SwaggerApiResponse(responseCode = "409", description = "이미 등록된 deviceId"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소 ID 또는 발급되지 않은 시리얼 번호"),
+        SwaggerApiResponse(responseCode = "409", description = "이미 등록된 시리얼 번호"),
     )
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
@@ -49,6 +53,29 @@ class DeviceController(
         authentication: Authentication,
     ): ApiResponse<DeviceDto.RegisterResponse> =
         ApiResponse.success(deviceService.register(extractUserId(authentication), request))
+
+    @Operation(
+        summary = "판매용 기기 시리얼 번호 배치 발급 (운영자 전용)",
+        description = "판매 전 서비스 운영자가 Arduino/AI 스피커 실물에 인쇄할 시리얼 번호를 미리 배치로 " +
+            "발급합니다(#147). 장소·ADMIN 권한과 무관하며, X-Operator-Key 헤더가 서버 설정값과 일치해야 " +
+            "합니다. 시리얼은 앞 2자리 타입 프리픽스(AR/AI) + 랜덤 6자리(혼동 문자 제외)로 구성됩니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "발급 성공 — serials 목록 반환"),
+        SwaggerApiResponse(responseCode = "400", description = "시리얼 발급 대상이 아닌 기기 유형 또는 잘못된 개수"),
+        SwaggerApiResponse(responseCode = "403", description = "운영자 키 불일치 또는 미설정"),
+    )
+    @PostMapping("/serials")
+    fun generateSerialBatch(
+        @RequestHeader("X-Operator-Key") operatorKey: String,
+        @Valid @RequestBody request: DeviceDto.SerialBatchRequest,
+    ): ApiResponse<DeviceDto.SerialBatchResponse> {
+        val deviceType = runCatching { DeviceType.valueOf(request.deviceType ?: "") }
+            .getOrElse { throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "잘못된 기기 유형입니다.") }
+        return ApiResponse.success(
+            deviceService.generateSerialBatch(operatorKey, deviceType, request.count ?: 0),
+        )
+    }
 
     @Operation(
         summary = "페어링 코드 생성",
