@@ -86,8 +86,47 @@ class DeviceService(
             throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "발급 개수는 1~${MAX_SERIAL_BATCH_COUNT}개여야 합니다.")
         }
 
-        val serials = (1..count).map { reserveUniqueSerial(prefix, deviceType) }
+        val serials = (1..count).map { reserveUniqueSerial(prefix, deviceType).serial }
         return DeviceDto.SerialBatchResponse(serials = serials)
+    }
+
+    // #150: place가 이미 만들어져 있는 상태에서 운영자가 하드웨어를 준비/배송할 때, 시리얼 발급과
+    // 그 장소로의 기기 등록을 한 번에 끝낸다 — 이후 실물에 이 시리얼만 입력해서 실행하면 되고,
+    // 고객사 관리자가 앱에서 별도로 등록할 필요가 없다. generateSerialBatch(재고용, 장소 무관)와는
+    // 별개 경로 — 여기서는 device_serial 생성과 동시에 assignTo까지 끝낸다.
+    @Transactional
+    fun generateAndRegisterDevice(
+        operatorKey: String,
+        deviceType: DeviceType,
+        placeId: Long,
+        deviceName: String?,
+    ): DeviceDto.RegisterResponse {
+        requireOperator(operatorKey)
+
+        val prefix = deviceType.serialPrefix
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "시리얼 발급 대상이 아닌 기기 유형입니다.")
+        val place = placeRepository.findById(placeId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        }
+
+        val deviceSerial = reserveUniqueSerial(prefix, deviceType)
+        val device = try {
+            deviceRepository.save(
+                Device(
+                    place = place,
+                    deviceType = deviceType,
+                    deviceKey = deviceSerial.serial,
+                    name = deviceName?.takeIf { it.isNotBlank() },
+                ),
+            )
+        } catch (e: DataIntegrityViolationException) {
+            log.warn("generateAndRegisterDevice 기기 저장 중 무결성 위반: {}", e.message)
+            throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 등록된 기기입니다.")
+        }
+        deviceSerial.assignTo(device)
+        deviceSerialRepository.save(deviceSerial)
+
+        return DeviceConverter.toRegisterResponse(device)
     }
 
     fun generatePairingCode(userId: Long, placeId: Long): DeviceDto.PairingCodeResponse {
@@ -163,12 +202,11 @@ class DeviceService(
         }
     }
 
-    private fun reserveUniqueSerial(prefix: String, deviceType: DeviceType): String {
+    private fun reserveUniqueSerial(prefix: String, deviceType: DeviceType): DeviceSerial {
         repeat(MAX_SERIAL_GENERATION_ATTEMPTS) {
             val serial = generateDeviceSerial(prefix)
             try {
-                deviceSerialRepository.save(DeviceSerial(serial = serial, deviceType = deviceType))
-                return serial
+                return deviceSerialRepository.save(DeviceSerial(serial = serial, deviceType = deviceType))
             } catch (e: DataIntegrityViolationException) {
                 log.warn("시리얼 생성 중 충돌, 재시도: {}", e.message)
             }

@@ -30,6 +30,12 @@ class DeviceDto {
         val serials: List<String>,
     )
 
+    data class GenerateAndRegisterRequest(
+        @field:NotBlank val deviceType: String? = null,
+        @field:NotNull val placeId: Long? = null,
+        val deviceName: String? = null,
+    )
+
     data class PairingCodeResponse(
         val pairingCode: String,
         val expiresAt: LocalDateTime,

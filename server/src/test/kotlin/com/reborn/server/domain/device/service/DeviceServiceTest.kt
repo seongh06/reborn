@@ -220,6 +220,52 @@ class DeviceServiceTest {
     }
 
     @Test
+    fun `generateAndRegisterDevice - 운영자 키가 맞으면 시리얼 발급과 동시에 기기를 등록한다`() {
+        val savedDevice = Device(
+            place = place,
+            deviceType = DeviceType.AI_SPEAKER,
+            deviceKey = "AI7K2P9M",
+            name = "거실 스피커",
+        ).apply { prePersist() }
+
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(deviceSerialRepository.save(any())).willAnswer { it.arguments[0] }
+        given(deviceRepository.save(any())).willReturn(savedDevice)
+
+        val response = deviceService.generateAndRegisterDevice("test-operator-key", DeviceType.AI_SPEAKER, 501L, "거실 스피커")
+
+        assertThat(response.deviceType).isEqualTo("AI_SPEAKER")
+        assertThat(response.deviceName).isEqualTo("거실 스피커")
+        verify(deviceSerialRepository, Mockito.times(2)).save(any())
+    }
+
+    @Test
+    fun `generateAndRegisterDevice - 운영자 키가 다르면 예외가 발생한다`() {
+        assertThatThrownBy { deviceService.generateAndRegisterDevice("wrong-key", DeviceType.ARDUINO, 501L, null) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `generateAndRegisterDevice - 시리얼 발급 대상이 아닌 기기 유형이면 예외가 발생한다`() {
+        assertThatThrownBy { deviceService.generateAndRegisterDevice("test-operator-key", DeviceType.SMART_THINGS, 501L, null) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `generateAndRegisterDevice - 존재하지 않는 장소면 예외가 발생한다`() {
+        given(placeRepository.findById(999L)).willReturn(Optional.empty())
+
+        assertThatThrownBy { deviceService.generateAndRegisterDevice("test-operator-key", DeviceType.ARDUINO, 999L, null) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
     fun `generatePairingCode - ADMIN이면 코드를 생성한다`() {
         given(placeRepository.existsById(501L)).willReturn(true)
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)

@@ -78,6 +78,33 @@ class DeviceController(
     }
 
     @Operation(
+        summary = "시리얼 발급 + 장소 등록 동시 처리 (운영자 전용)",
+        description = "고객사의 장소(placeId)가 이미 생성돼 있을 때, 운영자가 시리얼을 발급하면서 바로 그 " +
+            "장소의 기기로 등록까지 끝냅니다(#150). 응답으로 받은 시리얼을 실물(Arduino/AI 스피커)의 " +
+            "SoftAP 프로비저닝 폼에 입력해 실행하면, 고객사 관리자 앱에서 별도로 등록할 필요 없이 바로 " +
+            "동작합니다. X-Operator-Key 헤더가 서버 설정값과 일치해야 합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "발급+등록 성공 — deviceId(발급된 시리얼), 기기명, 기기 유형, 등록일시 반환"),
+        SwaggerApiResponse(responseCode = "400", description = "시리얼 발급 대상이 아닌 기기 유형"),
+        SwaggerApiResponse(responseCode = "403", description = "운영자 키 불일치 또는 미설정"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소 ID"),
+    )
+    @PostMapping("/serials/register")
+    fun generateAndRegisterDevice(
+        @RequestHeader("X-Operator-Key") operatorKey: String,
+        @Valid @RequestBody request: DeviceDto.GenerateAndRegisterRequest,
+    ): ApiResponse<DeviceDto.RegisterResponse> {
+        val deviceType = runCatching { DeviceType.valueOf(request.deviceType ?: "") }
+            .getOrElse { throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "잘못된 기기 유형입니다.") }
+        val placeId = request.placeId
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "장소 ID는 필수입니다.")
+        return ApiResponse.success(
+            deviceService.generateAndRegisterDevice(operatorKey, deviceType, placeId, request.deviceName),
+        )
+    }
+
+    @Operation(
         summary = "페어링 코드 생성",
         description = "공기계(AEROMETER) 앱과 장소를 연결하기 위한 일회용 페어링 코드를 생성합니다(10분 유효). 해당 장소의 ADMIN 권한이 필요합니다.",
     )
