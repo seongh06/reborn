@@ -13,6 +13,7 @@ sealed class AdminHomeEvent {
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminHomeEvent()
     data class NavigateToFeedbackDetail(val feedbackId: Int) : AdminHomeEvent()
     data object NavigateToSetting : AdminHomeEvent()
+    data object NavigateToDeviceList : AdminHomeEvent()
 }
 
 class AdminHomeViewModel : ViewModel() {
@@ -32,6 +33,7 @@ class AdminHomeViewModel : ViewModel() {
             is AdminHomeIntent.LoadInitial -> checkInitialState()
             is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm(alarm = alarmItems))
             is AdminHomeIntent.NavigateToSetting -> navigateToSetting()
+            is AdminHomeIntent.NavigateToDeviceList -> navigateToDeviceList()
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
             is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
             is AdminHomeIntent.DeleteAlarm -> deleteAlarm(intent.alarmId)
@@ -56,6 +58,12 @@ class AdminHomeViewModel : ViewModel() {
     private fun navigateToSetting() {
         viewModelScope.launch {
             navController.emitEvent(AdminHomeEvent.NavigateToSetting)
+        }
+    }
+
+    private fun navigateToDeviceList() {
+        viewModelScope.launch {
+            navController.emitEvent(AdminHomeEvent.NavigateToDeviceList)
         }
     }
 

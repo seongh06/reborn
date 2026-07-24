@@ -21,6 +21,7 @@ sealed interface AdminHomeIntent{
     data object LoadInitial : AdminHomeIntent
     data object NavigateToAlarm : AdminHomeIntent
     data object NavigateToSetting : AdminHomeIntent
+    data object NavigateToDeviceList : AdminHomeIntent
     data object NavigateBack : AdminHomeIntent
     data class NavigateToFeedback(val feedbackId: Int): AdminHomeIntent
     data class DeleteAlarm(val alarmId: Int) : AdminHomeIntent

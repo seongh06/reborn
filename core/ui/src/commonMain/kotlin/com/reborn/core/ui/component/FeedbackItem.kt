@@ -1,16 +1,18 @@
 package com.reborn.core.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +33,7 @@ import com.reborn.core.ui.ic_feedback_music
 import com.reborn.core.ui.ic_feedback_noise
 import com.reborn.core.ui.ic_feedback_smell
 import com.reborn.core.ui.ic_feedback_wind
+import com.reborn.core.ui.ic_none_feedback
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -43,50 +46,110 @@ fun FeedbackItem(
     id: Int,
     onClick:() -> Unit
 ) {
-
-    val icon = getFeedbackIcon(type)
-
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(RebornTheme.color.grayScale100)
-            .border(
-                width = 1.dp,
-                color = RebornTheme.color.grayScale200,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(20.dp,12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ){
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ){
-            Icon(
-                painterResource(icon.icon),
-                modifier = Modifier.size(32.dp),
-                contentDescription = null,
-                tint = icon.color
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
-            ) {
-                Text(
-                    title,
-                    style = RebornTheme.typography.titleMedium,
-                    color = RebornTheme.color.grayScale900
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ){
+                Icon(
+                    painter = painterResource(getFeedbackIcon(type).icon),
+                    tint = getFeedbackIcon(type).color,
+                    modifier = Modifier.size(16.dp),
+                    contentDescription = null
                 )
                 Text(
-                    time,
+                    text = time,
                     style = RebornTheme.typography.labelMedium,
                     color = RebornTheme.color.grayScale900
                 )
             }
+            Spacer(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(getStateColor(state))
+            )
         }
-        Spacer(modifier = Modifier.weight(1f))
-        stateChip(state)
+        Text(
+            text = title,
+            style = RebornTheme.typography.titleMedium,
+            color = RebornTheme.color.grayScale900
+        )
+    }
+}
+
+data class FeedbackListItem(
+    val id: Int,
+    val type: FeedbackType,
+    val state: State,
+    val time: String,
+    val title: String
+)
+
+@Composable
+fun FeedbackList(
+    items: List<FeedbackListItem>,
+    onItemClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (items.isEmpty()) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .heightIn(min = 120.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(RebornTheme.color.grayScale100),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_none_feedback),
+                modifier = Modifier.size(36.dp),
+                contentDescription = null,
+                tint = RebornTheme.color.grayScale700
+            )
+            Text(
+                text = "현재 피드백이 없습니다",
+                style = RebornTheme.typography.bodyLarge,
+                color = RebornTheme.color.grayScale900
+            )
+        }
+        return
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 120.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(RebornTheme.color.grayScale100)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        items.forEachIndexed { index, item ->
+            Column {
+                FeedbackItem(
+                    type = item.type,
+                    state = item.state,
+                    time = item.time,
+                    title = item.title,
+                    id = item.id,
+                    onClick = { onItemClick(item.id) }
+                )
+                if (index != items.lastIndex) {
+                    HorizontalDivider(color = RebornTheme.color.grayScale300, modifier = Modifier.padding(vertical = 8.dp))
+                }
+            }
+        }
     }
 }
 
@@ -100,11 +163,6 @@ enum class State {
 
 data class FeedbackUiStyle(
     val icon: DrawableResource,
-    val color: Color
-)
-
-data class StateUiStyle(
-    val text: String,
     val color: Color
 )
 
@@ -155,27 +213,10 @@ fun getFeedbackIcon(type: FeedbackType): FeedbackUiStyle {
 }
 
 @Composable
-fun getStateColor(state: State): StateUiStyle {
+fun getStateColor(state: State): Color {
     return when (state) {
-        State.WAITING -> StateUiStyle("대기",RebornTheme.color.grayScale500)
-        State.REJECT -> StateUiStyle("거절",RebornTheme.color.reject)
-        State.APPROVE -> StateUiStyle("승인",RebornTheme.color.approve)
+        State.WAITING -> RebornTheme.color.grayScale500
+        State.REJECT -> RebornTheme.color.reject
+        State.APPROVE -> RebornTheme.color.approve
     }
-}
-
-@Composable
-fun stateChip(
-    state: State
-){
-    val style = getStateColor(state)
-
-    Text(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(style.color)
-            .padding(12.dp,4.dp),
-        text = style.text,
-        style = RebornTheme.typography.labelMedium,
-        color = Color.White
-    )
 }

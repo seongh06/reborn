@@ -188,6 +188,9 @@ fun App() {
                         onNavigateToSetting = {
                             navController.navigate(Route.Admin.Setting)
                         },
+                        onNavigateToDeviceList = {
+                            navController.navigate(Route.Admin.Adjust)
+                        },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
                         }

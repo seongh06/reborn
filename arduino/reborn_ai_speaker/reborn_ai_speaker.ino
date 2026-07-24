@@ -39,7 +39,9 @@
 #include <Preferences.h>
 #include <Adafruit_NeoPixel.h>
 #include <ESP_I2S.h>
+#include <math.h>
 #include "voice_response_meta.h"
+#include "audio_gain.h"
 
 // ===== 설정값 =====
 // WiFi SSID/PW와 기기 ID는 더 이상 하드코딩하지 않는다(#143). 최초 부팅 시(또는 버튼을 꾹 눌러
@@ -256,6 +258,39 @@ void i2sSetTxRate(uint32_t rate) {
   i2s.configureTX(rate, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO);
 }
 
+// ===== 로컬 알림음(#157) =====
+// 버튼을 눌렀을 때 서버 왕복 없이 기기가 직접 사인파를 생성해 재생 — 등록/네트워크 상태와
+// 무관하게 항상 들리는 즉각적인 피드백. 진폭(9000/INT16_MAX≈32767)은 찌그러짐 없이 충분히
+// 크게 들리도록 잡은 추정치, audio_gain.h의 SPEAKER_GAIN과는 별개(이쪽은 이미 로컬에서 진폭을
+// 직접 정하므로 게인을 또 곱하지 않는다) — 실기기로 들어보고 조절 필요.
+void playTone(float freqHz, unsigned long durationMs, uint32_t sampleRate) {
+  const size_t totalSamples = (size_t)(sampleRate * durationMs / 1000UL);
+  const float phaseInc = 2.0f * PI * freqHz / (float)sampleRate;
+  float phase = 0.0f;
+
+  int16_t chunk[STREAM_CHUNK_BYTES / 2];
+  const size_t chunkCapacity = sizeof(chunk) / sizeof(chunk[0]);
+
+  size_t samplesWritten = 0;
+  while (samplesWritten < totalSamples) {
+    size_t chunkSamples = min(chunkCapacity, totalSamples - samplesWritten);
+    for (size_t i = 0; i < chunkSamples; i++) {
+      chunk[i] = (int16_t)(sinf(phase) * 9000.0f);
+      phase += phaseInc;
+      if (phase > 2.0f * PI) phase -= 2.0f * PI;
+    }
+    i2s.write((uint8_t *)chunk, chunkSamples * sizeof(int16_t));
+    samplesWritten += chunkSamples;
+  }
+}
+
+// "띠링" — 상승하는 2음(라 → 한 옥타브 위 마 근처)
+void playChime() {
+  i2sSetTxRate(DEFAULT_PLAYBACK_SAMPLE_RATE);
+  playTone(880.0f, 100, DEFAULT_PLAYBACK_SAMPLE_RATE);
+  playTone(1318.0f, 150, DEFAULT_PLAYBACK_SAMPLE_RATE);
+}
+
 // ===== WAV 헤더(스트리밍용 placeholder 크기) =====
 // RIFF/data 청크 크기를 알 수 없으므로 0xFFFFFFFF로 채운다. Gemini가 이를 받아들이는지는
 // 미검증 — 다음 세션에서 curl로 실제 응답 검증 필요(devlog 메모 참고).
@@ -382,6 +417,7 @@ void streamPlayback(WiFiClientSecure &client, long contentLength) {
       continue;
     }
     lastDataAt = millis();
+    applyGain(streamBuf, (size_t)n); // 음량 부스트(#156) — NS4168은 게인 고정이라 소프트웨어로 증폭
     bytesWritten = i2s.write(streamBuf, (size_t)n);
     (void)bytesWritten;
     remaining -= n;
@@ -544,6 +580,7 @@ void loop() {
     case SpeakerState::IDLE: {
       if (isButtonJustPressed()) {
         Serial.println("버튼 눌림 감지 - 녹음 시작");
+        playChime(); // 등록/네트워크 상태와 무관하게 바로 들리는 로컬 알림음(#157)
         currentRecordWindowMs = BASE_RECORD_MS;
         bool recognized = recordUploadAndPlay(currentRecordWindowMs);
         if (recognized) {
@@ -566,6 +603,7 @@ void loop() {
       }
       if (isButtonJustPressed()) {
         Serial.println("버튼 눌림 감지 - 재시도 녹음 시작");
+        playChime(); // 등록/네트워크 상태와 무관하게 바로 들리는 로컬 알림음(#157)
         currentRecordWindowMs += RETRY_EXTRA_MS;
         bool recognized = recordUploadAndPlay(currentRecordWindowMs);
         if (recognized) {
