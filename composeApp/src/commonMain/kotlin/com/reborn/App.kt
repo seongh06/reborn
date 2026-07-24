@@ -159,11 +159,15 @@ fun App() {
                         }
                     }
                 }
-            ) { innerPadding ->
+            ) { _ ->
+                // innerPadding(바텀바 높이만큼)을 그대로 적용하면 콘텐츠가 바텀바 영역까지
+                // 아예 안 그려져서, 그라데이션 스크림의 "투명" 부분 뒤에 아무것도 없어 보임
+                // (Scaffold의 containerColor만 비침) — edge-to-edge로 깔고 각 화면이 리스트
+                // contentPadding으로 하단 여백을 알아서 챙기게 함
                 NavHost(
                     navController = navController,
                     startDestination = Route.Intro,
-                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     introNavGraph(
                         onNavigateToAdmin = {

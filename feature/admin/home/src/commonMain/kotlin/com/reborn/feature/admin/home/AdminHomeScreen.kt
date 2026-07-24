@@ -2,6 +2,7 @@ package com.reborn.feature.admin.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -136,7 +137,13 @@ fun AdminHomeScreen(
                 onNavigateSetting = onSettingClick,
                 backgroundColor = RebornTheme.color.grayScale100
             )
-            LazyColumn(modifier = Modifier.weight(1f)) {
+            // 바텀네비 캡슐 영역(상단 8dp + 캡슐 60dp + 하단 20dp = 88dp) 아래로 마지막
+            // 아이템이 가려지지 않도록 하단 여백 확보. edge-to-edge라 콘텐츠는 그 영역까지
+            // 실제로 그려지고, 스크롤 시 캡슐 위 그라데이션 스크림 너머로 비쳐 보임
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(bottom = 88.dp)
+            ) {
                 item {
                     Dashboard(
                         temperature = /*state.metric?.temperature*/ 24.5f,
