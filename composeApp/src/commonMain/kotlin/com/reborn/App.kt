@@ -1,6 +1,8 @@
 package com.reborn
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,11 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,8 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -58,8 +61,9 @@ fun App() {
             var isAdminHomeBottomBarVisible by remember { mutableStateOf(true) }
             var introSkipToAdminModeSelect by remember { mutableStateOf(false) }
 
-            val lineColor = RebornTheme.color.grayScale700
             val surfaceColor = RebornTheme.color.grayScale100
+            val scrimColor = RebornTheme.color.grayScale200
+            val pillShape = RoundedCornerShape(percent = 50)
 
             Scaffold(
 
@@ -79,27 +83,42 @@ fun App() {
                     if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice && !isAdminAddArduino && !isAdminAddAiSpeaker &&
                         (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
                     ) {
-                        Surface(
-                            color = surfaceColor,
+                        // Figma BottomNavSection(595:5074) 스펙: 위쪽 투명 -> 아래쪽 불투명 그라데이션
+                        // 스크림 위에, 캡슐형(pill) 네비가 가운데 떠 있는 구조.
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .drawBehind {
-                                    val strokeWidth = 1.dp.toPx()
-                                    drawLine(
-                                        color = lineColor,
-                                        start = Offset(0f, 0f),
-                                        end = Offset(size.width, 0f),
-                                        strokeWidth = strokeWidth
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            scrimColor.copy(alpha = 0f),
+                                            scrimColor.copy(alpha = 0.5f),
+                                            scrimColor
+                                        )
                                     )
-                                }
+                                )
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp, bottom = 20.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             Row(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp)
-                                    .padding(bottom = 12.dp)
+                                    .shadow(
+                                        elevation = 4.dp,
+                                        shape = pillShape,
+                                        ambientColor = Color.Black.copy(alpha = 0.25f),
+                                        spotColor = Color.Black.copy(alpha = 0.25f)
+                                    )
+                                    .clip(pillShape)
+                                    .background(surfaceColor)
+                                    // 안쪽 좌상단 하이라이트 근사 — Figma의 inset shadow(반사광) 대체
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(Color.White.copy(alpha = 0.35f), Color.Transparent)
+                                        )
+                                    )
+                                    .padding(horizontal = 8.dp)
                                     .selectableGroup(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 MainTab.entries.forEach { tab ->
