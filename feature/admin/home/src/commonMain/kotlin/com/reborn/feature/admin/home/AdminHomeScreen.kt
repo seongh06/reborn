@@ -132,7 +132,8 @@ fun AdminHomeScreen(
             RebornTopAppBar(
                 title = "Re:Born",
                 onNavigateAlert = onAlarmClick,
-                onNavigateSetting = onSettingClick
+                onNavigateSetting = onSettingClick,
+                backgroundColor = RebornTheme.color.grayScale200
             )
             LazyColumn(modifier = Modifier.weight(1f)) {
                 item {

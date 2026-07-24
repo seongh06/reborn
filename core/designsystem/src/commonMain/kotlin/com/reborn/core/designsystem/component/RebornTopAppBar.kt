@@ -1,5 +1,6 @@
 package com.reborn.core.designsystem.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.Res
 import com.reborn.core.designsystem.ic_back
@@ -29,11 +33,29 @@ fun RebornTopAppBar(
     onNavigateAddDevice: (() -> Unit)? = null,
     onNavigateFeedbackQR: (() -> Unit)? = null,
     onNavigateDataExport: (() -> Unit)? = null,
+    backgroundColor: Color = Color.Unspecified,
     darkTheme: Boolean = false
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                if (backgroundColor.isSpecified) {
+                    // BottomNavSection과 대칭되는 상단 스크림 — 위쪽은 backgroundColor로 불투명하게
+                    // 시작해서 바 하단에서 완전 투명으로 빠짐(50% 지점 경유)
+                    Modifier.background(
+                        Brush.verticalGradient(
+                            listOf(
+                                backgroundColor,
+                                backgroundColor.copy(alpha = 0.5f),
+                                backgroundColor.copy(alpha = 0f)
+                            )
+                        )
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .padding(4.dp, 8.dp)
     ) {
         onBackClick?.let {
