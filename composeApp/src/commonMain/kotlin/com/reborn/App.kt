@@ -1,7 +1,8 @@
 package com.reborn
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -12,8 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -125,33 +124,36 @@ fun App() {
                                     val isSelected =
                                         currentDestination?.hasRoute(tab.route::class) == true
 
-                                    NavigationBarItem(
-                                        selected = isSelected,
-                                        label = {},
-                                        icon = {
-                                            Icon(
-                                                painter = painterResource(
-                                                    if (isSelected) tab.selectedIcon else tab.unselectedIcon
-                                                ),
-                                                modifier = Modifier.size(32.dp),
-                                                contentDescription = tab.label
-                                            )
-                                        },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            indicatorColor = Color.Transparent,
-                                            selectedIconColor = RebornTheme.color.grayScale700,
-                                            unselectedIconColor = RebornTheme.color.grayScale700,
-                                        ),
-                                        onClick = {
-                                            navController.navigate(tab.route) {
-                                                popUpTo(navController.graph.findStartDestination().id) {
-                                                    saveState = true
+                                    // Figma 스펙: 아이템당 64x32 아이콘 컨테이너 + 위 12dp/아래 16dp 여백
+                                    // = 아이템 높이 60dp. 2개 탭 * 64dp + Row 좌우 padding(8+8) = 144dp
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(top = 12.dp, bottom = 16.dp)
+                                            .size(width = 64.dp, height = 32.dp)
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                                onClick = {
+                                                    navController.navigate(tab.route) {
+                                                        popUpTo(navController.graph.findStartDestination().id) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
                                                 }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        }
-                                    )
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(
+                                                if (isSelected) tab.selectedIcon else tab.unselectedIcon
+                                            ),
+                                            modifier = Modifier.size(24.dp),
+                                            contentDescription = tab.label,
+                                            tint = RebornTheme.color.grayScale700
+                                        )
+                                    }
                                 }
                             }
                         }
