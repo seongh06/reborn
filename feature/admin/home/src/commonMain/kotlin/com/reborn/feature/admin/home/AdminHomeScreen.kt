@@ -24,9 +24,9 @@ import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.Dashboard
+import com.reborn.core.ui.component.FeedbackStatusSection
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.home.component.FeedbackListSection
-import com.reborn.feature.admin.home.component.FeedbackStatusSection
 import com.reborn.feature.admin.home.component.IoTListSection
 import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
@@ -112,7 +112,7 @@ fun AdminHomeScreen(
                  verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
              ){
                  Icon(
-                     painter = painterResource(Res.drawable.ic_none_IoT),
+                     painter = painterResource(Res.drawable.ic_none_iot),
                      contentDescription = null,
                      tint = RebornTheme.color.grayScale700,
                      modifier = Modifier.size(100.dp)
@@ -154,6 +154,7 @@ fun AdminHomeScreen(
                 item {
                     FeedbackListSection(
                         onFeedbackClick = onFeedbackClick,
+                        // TODO: 전체 피드백 목록 화면 연동 전까지의 임시 동작 — 지금은 id=1 상세로 고정 이동함
                         onMoreClick = { onFeedbackClick(1) }
                     )
                 }

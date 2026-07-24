@@ -119,8 +119,9 @@ fun DashboardItem(
 private fun formatDashboardValue(type: DataType, value: Float): String {
     return when (type) {
         DataType.Temperature, DataType.Humidity -> {
-            val sign = if (value < 0) "-" else ""
             val scaled = (abs(value) * 10).roundToInt()
+            // scaled가 반올림으로 0이 되면(예: -0.03) 부호를 붙이지 않음 — "-0.0" 방지
+            val sign = if (value < 0 && scaled != 0) "-" else ""
             "$sign${scaled / 10}.${scaled % 10}"
         }
         DataType.Illuminance, DataType.PeopleCount -> value.roundToInt().toString()

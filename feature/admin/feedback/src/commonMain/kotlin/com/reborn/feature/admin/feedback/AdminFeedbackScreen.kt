@@ -24,9 +24,9 @@ import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.FeedbackItem
 import com.reborn.core.ui.component.State
+import com.reborn.core.ui.component.FeedbackStatusSection
 import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
-import com.reborn.feature.admin.feedback.component.FeedbackStatusSection
 import com.reborn.feature.admin.feedback.model.AdminFeedbackIntent
 import com.reborn.feature.admin.feedback.model.AdminFeedbackUiState
 import com.reborn.feature.admin.feedback.model.filteredFeedbacks

@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.Res
@@ -76,6 +78,7 @@ fun FeedbackItem(
                     .size(8.dp)
                     .clip(CircleShape)
                     .background(getStateColor(state))
+                    .semantics { stateDescription = getStateLabel(state) }
             )
         }
         Text(
@@ -218,5 +221,14 @@ fun getStateColor(state: State): Color {
         State.WAITING -> RebornTheme.color.grayScale500
         State.REJECT -> RebornTheme.color.reject
         State.APPROVE -> RebornTheme.color.approve
+    }
+}
+
+// 상태를 색상만으로 구분하면 색약 사용자가 인지하기 어려워 스크린리더용 텍스트 대안 제공
+fun getStateLabel(state: State): String {
+    return when (state) {
+        State.WAITING -> "대기"
+        State.REJECT -> "거절"
+        State.APPROVE -> "승인"
     }
 }
