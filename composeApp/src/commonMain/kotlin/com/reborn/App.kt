@@ -1,6 +1,9 @@
 package com.reborn
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,11 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,8 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -58,8 +60,9 @@ fun App() {
             var isAdminHomeBottomBarVisible by remember { mutableStateOf(true) }
             var introSkipToAdminModeSelect by remember { mutableStateOf(false) }
 
-            val lineColor = RebornTheme.color.grayScale700
             val surfaceColor = RebornTheme.color.grayScale100
+            val scrimColor = RebornTheme.color.grayScale200
+            val pillShape = RoundedCornerShape(percent = 50)
 
             Scaffold(
 
@@ -79,70 +82,92 @@ fun App() {
                     if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice && !isAdminAddArduino && !isAdminAddAiSpeaker &&
                         (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
                     ) {
-                        Surface(
-                            color = surfaceColor,
+                        // Figma BottomNavSection(595:5074) 스펙: 위쪽 투명 -> 아래쪽 불투명 그라데이션
+                        // 스크림 위에, 캡슐형(pill) 네비가 가운데 떠 있는 구조.
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .drawBehind {
-                                    val strokeWidth = 1.dp.toPx()
-                                    drawLine(
-                                        color = lineColor,
-                                        start = Offset(0f, 0f),
-                                        end = Offset(size.width, 0f),
-                                        strokeWidth = strokeWidth
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            scrimColor.copy(alpha = 0f),
+                                            scrimColor.copy(alpha = 0.5f),
+                                            scrimColor
+                                        )
                                     )
-                                }
+                                )
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp, bottom = 20.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             Row(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp)
-                                    .padding(bottom = 12.dp)
+                                    .shadow(
+                                        elevation = 4.dp,
+                                        shape = pillShape,
+                                        ambientColor = Color.Black.copy(alpha = 0.25f),
+                                        spotColor = Color.Black.copy(alpha = 0.25f)
+                                    )
+                                    .clip(pillShape)
+                                    .background(surfaceColor)
+                                    // 안쪽 좌상단 하이라이트 근사 — Figma의 inset shadow(반사광) 대체
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(Color.White.copy(alpha = 0.35f), Color.Transparent)
+                                        )
+                                    )
+                                    .padding(horizontal = 8.dp)
                                     .selectableGroup(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 MainTab.entries.forEach { tab ->
                                     val isSelected =
                                         currentDestination?.hasRoute(tab.route::class) == true
 
-                                    NavigationBarItem(
-                                        selected = isSelected,
-                                        label = {},
-                                        icon = {
-                                            Icon(
-                                                painter = painterResource(
-                                                    if (isSelected) tab.selectedIcon else tab.unselectedIcon
-                                                ),
-                                                modifier = Modifier.size(32.dp),
-                                                contentDescription = tab.label
-                                            )
-                                        },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            indicatorColor = Color.Transparent,
-                                            selectedIconColor = RebornTheme.color.grayScale700,
-                                            unselectedIconColor = RebornTheme.color.grayScale700,
-                                        ),
-                                        onClick = {
-                                            navController.navigate(tab.route) {
-                                                popUpTo(navController.graph.findStartDestination().id) {
-                                                    saveState = true
+                                    // Figma 스펙: 아이템당 64x32 아이콘 컨테이너 + 위 12dp/아래 16dp 여백
+                                    // = 아이템 높이 60dp. 2개 탭 * 64dp + Row 좌우 padding(8+8) = 144dp
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(top = 12.dp, bottom = 16.dp)
+                                            .size(width = 64.dp, height = 32.dp)
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                                onClick = {
+                                                    navController.navigate(tab.route) {
+                                                        popUpTo(navController.graph.findStartDestination().id) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
                                                 }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        }
-                                    )
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(
+                                                if (isSelected) tab.selectedIcon else tab.unselectedIcon
+                                            ),
+                                            modifier = Modifier.size(24.dp),
+                                            contentDescription = tab.label,
+                                            tint = RebornTheme.color.grayScale700
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            ) { innerPadding ->
+            ) { _ ->
+                // innerPadding(바텀바 높이만큼)을 그대로 적용하면 콘텐츠가 바텀바 영역까지
+                // 아예 안 그려져서, 그라데이션 스크림의 "투명" 부분 뒤에 아무것도 없어 보임
+                // (Scaffold의 containerColor만 비침) — edge-to-edge로 깔고 각 화면이 리스트
+                // contentPadding으로 하단 여백을 알아서 챙기게 함
                 NavHost(
                     navController = navController,
                     startDestination = Route.Intro,
-                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     introNavGraph(
                         onNavigateToAdmin = {
@@ -187,6 +212,9 @@ fun App() {
                         },
                         onNavigateToSetting = {
                             navController.navigate(Route.Admin.Setting)
+                        },
+                        onNavigateToDeviceList = {
+                            navController.navigate(Route.Admin.Adjust)
                         },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible

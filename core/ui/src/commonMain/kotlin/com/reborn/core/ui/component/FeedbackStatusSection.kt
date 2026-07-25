@@ -1,4 +1,4 @@
-package com.reborn.feature.admin.feedback.component
+package com.reborn.core.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

@@ -30,7 +30,6 @@ import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
-import com.reborn.core.ui.component.Dashboard
 import com.reborn.core.ui.component.DeviceListItem
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
@@ -125,7 +124,6 @@ fun AdminAdjustScreen(
         modifier = Modifier.rebornDefault(Color.White)
     ){
         RebornTopAppBar(title = "기기 제어", onNavigateAddDevice = onAddDeviceClick)
-        Dashboard("거실",20,20,20,20)
         Text(
             "연결된 기기",
             modifier = Modifier.padding(16.dp),

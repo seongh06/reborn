@@ -1,21 +1,20 @@
 package com.reborn.core.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
@@ -26,42 +25,27 @@ import com.reborn.core.ui.ic_people
 import com.reborn.core.ui.ic_temperature
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @Composable
 fun Dashboard(
-    place: String,
-    temperature: Int,
-    humidity: Int,
-    illuminance: Int,
-    peopleCount: Int
+    temperature: Float?=null,
+    humidity: Float?=null,
+    illuminance: Float?=null,
+    peopleCount: Float?=null
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(RebornTheme.color.grayScale100)
-            .border(
-                width = 1.dp,
-                color = RebornTheme.color.grayScale200,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .horizontalScroll(rememberScrollState())
+            .padding(16.dp, 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            "$place DashBoard",
-            style = RebornTheme.typography.titleMedium,
-            color = RebornTheme.color.grayScale900
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            DashboardItem(modifier = Modifier.weight(1f), type = DataType.Temperature, value = temperature)
-            DashboardItem(modifier = Modifier.weight(1f), type = DataType.Humidity, value = humidity)
-            DashboardItem(modifier = Modifier.weight(1f), type = DataType.Illuminance, value = illuminance)
-            DashboardItem(modifier = Modifier.weight(1f), type = DataType.PeopleCount, value = peopleCount)
-        }
+        temperature?.let{ DashboardItem(type = DataType.Temperature, value = temperature) }
+        humidity?.let{ DashboardItem(type = DataType.Humidity, value = humidity) }
+        illuminance?.let{ DashboardItem(type = DataType.Illuminance, value = illuminance) }
+        peopleCount?.let{ DashboardItem(type = DataType.PeopleCount, value = peopleCount) }
     }
 }
 
@@ -72,7 +56,7 @@ enum class DataType {
 data class UiStyle(
     val icon: DrawableResource,
     val color: Color,
-    val gradient: Brush
+    val sign: String
 )
 
 @Composable
@@ -81,26 +65,69 @@ fun getUiStyleForType(type: DataType): UiStyle {
         DataType.Temperature -> UiStyle(
             icon = Res.drawable.ic_temperature,
             color = RebornTheme.color.temperature,
-            gradient = RebornTheme.color.temperatureGradient
+            sign = "°C"
         )
         DataType.Humidity -> UiStyle(
             icon = Res.drawable.ic_humidity,
             color = RebornTheme.color.humidity,
-            gradient = RebornTheme.color.humidityGradient
+            sign = "%"
         )
         DataType.Illuminance -> UiStyle(
             icon = Res.drawable.ic_illuminance,
             color = RebornTheme.color.illuminance,
-            gradient = RebornTheme.color.illuminanceGradient
+            sign = "lx"
         )
         DataType.PeopleCount -> UiStyle(
             icon = Res.drawable.ic_people,
             color = RebornTheme.color.peopleCount,
-            gradient = RebornTheme.color.peopleCountGradient
+            sign = "명"
         )
     }
 }
 
+@Composable
+fun DashboardItem(
+    modifier: Modifier = Modifier,
+    type: DataType,
+    value: Float
+) {
+    val style = getUiStyleForType(type)
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(RebornTheme.color.grayScale300)
+            .padding(16.dp, 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painterResource(style.icon),
+            modifier = Modifier.size(24.dp),
+            contentDescription = null,
+            tint = style.color
+        )
+        Text(
+            text = "${formatDashboardValue(type, value)}${style.sign}",
+            style = RebornTheme.typography.bodyLarge,
+            color = RebornTheme.color.grayScale700
+        )
+    }
+}
+
+// 온도·습도는 소수점 한 자리까지, 조도·인원수는 정수로 표시
+private fun formatDashboardValue(type: DataType, value: Float): String {
+    return when (type) {
+        DataType.Temperature, DataType.Humidity -> {
+            val scaled = (abs(value) * 10).roundToInt()
+            // scaled가 반올림으로 0이 되면(예: -0.03) 부호를 붙이지 않음 — "-0.0" 방지
+            val sign = if (value < 0 && scaled != 0) "-" else ""
+            "$sign${scaled / 10}.${scaled % 10}"
+        }
+        DataType.Illuminance, DataType.PeopleCount -> value.roundToInt().toString()
+    }
+}
+/*
 @Composable
 fun DashboardItem(
     modifier: Modifier = Modifier,
@@ -142,3 +169,4 @@ fun DashboardItem(
         }
     }
 }
+*/
