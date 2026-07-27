@@ -66,7 +66,9 @@ fun DataLineChartSection(
 
     val lineColor = RebornTheme.color.grayScale800
     val gridColor = RebornTheme.color.grayScale300
-    val axisLabelMaskColor = Color.White
+    // Figma(node 595:5141 Section02) 기준 차트 카드 배경 - "데이터 없음" 상태 카드와 동일한 톤으로 통일
+    val cardBackgroundColor = RebornTheme.color.grayScale100
+    val axisLabelMaskColor = cardBackgroundColor
     val axisTextStyle = RebornTheme.typography.caption.copy(color = RebornTheme.color.grayScale500)
 
     val textMeasurer = rememberTextMeasurer()
@@ -89,6 +91,8 @@ fun DataLineChartSection(
         modifier = modifier
             .fillMaxWidth()
             .height(220.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(cardBackgroundColor)
             .padding(vertical = 12.dp)
             .clipToBounds()
             .onSizeChanged { canvasWidthPx = it.width.toFloat() }
