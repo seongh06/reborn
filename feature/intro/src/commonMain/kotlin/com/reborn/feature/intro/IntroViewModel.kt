@@ -176,6 +176,10 @@ class IntroViewModel(
     }
 
     fun registerPlace(name: String, type: String) {
+        // Signup 화면에서 DevicePairing으로 넘어간 뒤 뒤로가기로 복귀해 재등록하면, 이전에 등록된
+        // 장소가 페어링 코드 한 번 못 받고 orphan으로 남는다 - 최초 등록 이후 재호출은 무시(#160 CodeRabbit 리뷰)
+        if (registeredPlaceId != null) return
+
         viewModelScope.launch {
             registerPlaceUseCase(name, type)
                 .onSuccess { place ->

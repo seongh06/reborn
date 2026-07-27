@@ -27,6 +27,7 @@ import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.intro.IntroEvent
 import com.reborn.feature.intro.IntroViewModel
 import com.reborn.feature.intro.component.PlaceTypeList
+import com.reborn.feature.intro.model.PlaceType
 import org.koin.compose.viewmodel.koinViewModel
 
 // 기존 AdminModeSelect(신규/초대 선택)+AdminPlaceName(이름 입력)+AdminPlaceSelect(유형 선택)
@@ -38,9 +39,8 @@ fun IntroSignupScreen(
     onInviteCodeClick: () -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
-    val placeTypes = remember { listOf("HOME", "STORE", "COMPANY") }
     var placeName by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf<String?>(null) }
+    var selectedType by remember { mutableStateOf<PlaceType?>(null) }
     var isRegistering by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -110,7 +110,7 @@ fun IntroSignupScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
-                placeTypes.forEach { type ->
+                PlaceType.entries.forEach { type ->
                     PlaceTypeList(
                         placeType = type,
                         selected = selectedType == type,
@@ -127,7 +127,7 @@ fun IntroSignupScreen(
                 val type = selectedType
                 if (type != null) {
                     isRegistering = true
-                    viewModel.registerPlace(placeName, type)
+                    viewModel.registerPlace(placeName, type.name)
                 }
             }
         )

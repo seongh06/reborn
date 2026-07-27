@@ -90,15 +90,17 @@ fun IntroWelcomeScreen(
                 socialType = SocialType.GOOGLE,
                 onClick = { socialLoginLauncher.launch(SocialType.GOOGLE) }
             )
+            val baseStyle = SpanStyle(color = RebornTheme.color.grayScale500)
+            val emphasisStyle = SpanStyle(color = RebornTheme.color.grayScale700, fontWeight = FontWeight.SemiBold)
             Text(
                 text = buildAnnotatedString {
-                    withStyle(SpanStyle(color = RebornTheme.color.grayScale500)) { append("계속하면 Reborn의 ") }
-                    withStyle(SpanStyle(color = RebornTheme.color.grayScale700, fontWeight = FontWeight.SemiBold)) { append("소비자 약관") }
-                    withStyle(SpanStyle(color = RebornTheme.color.grayScale500)) { append(" 및 ") }
-                    withStyle(SpanStyle(color = RebornTheme.color.grayScale700, fontWeight = FontWeight.SemiBold)) { append("이용 정책") }
-                    withStyle(SpanStyle(color = RebornTheme.color.grayScale500)) { append("에 동의하고, ") }
-                    withStyle(SpanStyle(color = RebornTheme.color.grayScale700, fontWeight = FontWeight.SemiBold)) { append("개인정보 처리방침") }
-                    withStyle(SpanStyle(color = RebornTheme.color.grayScale500)) { append("을 확인하는 것으로 간주됩니다.") }
+                    withStyle(baseStyle) { append("계속하면 Reborn의 ") }
+                    withStyle(emphasisStyle) { append("소비자 약관") }
+                    withStyle(baseStyle) { append(" 및 ") }
+                    withStyle(emphasisStyle) { append("이용 정책") }
+                    withStyle(baseStyle) { append("에 동의하고, ") }
+                    withStyle(emphasisStyle) { append("개인정보 처리방침") }
+                    withStyle(baseStyle) { append("을 확인하는 것으로 간주됩니다.") }
                 },
                 style = RebornTheme.typography.labelLarge,
                 textAlign = TextAlign.Center,
