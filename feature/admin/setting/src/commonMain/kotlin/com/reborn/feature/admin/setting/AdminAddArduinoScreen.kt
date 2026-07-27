@@ -29,6 +29,7 @@ fun AdminAddArduinoRoute(
     placeId: Long,
     viewModel: AdminAddArduinoViewModel = koinViewModel(),
     onBackClick: () -> Unit,
+    onRegisterSuccess: (deviceId: String) -> Unit = { onBackClick() },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -39,7 +40,7 @@ fun AdminAddArduinoRoute(
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->
             when (event) {
-                is AdminAddArduinoEvent.RegisterSuccess -> onBackClick()
+                is AdminAddArduinoEvent.RegisterSuccess -> onRegisterSuccess(deviceId.trim())
                 is AdminAddArduinoEvent.ShowErrorSnackbar ->
                     snackbarHostState.showSnackbar(event.throwable.message ?: "기기 등록에 실패했습니다.")
             }
