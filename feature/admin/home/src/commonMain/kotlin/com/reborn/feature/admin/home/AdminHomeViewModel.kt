@@ -26,7 +26,37 @@ class AdminHomeViewModel : ViewModel() {
     val uiState = navController.uiState
     val event = navController.event
 
-    private var alarmItems: List<AdminHomeUiState.AlarmItem> = emptyList()
+    // TODO: 서버 알림 API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정 - Figma 595:5087 그대로
+    private var alarmItems: List<AdminHomeUiState.AlarmItem> = listOf(
+        AdminHomeUiState.AlarmItem(
+            id = 1,
+            group = AdminHomeUiState.AlarmGroup.THIS_WEEK,
+            category = AdminHomeUiState.AlarmFilter.SETTLEMENT,
+            title = "2026.08 receipt",
+            content = "이번 달의 월말결산을 확인해보세요",
+            time = "2일 전"
+        ),
+        AdminHomeUiState.AlarmItem(
+            id = 2,
+            group = AdminHomeUiState.AlarmGroup.THIS_WEEK,
+            category = AdminHomeUiState.AlarmFilter.FEEDBACK,
+            content = "최근에 피드백을 받았습니다!"
+        ),
+        AdminHomeUiState.AlarmItem(
+            id = 3,
+            group = AdminHomeUiState.AlarmGroup.PREVIOUS,
+            category = AdminHomeUiState.AlarmFilter.FEEDBACK,
+            content = "최근에 피드백을 받았습니다!"
+        ),
+        AdminHomeUiState.AlarmItem(
+            id = 4,
+            group = AdminHomeUiState.AlarmGroup.PREVIOUS,
+            category = AdminHomeUiState.AlarmFilter.SETTLEMENT,
+            title = "2026.07 receipt",
+            content = "이번 달의 월말결산을 확인해보세요",
+            time = "한달 전"
+        ),
+    )
 
     fun onIntent(intent: AdminHomeIntent) {
         when (intent) {
@@ -37,7 +67,13 @@ class AdminHomeViewModel : ViewModel() {
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
             is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
             is AdminHomeIntent.DeleteAlarm -> deleteAlarm(intent.alarmId)
-            is AdminHomeIntent.DeleteAllAlarms -> deleteAllAlarms()
+            is AdminHomeIntent.ClickAlarmFilter -> clickAlarmFilter(intent.filter)
+        }
+    }
+
+    private fun clickAlarmFilter(filter: AdminHomeUiState.AlarmFilter) {
+        navController.updateCurrentState { state ->
+            (state as? AdminHomeUiState.Alarm)?.copy(filter = filter) ?: state
         }
     }
 
@@ -76,12 +112,4 @@ class AdminHomeViewModel : ViewModel() {
         }
     }
 
-    private fun deleteAllAlarms() {
-        alarmItems = emptyList()
-        navController.updateCurrentState { state ->
-            (state as? AdminHomeUiState.Alarm)
-                ?.copy(alarm = alarmItems)
-                ?: state
-        }
-    }
 }

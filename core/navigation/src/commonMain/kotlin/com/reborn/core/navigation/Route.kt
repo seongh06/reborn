@@ -19,5 +19,6 @@ sealed interface Route {
         @Serializable data class AddDevice(val placeId: Int) : Admin
         @Serializable data class AddArduino(val placeId: Int) : Admin
         @Serializable data class AddAiSpeaker(val placeId: Int) : Admin
+        @Serializable data class DeviceWifiSetup(val deviceId: String) : Admin
     }
 }
