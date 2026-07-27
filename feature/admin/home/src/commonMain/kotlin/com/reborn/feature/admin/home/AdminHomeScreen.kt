@@ -42,6 +42,7 @@ fun AdminHomeRoute(
     onNavigateToFeedbackList: () -> Unit = {},
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
+    onNavigateToDeviceDetail: (Int) -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -66,6 +67,7 @@ fun AdminHomeRoute(
                 is AdminHomeEvent.NavigateToFeedbackList -> onNavigateToFeedbackList()
                 is AdminHomeEvent.NavigateToSetting -> onNavigateToSetting()
                 is AdminHomeEvent.NavigateToDeviceList -> onNavigateToDeviceList()
+                is AdminHomeEvent.NavigateToDeviceDetail -> onNavigateToDeviceDetail(event.deviceId)
             }
         }
     }
@@ -81,7 +83,8 @@ fun AdminHomeRoute(
                 onSettingClick = {viewModel.onIntent(AdminHomeIntent.NavigateToSetting)},
                 onFeedbackClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(id)) },
                 onMoreFeedbackClick = { viewModel.onIntent(AdminHomeIntent.NavigateToFeedbackList) },
-                onDeviceListClick = { viewModel.onIntent(AdminHomeIntent.NavigateToDeviceList) }
+                onDeviceListClick = { viewModel.onIntent(AdminHomeIntent.NavigateToDeviceList) },
+                onDeviceDetailClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToDeviceDetail(id)) }
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
                 state = state,
@@ -100,7 +103,8 @@ fun AdminHomeScreen(
     onSettingClick: () -> Unit,
     onFeedbackClick: (Int) -> Unit,
     onMoreFeedbackClick: () -> Unit = {},
-    onDeviceListClick: () -> Unit = {}
+    onDeviceListClick: () -> Unit = {},
+    onDeviceDetailClick: (Int) -> Unit = {}
 ) {
     if (!state.hasDevices) {
          Column(
@@ -172,7 +176,7 @@ fun AdminHomeScreen(
                 }
                 item {
                     IoTListSection(
-                        onDeviceClick = { onDeviceListClick() },
+                        onDeviceClick = onDeviceDetailClick,
                         onMoreClick = onDeviceListClick
                     )
                 }

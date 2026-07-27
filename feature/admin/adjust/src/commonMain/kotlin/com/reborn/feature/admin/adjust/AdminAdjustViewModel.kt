@@ -64,7 +64,7 @@ class AdminAdjustViewModel(
 
     fun onIntent(intent: AdminAdjustIntent) {
         when (intent) {
-            is AdminAdjustIntent.LoadInitial -> checkInitialState()
+            is AdminAdjustIntent.LoadInitial -> checkInitialState(intent.deviceId)
             is AdminAdjustIntent.NavigateBack -> navController.navigateBack()
             is AdminAdjustIntent.NavigateToAddDevice -> navController.navigateTo(AdminAdjustUiState.AddDevice)
             is AdminAdjustIntent.NavigateToDeviceDetail -> navigateToDeviceDetail(intent)
@@ -76,11 +76,14 @@ class AdminAdjustViewModel(
         }
     }
 
-    private fun checkInitialState() {
+    private fun checkInitialState(deviceId: Int? = null) {
         navController.clearAndReset(AdminAdjustUiState.Loading)
         viewModelScope.launch {
             delay(1500)
             navController.clearAndReset(AdminAdjustUiState.Adjust(devices))
+            if (deviceId != null) {
+                navigateToDeviceDetail(AdminAdjustIntent.NavigateToDeviceDetail(deviceId = deviceId))
+            }
         }
     }
 

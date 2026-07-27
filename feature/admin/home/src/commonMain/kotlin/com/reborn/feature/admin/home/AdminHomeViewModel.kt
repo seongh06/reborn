@@ -23,6 +23,7 @@ sealed class AdminHomeEvent {
     data object NavigateToFeedbackList : AdminHomeEvent()
     data object NavigateToSetting : AdminHomeEvent()
     data object NavigateToDeviceList : AdminHomeEvent()
+    data class NavigateToDeviceDetail(val deviceId: Int) : AdminHomeEvent()
 }
 
 private const val RECENT_FEEDBACK_COUNT = 3
@@ -81,6 +82,7 @@ class AdminHomeViewModel(
             is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm(alarm = alarmItems))
             is AdminHomeIntent.NavigateToSetting -> navigateToSetting()
             is AdminHomeIntent.NavigateToDeviceList -> navigateToDeviceList()
+            is AdminHomeIntent.NavigateToDeviceDetail -> navigateToDeviceDetail(intent.deviceId)
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
             is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
             is AdminHomeIntent.NavigateToFeedbackList -> navigateToFeedbackList()
@@ -167,6 +169,12 @@ class AdminHomeViewModel(
     private fun navigateToDeviceList() {
         viewModelScope.launch {
             navController.emitEvent(AdminHomeEvent.NavigateToDeviceList)
+        }
+    }
+
+    private fun navigateToDeviceDetail(deviceId: Int) {
+        viewModelScope.launch {
+            navController.emitEvent(AdminHomeEvent.NavigateToDeviceDetail(deviceId))
         }
     }
 

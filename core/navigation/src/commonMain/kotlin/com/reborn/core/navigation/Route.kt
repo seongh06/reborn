@@ -10,7 +10,9 @@ sealed interface Route {
     @Serializable
     sealed interface Admin : Route {
         @Serializable data object Home : Admin
-        @Serializable data object Adjust : Admin
+        // deviceId가 있으면 기기 목록을 건너뛰고 해당 기기의 상세(원격/자동 제어)로 바로 이동
+        // (Home IoT 카드 클릭 딥링크, #154)
+        @Serializable data class Adjust(val deviceId: Int? = null) : Admin
         @Serializable data object IotDeviceList : Admin
         @Serializable data object AddSmartThingsDevice : Admin
         // feedbackId가 있으면 목록을 건너뛰고 해당 피드백 상세로 바로 이동(Home에서 딥링크, #177)

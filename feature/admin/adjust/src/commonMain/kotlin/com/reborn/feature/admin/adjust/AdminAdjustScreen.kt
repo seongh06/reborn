@@ -40,6 +40,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AdminAdjustRoute(
     viewModel: AdminAdjustViewModel = koinViewModel(),
     onBackClick: () -> Unit,
+    initialDeviceId: Int? = null,
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -53,7 +54,7 @@ fun AdminAdjustRoute(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.onIntent(AdminAdjustIntent.LoadInitial)
+        viewModel.onIntent(AdminAdjustIntent.LoadInitial(initialDeviceId))
 
         viewModel.event.collect { event ->
             when (event) {

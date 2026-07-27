@@ -241,6 +241,9 @@ fun App() {
                         onNavigateToDeviceList = {
                             navController.navigate(Route.Admin.IotDeviceList)
                         },
+                        onNavigateToDeviceDetail = { deviceId ->
+                            navController.navigate(Route.Admin.Adjust(deviceId))
+                        },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
                         }

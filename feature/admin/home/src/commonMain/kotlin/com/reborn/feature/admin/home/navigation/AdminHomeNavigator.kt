@@ -21,6 +21,7 @@ fun NavGraphBuilder.adminHomeNavGraph(
     onNavigateToFeedbackList: () -> Unit = {},
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
+    onNavigateToDeviceDetail: (Int) -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ) {
     composable<Route.Admin.Home> {
@@ -30,6 +31,7 @@ fun NavGraphBuilder.adminHomeNavGraph(
             onNavigateToFeedbackList = onNavigateToFeedbackList,
             onNavigateToSetting = onNavigateToSetting,
             onNavigateToDeviceList = onNavigateToDeviceList,
+            onNavigateToDeviceDetail = onNavigateToDeviceDetail,
             onBottomBarVisibilityChange = onBottomBarVisibilityChange
         )
     }
