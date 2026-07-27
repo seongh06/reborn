@@ -9,6 +9,7 @@ import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
+import com.reborn.core.domain.usecase.WithdrawUseCase
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
 import kotlinx.coroutines.async
@@ -37,6 +38,7 @@ class AdminSettingViewModel(
     private val deletePlaceUseCase: DeletePlaceUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateUserProfileUseCase: UpdateUserProfileUseCase,
+    private val withdrawUseCase: WithdrawUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminSettingUiState, AdminSettingEvent>(
         initialState = AdminSettingUiState.Loading,
@@ -68,6 +70,7 @@ class AdminSettingViewModel(
                 navigationManager.emitEvent(AdminSettingEvent.NavigateToAddAiSpeaker(intent.placeId))
             is AdminSettingIntent.ClickAddPlace -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddPlace)
             is AdminSettingIntent.ClickLogout -> logout()
+            is AdminSettingIntent.ClickWithdraw -> withdraw()
             is AdminSettingIntent.UpdateProfileName -> updateProfileName(intent.name)
         }
     }
@@ -162,6 +165,22 @@ class AdminSettingViewModel(
         viewModelScope.launch {
             logoutUseCase()
                 .onSuccess {
+                    navigationManager.emitEvent(AdminSettingEvent.LoggedOut)
+                }
+                .onFailure {
+                    isLoggingOut = false
+                    navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
+
+    private fun withdraw() {
+        if (isLoggingOut) return
+        isLoggingOut = true
+        viewModelScope.launch {
+            withdrawUseCase()
+                .onSuccess {
+                    // 탈퇴 후에도 인트로로 빠져나가는 동작은 로그아웃과 동일해서 이벤트를 재사용
                     navigationManager.emitEvent(AdminSettingEvent.LoggedOut)
                 }
                 .onFailure {

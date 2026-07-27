@@ -99,8 +99,9 @@ fun App() {
                     val isAdminDeviceWifiSetup = currentDestination?.hasRoute<Route.Admin.DeviceWifiSetup>() == true
                     val isSubScreenWithoutBottomBar = isIntro || isAerometer || isAdminSetting ||
                         isAdminInviteCode || isAdminAddDevice || isAdminAddArduino || isAdminDeviceWifiSetup ||
-                        isAdminAddAiSpeaker || isAdminIotDeviceList || isAdminAddSmartThingsDevice
-                    val isHomeLikeTabHidden = (isAdminHome || isAdminAdjust || isAdminFeedback) &&
+                        isAdminAddAiSpeaker || isAdminIotDeviceList || isAdminAddSmartThingsDevice ||
+                        isAdminFeedback
+                    val isHomeLikeTabHidden = (isAdminHome || isAdminAdjust) &&
                         !isAdminHomeBottomBarVisible
                     if (!isSubScreenWithoutBottomBar && !isHomeLikeTabHidden) {
                         // Figma BottomNavSection(595:5074) 스펙: 위쪽 투명 -> 아래쪽 불투명 그라데이션

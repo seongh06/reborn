@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -121,6 +122,24 @@ class AuthController(
         authentication: Authentication,
     ): ApiResponse<AuthDto.MeResponse> =
         ApiResponse.success(authService.updateProfile(extractUserId(authentication), request))
+
+    @Operation(
+        summary = "회원 탈퇴",
+        description = "인증된 사용자를 탈퇴 처리합니다. 사용자가 어떤 장소의 유일한 ADMIN이면 " +
+            "(다른 관리자가 없으면) 차단됩니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "탈퇴 완료"),
+        SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 AccessToken"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
+        SwaggerApiResponse(responseCode = "409", description = "유일한 관리자로 등록된 장소가 있어 탈퇴 불가"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/me")
+    fun withdraw(authentication: Authentication): ApiResponse<Nothing> {
+        authService.withdraw(extractUserId(authentication))
+        return ApiResponse.success("정상적으로 탈퇴되었습니다.")
+    }
 
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long

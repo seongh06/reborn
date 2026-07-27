@@ -66,6 +66,7 @@ fun AdminFeedbackRoute(
             is AdminFeedbackUiState.Loading -> RebornLoadingScreen()
             is AdminFeedbackUiState.Feedback -> AdminFeedbackScreen(
                 state = state,
+                onBackClick = onBackClick,
                 navToFeedbackQR = { id -> viewModel.onIntent(AdminFeedbackIntent.NavigateToQR(id))},
                 navToFeedbackDetail = { id -> viewModel.onIntent(AdminFeedbackIntent.NavigateToFeedbackDetail(id)) },
                 onTabClick = { tab -> viewModel.onIntent(AdminFeedbackIntent.ClickTab(tab))}
@@ -88,6 +89,7 @@ fun AdminFeedbackRoute(
 @Composable
 fun AdminFeedbackScreen(
     state: AdminFeedbackUiState.Feedback,
+    onBackClick: () -> Unit = {},
     onTabClick: (AdminFeedbackUiState.FeedbackFiltering) -> Unit = {},
     navToFeedbackQR: (Int) -> Unit,
     navToFeedbackDetail: (Int) -> Unit
@@ -100,7 +102,7 @@ fun AdminFeedbackScreen(
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
-        RebornTopAppBar(title = "피드백", onNavigateFeedbackQR = { navToFeedbackQR(placeId) })
+        RebornTopAppBar(title = "피드백", onBackClick = onBackClick, onNavigateFeedbackQR = { navToFeedbackQR(placeId) })
         TabBar(
             tabItems = AdminFeedbackUiState.FeedbackFiltering.entries,
             selectedTab = currentTab,
