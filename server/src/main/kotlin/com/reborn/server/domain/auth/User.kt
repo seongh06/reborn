@@ -22,7 +22,7 @@ class User(
     val email: String? = null,
 
     @Column(nullable = false)
-    val name: String,
+    var name: String,
 
     @Column
     val profileImage: String? = null,
@@ -45,5 +45,9 @@ class User(
 
     fun updateFcmToken(token: String?) {
         fcmToken = token
+    }
+
+    fun updateName(newName: String) {
+        name = newName
     }
 }

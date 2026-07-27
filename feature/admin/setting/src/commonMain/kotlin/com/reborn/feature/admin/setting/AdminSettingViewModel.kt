@@ -8,6 +8,7 @@ import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
+import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
 import kotlinx.coroutines.async
@@ -35,6 +36,7 @@ class AdminSettingViewModel(
     private val getPlaceDetailUseCase: GetPlaceDetailUseCase,
     private val deletePlaceUseCase: DeletePlaceUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
+    private val updateUserProfileUseCase: UpdateUserProfileUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminSettingUiState, AdminSettingEvent>(
         initialState = AdminSettingUiState.Loading,
@@ -62,6 +64,19 @@ class AdminSettingViewModel(
                 navigationManager.emitEvent(AdminSettingEvent.NavigateToAddAiSpeaker(intent.placeId))
             is AdminSettingIntent.ClickAddPlace -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddPlace)
             is AdminSettingIntent.ClickLogout -> logout()
+            is AdminSettingIntent.UpdateProfileName -> updateProfileName(intent.name)
+        }
+    }
+
+    private fun updateProfileName(name: String) {
+        viewModelScope.launch {
+            updateUserProfileUseCase(name)
+                .onSuccess { profile ->
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminSettingUiState.Setting)?.copy(profileName = profile.name) ?: state
+                    }
+                }
+                .onFailure { navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it)) }
         }
     }
 

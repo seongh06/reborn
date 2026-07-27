@@ -35,4 +35,8 @@ class AuthDto {
         val name: String,
         val profileImage: String?,
     )
+
+    data class UpdateProfileRequest(
+        @field:NotBlank val name: String? = null,
+    )
 }

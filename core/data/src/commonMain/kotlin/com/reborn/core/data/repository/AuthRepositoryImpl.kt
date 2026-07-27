@@ -8,6 +8,7 @@ import com.reborn.core.model.UserProfile
 import com.reborn.core.network.datasource.AuthDataSource
 import com.reborn.core.network.model.request.auth.FcmTokenUpdateRequest
 import com.reborn.core.network.model.request.auth.LoginRequest
+import com.reborn.core.network.model.request.auth.UpdateProfileRequest
 
 class AuthRepositoryImpl(
     private val remote: AuthDataSource,
@@ -36,6 +37,11 @@ class AuthRepositoryImpl(
 
     override suspend fun getMe(): Result<UserProfile> =
         remote.getMe()
+            .toResult()
+            .mapCatching { dto -> UserProfile(userId = dto.userId, name = dto.name, profileImage = dto.profileImage) }
+
+    override suspend fun updateProfile(name: String): Result<UserProfile> =
+        remote.updateProfile(UpdateProfileRequest(name))
             .toResult()
             .mapCatching { dto -> UserProfile(userId = dto.userId, name = dto.name, profileImage = dto.profileImage) }
 }

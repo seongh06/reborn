@@ -19,6 +19,7 @@ import com.reborn.core.domain.usecase.RegisterAiSpeakerDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
+import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.core.network.di.dataSourceModule
 import com.reborn.core.network.di.networkModule
 import com.reborn.feature.admin.adjust.AdminAdjustViewModel
@@ -47,6 +48,7 @@ val appDependenciesModule = module {
     factory { RedeemAdminCodeUseCase(get()) }
     factory { GetPlaceListUseCase(get()) }
     factory { GetUserProfileUseCase(get()) }
+    factory { UpdateUserProfileUseCase(get()) }
     factory { GetPlaceDetailUseCase(get()) }
     factory { DeletePlaceUseCase(get()) }
     factory { GeneratePairingCodeUseCase(get()) }

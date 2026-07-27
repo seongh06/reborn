@@ -31,4 +31,5 @@ sealed interface AdminSettingIntent {
     data class ClickAddAiSpeaker(val placeId: Int) : AdminSettingIntent
     data object ClickAddPlace : AdminSettingIntent
     data object ClickLogout : AdminSettingIntent
+    data class UpdateProfileName(val name: String) : AdminSettingIntent
 }

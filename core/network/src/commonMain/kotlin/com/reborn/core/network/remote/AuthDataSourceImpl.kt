@@ -4,6 +4,7 @@ import com.reborn.core.network.datasource.AuthDataSource
 import com.reborn.core.network.model.ApiResponse
 import com.reborn.core.network.model.request.auth.FcmTokenUpdateRequest
 import com.reborn.core.network.model.request.auth.LoginRequest
+import com.reborn.core.network.model.request.auth.UpdateProfileRequest
 import com.reborn.core.network.model.response.auth.LoginResponse
 import com.reborn.core.network.model.response.auth.MeResponse
 import com.reborn.core.network.util.asApiResponse
@@ -37,5 +38,11 @@ private val httpClient: HttpClient
 
     override suspend fun getMe(): ApiResponse<MeResponse> = runCatching {
         httpClient.get("/api/auth/me")
+    }.asApiResponse()
+
+    override suspend fun updateProfile(request: UpdateProfileRequest): ApiResponse<MeResponse> = runCatching {
+        httpClient.patch("/api/auth/me") {
+            setBody(request)
+        }
     }.asApiResponse()
 }
