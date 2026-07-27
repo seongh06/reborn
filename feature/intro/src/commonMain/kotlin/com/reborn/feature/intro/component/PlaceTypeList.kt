@@ -1,6 +1,8 @@
 package com.reborn.feature.intro.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,30 +25,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
-import com.reborn.feature.intro.Res
-import com.reborn.feature.intro.*
+import com.reborn.feature.intro.model.PlaceType
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun PlaceTypeList(
-    placeType: String,
-    onClick: () -> Unit
+    placeType: PlaceType,
+    onClick: () -> Unit,
+    selected: Boolean = false
 ) {
-    val image = when (placeType) {
-        "HOME" -> Res.drawable.img_home
-        "STORE" -> Res.drawable.img_store
-        "COMPANY" -> Res.drawable.img_company
-        else -> Res.drawable.img_home
-    }
-
     Row(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clickable(onClick = onClick).fillMaxWidth(),
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .background(RebornTheme.color.grayScale100)
+            .then(
+                if (selected) {
+                    Modifier.border(2.dp, RebornTheme.color.grayScale900, RoundedCornerShape(4.dp))
+                } else {
+                    Modifier
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(image),
-            contentDescription = placeType,
+            painter = painterResource(placeType.image),
+            contentDescription = placeType.name,
             modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp))
         )
         Column(
@@ -54,12 +62,12 @@ fun PlaceTypeList(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ){
             Text(
-                text = placeType,
+                text = placeType.name,
                 style = RebornTheme.typography.headlineMedium,
                 color = RebornTheme.color.grayScale900
             )
             Text(
-                text = "장소 설명",
+                text = placeType.description,
                 style = RebornTheme.typography.bodyMedium,
                 color = RebornTheme.color.grayScale700
             )

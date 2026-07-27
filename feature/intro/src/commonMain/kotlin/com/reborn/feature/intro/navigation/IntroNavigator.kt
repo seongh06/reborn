@@ -8,7 +8,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.reborn.core.navigation.Route
 import com.reborn.feature.intro.IntroRoute
-import com.reborn.feature.intro.IntroScreen
 import com.reborn.feature.intro.screen.admin.IntroAdminCodeScreen
 import com.reborn.feature.intro.screen.admin.IntroDevicePairingCodeScreen
 
@@ -20,14 +19,14 @@ fun NavGraphBuilder.introNavGraph(
     onNavigateToAdmin: () -> Unit,
     onNavigateToAerometer: () -> Unit,
     onBackClick: () -> Unit,
-    skipToAdminModeSelect: () -> Boolean = { false }
+    skipToSignup: () -> Boolean = { false }
 ) {
     composable<Route.Intro> {
         IntroRoute(
             onNavigateToAdmin = onNavigateToAdmin,
             onNavigateToAerometer = onNavigateToAerometer,
             onBackClick =onBackClick,
-            skipToAdminModeSelect = skipToAdminModeSelect()
+            skipToSignup = skipToSignup()
         )
     }
 }

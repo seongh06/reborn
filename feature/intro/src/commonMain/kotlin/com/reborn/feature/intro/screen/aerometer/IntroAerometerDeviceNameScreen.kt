@@ -38,7 +38,6 @@ fun IntroAerometerDeviceNameScreen(
                 is IntroEvent.ShowErrorSnackbar -> isPairing = false
                 is IntroEvent.NavigateToAdmin,
                 is IntroEvent.NavigateToAerometer,
-                is IntroEvent.PermissionGranted,
                 is IntroEvent.ExitIntro,
                 is IntroEvent.LoginSuccess,
                 is IntroEvent.PlaceRegistered,
