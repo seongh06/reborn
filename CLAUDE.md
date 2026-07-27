@@ -131,6 +131,7 @@ device_serial ──(assignedDeviceId, 등록 시 1회 연결)──> device
 | POST | `/api/metric/collect` | 메트릭 수집 (Arduino) | X-Device-Id 헤더 |
 | GET | `/api/metric/current` | 특정 기기 최신 메트릭 조회 | ❌ |
 | GET | `/api/metric/history` | 메트릭 히스토리 조회 | ✅ |
+| GET | `/api/feedback/context` | QR 웹페이지 진입 시 장소명/기기 목록 조회 (2026-07-27 신설, #163) | ❌ |
 | POST | `/api/feedback` | 피드백 제출 (QR 웹) | ❌ |
 | GET | `/api/feedback` | 피드백 목록 조회 | ✅ ADMIN |
 | PATCH | `/api/feedback/{id}` | 피드백 상태 변경 | ✅ ADMIN |

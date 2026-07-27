@@ -17,7 +17,8 @@ sealed interface AdminFeedbackUiState {
         val feedback: FeedbackItem
     ) : AdminFeedbackUiState
 
-    data class FeedbackQR(val placeId: Int) : AdminFeedbackUiState
+    // qrUrl == null이면 조회 중(로딩) - Figma에 없는 화면이라 QR 코드 이미지는 공개 QR 생성 API로 렌더링
+    data class FeedbackQR(val placeId: Int, val qrUrl: String? = null) : AdminFeedbackUiState
     data class FeedbackItem(
         val id: Int,
         val type: FeedbackType,

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Re;Born 피드백</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --gray-100: #F9F9F9;
+    --gray-200: #F4F4F4;
+    --gray-300: #EBEBEB;
+    --gray-400: #DBDBDB;
+    --gray-500: #A6A6A6;
+    --gray-600: #8E8E8E;
+    --gray-700: #767676;
+    --gray-800: #4A4A4A;
+    --gray-900: #121212;
+    --approve: #54B547;
+    --reject: #CE2B2B;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--gray-200);
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    color: var(--gray-900);
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  .page {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+  }
+  .header {
+    padding: 40px 24px 8px;
+  }
+  .header .place {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+  .header .subtitle {
+    font-size: 16px;
+    color: var(--gray-700);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .content {
+    flex: 1;
+    padding: 16px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .section-label {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 0 12px;
+  }
+  .device-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .device-chip {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--gray-400);
+    background: var(--gray-100);
+    color: var(--gray-800);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .device-chip.selected {
+    background: var(--gray-800);
+    border-color: var(--gray-800);
+    color: var(--gray-100);
+  }
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .type-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: var(--gray-100);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--gray-900);
+    cursor: pointer;
+    text-align: left;
+  }
+  .type-chip .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .type-chip.selected {
+    border-color: var(--gray-900);
+    background: var(--gray-200);
+  }
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    border: none;
+    border-radius: 12px;
+    background: var(--gray-100);
+    padding: 16px;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--gray-900);
+    line-height: 1.5;
+  }
+  textarea::placeholder { color: var(--gray-500); }
+  textarea:focus { outline: 2px solid var(--gray-800); }
+  .submit-bar {
+    padding: 8px 24px 40px;
+  }
+  button.submit {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 4px;
+    background: var(--gray-900);
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  button.submit:disabled {
+    background: var(--gray-400);
+    color: var(--gray-600);
+    cursor: not-allowed;
+  }
+  .state-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    gap: 12px;
+  }
+  .state-screen .title {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .state-screen .desc {
+    font-size: 15px;
+    color: var(--gray-700);
+    line-height: 1.6;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="page">
+    <!-- 로딩 -->
+    <div id="loadingState" class="state-screen">
+      <div class="desc">불러오는 중...</div>
+    </div>
+
+    <!-- 오류(잘못된 QR/장소 없음) -->
+    <div id="errorState" class="state-screen hidden">
+      <div class="title">피드백을 불러올 수 없어요</div>
+      <div class="desc" id="errorMessage">QR 코드를 다시 확인해주세요.</div>
+    </div>
+
+    <!-- 제출 완료 -->
+    <div id="doneState" class="state-screen hidden">
+      <div class="title">소중한 의견 감사합니다!</div>
+      <div class="desc">전달해주신 피드백은 관리자 확인 후 반영돼요.</div>
+    </div>
+
+    <!-- 입력 폼 -->
+    <div id="formState" class="hidden" style="display:flex; flex-direction:column; flex:1;">
+      <div class="header">
+        <p class="place" id="placeName"></p>
+        <p class="subtitle">지금 이 공간은 어떠신가요? 느끼신 점을 알려주세요.</p>
+      </div>
+      <div class="content">
+        <div id="deviceSection" class="hidden">
+          <p class="section-label">어느 위치인가요?</p>
+          <div class="device-group" id="deviceGroup"></div>
+        </div>
+        <div>
+          <p class="section-label">빠른 선택</p>
+          <div class="type-grid" id="typeGrid"></div>
+        </div>
+        <div>
+          <p class="section-label">자세히 알려주세요</p>
+          <textarea id="content" placeholder="예) 바람이 너무 강하게 나와요"></textarea>
+        </div>
+      </div>
+      <div class="submit-bar">
+        <button class="submit" id="submitButton" disabled>피드백 보내기</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var FEEDBACK_TYPES = [
+    { label: '더워요', color: '#BF4040', text: '너무 더워요.' },
+    { label: '추워요', color: '#40BFBF', text: '너무 추워요.' },
+    { label: '바람이 강해요', color: '#406ABF', text: '바람이 너무 강해요.' },
+    { label: '불이 밝아요', color: '#BFBF40', text: '불이 너무 밝아요.' },
+    { label: '어두워요', color: '#808080', text: '너무 어두워요.' },
+    { label: '냄새가 나요', color: '#BF8040', text: '냄새가 나요.' },
+    { label: '공기가 안 좋아요', color: '#80BF40', text: '공기가 안 좋아요.' },
+    { label: '시끄러워요', color: '#40BF80', text: '너무 시끄러워요.' },
+    { label: '지저분해요', color: '#BF40BF', text: '주변이 지저분해요.' }
+  ];
+
+  var qs = new URLSearchParams(window.location.search);
+  var qrCode = qs.get('qrCode');
+
+  var loadingState = document.getElementById('loadingState');
+  var errorState = document.getElementById('errorState');
+  var errorMessage = document.getElementById('errorMessage');
+  var doneState = document.getElementById('doneState');
+  var formState = document.getElementById('formState');
+  var placeNameEl = document.getElementById('placeName');
+  var deviceSection = document.getElementById('deviceSection');
+  var deviceGroup = document.getElementById('deviceGroup');
+  var typeGrid = document.getElementById('typeGrid');
+  var contentEl = document.getElementById('content');
+  var submitButton = document.getElementById('submitButton');
+
+  var selectedDeviceId = null;
+  var selectedTypeIndex = -1;
+
+  function showOnly(el) {
+    [loadingState, errorState, doneState, formState].forEach(function (s) {
+      s.classList.toggle('hidden', s !== el);
+    });
+  }
+
+  function showError(message) {
+    errorMessage.textContent = message;
+    showOnly(errorState);
+  }
+
+  function updateSubmitState() {
+    submitButton.disabled = !selectedDeviceId || contentEl.value.trim().length === 0;
+  }
+
+  function renderDevices(devices) {
+    if (devices.length <= 1) {
+      selectedDeviceId = devices.length === 1 ? devices[0].deviceId : null;
+      deviceSection.classList.add('hidden');
+      return;
+    }
+    deviceSection.classList.remove('hidden');
+    devices.forEach(function (device, index) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'device-chip';
+      chip.textContent = device.name;
+      chip.addEventListener('click', function () {
+        selectedDeviceId = device.deviceId;
+        Array.prototype.forEach.call(deviceGroup.children, function (c) { c.classList.remove('selected'); });
+        chip.classList.add('selected');
+        updateSubmitState();
+      });
+      if (index === 0) {
+        chip.classList.add('selected');
+        selectedDeviceId = device.deviceId;
+      }
+      deviceGroup.appendChild(chip);
+    });
+  }
+
+  function renderTypes() {
+    FEEDBACK_TYPES.forEach(function (type, index) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'type-chip';
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = type.color;
+      var label = document.createElement('span');
+      label.textContent = type.label;
+      chip.appendChild(dot);
+      chip.appendChild(label);
+      chip.addEventListener('click', function () {
+        if (selectedTypeIndex === index) {
+          selectedTypeIndex = -1;
+          chip.classList.remove('selected');
+          return;
+        }
+        selectedTypeIndex = index;
+        Array.prototype.forEach.call(typeGrid.children, function (c) { c.classList.remove('selected'); });
+        chip.classList.add('selected');
+        if (!contentEl.value.trim()) {
+          contentEl.value = type.text;
+        }
+        updateSubmitState();
+      });
+      typeGrid.appendChild(chip);
+    });
+  }
+
+  function sessionTokenFor(qrCode) {
+    var key = 'reborn_feedback_session_' + qrCode;
+    var token = window.localStorage.getItem(key);
+    if (!token) {
+      token = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : String(Date.now()) + Math.random();
+      window.localStorage.setItem(key, token);
+    }
+    return token;
+  }
+
+  function submit() {
+    submitButton.disabled = true;
+    submitButton.textContent = '보내는 중...';
+    fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        qrCode: qrCode,
+        deviceId: selectedDeviceId,
+        content: contentEl.value.trim(),
+        sessionToken: sessionTokenFor(qrCode)
+      })
+    }).then(function (res) {
+      if (res.status === 429) {
+        showError('이미 피드백을 제출하셨어요. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+      if (!res.ok) {
+        throw new Error('submit failed');
+      }
+      showOnly(doneState);
+    }).catch(function () {
+      submitButton.disabled = false;
+      submitButton.textContent = '피드백 보내기';
+      window.alert('전송에 실패했어요. 다시 시도해주세요.');
+    });
+  }
+
+  if (!qrCode) {
+    showError('올바르지 않은 접근이에요. QR 코드를 다시 스캔해주세요.');
+    return;
+  }
+
+  renderTypes();
+  contentEl.addEventListener('input', updateSubmitState);
+  submitButton.addEventListener('click', submit);
+
+  fetch('/api/feedback/context?qrCode=' + encodeURIComponent(qrCode))
+    .then(function (res) {
+      if (res.status === 404) {
+        throw new Error('not_found');
+      }
+      if (!res.ok) {
+        throw new Error('unknown');
+      }
+      return res.json();
+    })
+    .then(function (body) {
+      var data = body.data || body;
+      placeNameEl.textContent = data.placeName;
+      renderDevices(data.devices || []);
+      updateSubmitState();
+      showOnly(formState);
+    })
+    .catch(function (err) {
+      if (err.message === 'not_found') {
+        showError('존재하지 않는 장소예요. QR 코드를 다시 확인해주세요.');
+      } else {
+        showError('잠시 후 다시 시도해주세요.');
+      }
+    });
+})();
+</script>
+</body>
+</html>

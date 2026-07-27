@@ -3,6 +3,8 @@ package com.reborn.feature.admin.feedback
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
+import com.reborn.core.network.AppConfig
 import com.reborn.core.ui.component.FeedbackType
 import com.reborn.core.ui.component.State
 import com.reborn.feature.admin.feedback.model.AdminFeedbackIntent
@@ -16,7 +18,9 @@ sealed class AdminFeedbackEvent {
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminFeedbackEvent()
 }
 
-class AdminFeedbackViewModel : ViewModel() {
+class AdminFeedbackViewModel(
+    private val getPlaceDetailUseCase: GetPlaceDetailUseCase
+) : ViewModel() {
     private val navigationManager = NavigationManager<AdminFeedbackUiState, AdminFeedbackEvent>(
         initialState = AdminFeedbackUiState.Loading,
         exitEvent = AdminFeedbackEvent.Exit,
@@ -90,7 +94,7 @@ class AdminFeedbackViewModel : ViewModel() {
             is AdminFeedbackIntent.LoadInitial -> checkInitialState()
             is AdminFeedbackIntent.NavigateBack -> navigationManager.navigateBack()
             is AdminFeedbackIntent.NavigateToFeedbackDetail -> navigateToFeedbackDetail(intent)
-            is AdminFeedbackIntent.NavigateToQR -> navigationManager.navigateTo(AdminFeedbackUiState.FeedbackQR(intent.placeId))
+            is AdminFeedbackIntent.NavigateToQR -> navigateToQR(intent.placeId)
             is AdminFeedbackIntent.ClickTab -> handleTabClick(intent.tab)
         }
     }
@@ -100,6 +104,24 @@ class AdminFeedbackViewModel : ViewModel() {
         viewModelScope.launch {
             delay(1500)
             navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(feedbacks))
+        }
+    }
+
+    // QR 화면으로 즉시 전환(로딩 표시)한 뒤, 장소의 qrCode를 조회해서 방문자용 피드백 웹페이지
+    // URL을 완성한다 - QR 이미지는 별도 라이브러리 없이 공개 QR 생성 API로 렌더링(#163)
+    private fun navigateToQR(placeId: Int) {
+        navigationManager.navigateTo(AdminFeedbackUiState.FeedbackQR(placeId))
+        viewModelScope.launch {
+            getPlaceDetailUseCase(placeId.toLong())
+                .onSuccess { detail ->
+                    val url = "${AppConfig.webBaseUrl}/feedback.html?qrCode=${detail.qrCode}"
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminFeedbackUiState.FeedbackQR)?.copy(qrUrl = url) ?: state
+                    }
+                }
+                .onFailure {
+                    navigationManager.emitEvent(AdminFeedbackEvent.ShowErrorSnackbar(it))
+                }
         }
     }
 

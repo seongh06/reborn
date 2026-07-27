@@ -1,7 +1,9 @@
 package com.reborn.server.domain.feedback.converter
 
+import com.reborn.server.domain.device.Device
 import com.reborn.server.domain.feedback.Feedback
 import com.reborn.server.domain.feedback.dto.FeedbackDto
+import com.reborn.server.domain.place.Place
 import org.springframework.data.domain.Page
 
 object FeedbackConverter {
@@ -24,6 +26,14 @@ object FeedbackConverter {
 
     fun toStatusUpdateResponse(entity: Feedback): FeedbackDto.StatusUpdateResponse =
         FeedbackDto.StatusUpdateResponse(feedbackId = entity.id, status = entity.status.name)
+
+    fun toContextResponse(place: Place, devices: List<Device>): FeedbackDto.ContextResponse =
+        FeedbackDto.ContextResponse(
+            placeName = place.name,
+            devices = devices.map {
+                FeedbackDto.DeviceOption(deviceId = it.deviceKey, name = it.name ?: it.deviceType.name)
+            },
+        )
 
     private fun toFeedbackItem(entity: Feedback): FeedbackDto.FeedbackItem =
         FeedbackDto.FeedbackItem(

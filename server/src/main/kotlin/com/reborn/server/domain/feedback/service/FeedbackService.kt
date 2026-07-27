@@ -124,6 +124,16 @@ class FeedbackService(
         )
     }
 
+    // QR 웹페이지(#163)가 진입 시 장소명 + 제출 대상 기기 목록을 미리 조회한다. SMART_THINGS는
+    // 방문자가 직접 지목할 물리 기기가 아니라 클라우드로 제어하는 가전이라 선택지에서 제외한다.
+    fun getSubmissionContext(qrCode: String): FeedbackDto.ContextResponse {
+        val place = placeRepository.findByQrCode(qrCode)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        val devices = deviceRepository.findAllByPlaceId(place.id)
+            .filter { it.deviceType != DeviceType.SMART_THINGS }
+        return FeedbackConverter.toContextResponse(place, devices)
+    }
+
     private fun notifyAdmins(place: Place, feedback: Feedback) {
         val deviceName = feedback.device?.name ?: place.name
         userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(place.id, AccessLevel.ADMIN)

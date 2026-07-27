@@ -86,6 +86,18 @@ class FeedbackController(
         runCatching { MediaType.parseMediaType(mimeType) }.getOrDefault(MediaType.parseMediaType("audio/wav"))
 
     @Operation(
+        summary = "QR 피드백 페이지 컨텍스트 조회",
+        description = "QR 웹페이지가 진입 시 qrCode로 장소명과 제출 대상 기기 목록을 조회합니다. 인증이 필요 없습니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공 — placeName, devices 반환"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
+    )
+    @GetMapping("/context")
+    fun getContext(@RequestParam qrCode: String): ApiResponse<FeedbackDto.ContextResponse> =
+        ApiResponse.success(feedbackService.getSubmissionContext(qrCode))
+
+    @Operation(
         summary = "피드백 조회",
         description = "특정 장소에 접수된 피드백 목록을 조회합니다. deviceId/status로 필터링할 수 있습니다. (ADMIN 권한 필요)",
     )

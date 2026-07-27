@@ -4,22 +4,32 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
+import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.feedback.model.AdminFeedbackUiState
 
+// Figma에 QR 화면 프레임은 없음 - 방문자용 피드백 웹페이지(#163) URL을 QR 이미지로 보여주고
+// 공유할 수 있게 하는 것이 목적. QR 이미지 자체는 별도 라이브러리 없이 공개 QR 생성 API로 렌더링
 @Composable
 fun AdminFeedbackQRScreen(
     state: AdminFeedbackUiState.FeedbackQR,
     onBackClick: () -> Unit,
     onDownloadClick: () -> Unit
 ){
+    val qrUrl = state.qrUrl
+
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ){
@@ -30,14 +40,31 @@ fun AdminFeedbackQRScreen(
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ){
-            // TODO: QR 코드 이미지 생성/표시 및 "이미지 다운로드" 저장 로직은 후속 이슈에서 구현 예정
-            Box(
-                modifier = Modifier.padding(40.dp)
-            ){
+            if (qrUrl == null) {
+                CircularProgressIndicator(color = RebornTheme.color.grayScale900)
+            } else {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    AsyncImage(
+                        model = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$qrUrl",
+                        contentDescription = "피드백 웹페이지 QR 코드",
+                        modifier = Modifier.size(240.dp)
+                    )
+                    Text(
+                        modifier = Modifier.padding(top = 16.dp),
+                        text = qrUrl,
+                        style = RebornTheme.typography.bodyMedium,
+                        color = RebornTheme.color.grayScale700,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
         RebornButton(
             text = "이미지 다운로드",
+            enabled = qrUrl != null,
             onClick = { onDownloadClick() }
         )
     }

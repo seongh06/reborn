@@ -48,4 +48,15 @@ class FeedbackDto {
         val feedbackId: Long,
         val status: String,
     )
+
+    // QR 웹페이지(#163) 진입 시 장소명 + 제출 대상 기기 목록을 미리 조회하기 위한 응답
+    data class ContextResponse(
+        val placeName: String,
+        val devices: List<DeviceOption>,
+    )
+
+    data class DeviceOption(
+        val deviceId: String,
+        val name: String,
+    )
 }
