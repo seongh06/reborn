@@ -18,7 +18,7 @@ fun SwitchSection(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .background(RebornTheme.color.grayScale100),
-        label = "전원",
+        label = "기기 전원",
         checked = isPower,
         onCheckedChange = onPowerChange
     )

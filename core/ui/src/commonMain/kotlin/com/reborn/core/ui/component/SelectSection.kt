@@ -43,7 +43,7 @@ fun <T> SelectPickerSection(
     ) {
         Text(
             text = title,
-            style = RebornTheme.typography.titleMedium,
+            style = RebornTheme.typography.titleSmall,
             color = RebornTheme.color.grayScale900
         )
         SelectOptionRow(
