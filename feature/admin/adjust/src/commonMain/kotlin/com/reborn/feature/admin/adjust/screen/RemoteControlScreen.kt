@@ -37,14 +37,14 @@ fun RemoteControlScreen(
             onValueChange = onTemperatureChange
         )
         SelectPickerSection(
-            title = "운전모드",
+            title = "운전 모드",
             options = OperationMode.entries,
             selectedOption = operationMode,
             onOptionSelected = onOperationModeChange,
             optionToString = { it.label }
         )
         SelectPickerSection(
-            title = "바람세기",
+            title = "바람 세기",
             options = WindSpeed.entries,
             selectedOption = windSpeed,
             onOptionSelected = onWindSpeedChange,

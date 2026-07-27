@@ -72,7 +72,7 @@ fun AdminDeviceDetailScreen(
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
-        RebornTopAppBar(title = "IoT 기기 상세보기", onBackClick = onBackClick)
+        RebornTopAppBar(title = "IoT 기기 상세", onBackClick = onBackClick)
         DeviceSection(
             Device(
                 id = state.device.id.toString(),

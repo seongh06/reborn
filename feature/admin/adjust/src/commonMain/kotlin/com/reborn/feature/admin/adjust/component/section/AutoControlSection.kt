@@ -21,11 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.reborn.core.designsystem.component.RebornSwitch
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.feature.admin.adjust.model.RuleData
@@ -93,7 +91,11 @@ fun AutomationRuleSection(
                         )
                     }
 
-                    Text(text = "분 유지 시 전원 자동 off", fontSize = 18.sp, color = Color.Black)
+                    Text(
+                        text = "분 유지 시 전원 자동 off",
+                        style = RebornTheme.typography.bodyMedium,
+                        color = RebornTheme.color.grayScale900
+                    )
                 }
 
                 RebornSwitch(
