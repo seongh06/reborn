@@ -8,6 +8,7 @@ import com.reborn.core.navigation.Route
 import com.reborn.feature.admin.home.AdminHomeEvent
 import com.reborn.feature.admin.home.AdminHomeRoute
 import com.reborn.feature.admin.home.AdminHomeScreen
+import com.reborn.feature.admin.home.AdminIotDeviceListRoute
 
 fun NavController.navigateAdminHome(navOptions: NavOptions) {
     navigate(route = Route.Admin.Home, navOptions = navOptions)
@@ -28,5 +29,13 @@ fun NavGraphBuilder.adminHomeNavGraph(
             onNavigateToDeviceList = onNavigateToDeviceList,
             onBottomBarVisibilityChange = onBottomBarVisibilityChange
         )
+    }
+}
+
+fun NavGraphBuilder.adminIotDeviceListNavGraph(
+    onBackClick: () -> Unit
+) {
+    composable<Route.Admin.IotDeviceList> {
+        AdminIotDeviceListRoute(onBackClick = onBackClick)
     }
 }

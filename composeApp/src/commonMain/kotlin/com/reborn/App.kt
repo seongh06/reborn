@@ -42,6 +42,7 @@ import com.reborn.feature.admin.adjust.navigation.adjustNavGraph
 import com.reborn.feature.admin.data.navigation.adminDataNavGraph
 import com.reborn.feature.admin.feedback.navigation.adminFeedbackNavGraph
 import com.reborn.feature.admin.home.navigation.adminHomeNavGraph
+import com.reborn.feature.admin.home.navigation.adminIotDeviceListNavGraph
 import com.reborn.feature.admin.setting.navigation.adminAddAiSpeakerNavGraph
 import com.reborn.feature.admin.setting.navigation.adminAddArduinoNavGraph
 import com.reborn.feature.admin.setting.navigation.adminSettingNavGraph
@@ -91,7 +92,8 @@ fun App() {
                     val isAdminAddDevice = currentDestination?.hasRoute<Route.Admin.AddDevice>() == true
                     val isAdminAddArduino = currentDestination?.hasRoute<Route.Admin.AddArduino>() == true
                     val isAdminAddAiSpeaker = currentDestination?.hasRoute<Route.Admin.AddAiSpeaker>() == true
-                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice && !isAdminAddArduino && !isAdminAddAiSpeaker &&
+                    val isAdminIotDeviceList = currentDestination?.hasRoute<Route.Admin.IotDeviceList>() == true
+                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice && !isAdminAddArduino && !isAdminAddAiSpeaker && !isAdminIotDeviceList &&
                         (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
                     ) {
                         // Figma BottomNavSection(595:5074) 스펙: 위쪽 투명 -> 아래쪽 불투명 그라데이션
@@ -226,10 +228,15 @@ fun App() {
                             navController.navigate(Route.Admin.Setting)
                         },
                         onNavigateToDeviceList = {
-                            navController.navigate(Route.Admin.Adjust)
+                            navController.navigate(Route.Admin.IotDeviceList)
                         },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
+                        }
+                    )
+                    adminIotDeviceListNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
                         }
                     )
                     adjustNavGraph(
