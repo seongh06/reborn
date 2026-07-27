@@ -36,6 +36,7 @@ import com.reborn.feature.admin.adjust.AdminAdjustViewModel
 import com.reborn.feature.admin.data.AdminDataViewModel
 import com.reborn.feature.admin.feedback.AdminFeedbackViewModel
 import com.reborn.feature.admin.home.AdminHomeViewModel
+import com.reborn.feature.admin.home.AdminIotDeviceListViewModel
 import com.reborn.feature.admin.home.AdminSmartThingsAddViewModel
 import com.reborn.feature.admin.setting.AdminAddAiSpeakerViewModel
 import com.reborn.feature.admin.setting.AdminAddArduinoViewModel
@@ -82,6 +83,7 @@ val appDependenciesModule = module {
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)
     viewModelOf(::AdminSmartThingsAddViewModel)
+    viewModelOf(::AdminIotDeviceListViewModel)
     viewModelOf(::AdminAdjustViewModel)
     viewModelOf(::AdminFeedbackViewModel)
     viewModelOf(::AdminDataViewModel)

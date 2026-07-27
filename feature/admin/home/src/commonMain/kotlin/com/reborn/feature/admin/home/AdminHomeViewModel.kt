@@ -3,6 +3,7 @@ package com.reborn.feature.admin.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
@@ -12,6 +13,7 @@ import com.reborn.core.ui.component.FeedbackListItem
 import com.reborn.core.ui.component.classifyFeedbackType
 import com.reborn.core.ui.component.feedbackStatusToState
 import com.reborn.core.ui.component.formatFeedbackRelativeTime
+import com.reborn.feature.admin.home.component.IoTDeviceItem
 import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
 import kotlinx.coroutines.launch
@@ -23,7 +25,7 @@ sealed class AdminHomeEvent {
     data object NavigateToFeedbackList : AdminHomeEvent()
     data object NavigateToSetting : AdminHomeEvent()
     data object NavigateToDeviceList : AdminHomeEvent()
-    data class NavigateToDeviceDetail(val deviceId: Int) : AdminHomeEvent()
+    data class NavigateToDeviceDetail(val deviceId: String) : AdminHomeEvent()
 }
 
 private const val RECENT_FEEDBACK_COUNT = 3
@@ -34,6 +36,7 @@ class AdminHomeViewModel(
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val getCurrentMetricUseCase: GetCurrentMetricUseCase,
     private val getFeedbackListUseCase: GetFeedbackListUseCase,
+    private val controlDeviceUseCase: ControlDeviceUseCase,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminHomeUiState, AdminHomeEvent>(
         initialState = AdminHomeUiState.Loading,
@@ -43,6 +46,8 @@ class AdminHomeViewModel(
 
     val uiState = navController.uiState
     val event = navController.event
+
+    private var devices: List<IoTDeviceItem> = emptyList()
 
     // TODO: 서버 알림 API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정 - Figma 595:5087 그대로
     private var alarmItems: List<AdminHomeUiState.AlarmItem> = listOf(
@@ -83,6 +88,7 @@ class AdminHomeViewModel(
             is AdminHomeIntent.NavigateToSetting -> navigateToSetting()
             is AdminHomeIntent.NavigateToDeviceList -> navigateToDeviceList()
             is AdminHomeIntent.NavigateToDeviceDetail -> navigateToDeviceDetail(intent.deviceId)
+            is AdminHomeIntent.TogglePower -> togglePower(intent.deviceId)
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
             is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
             is AdminHomeIntent.NavigateToFeedbackList -> navigateToFeedbackList()
@@ -110,9 +116,18 @@ class AdminHomeViewModel(
 
             val deviceListResult = getDeviceListUseCase(placeId)
             deviceListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
-            val devices = deviceListResult.getOrNull().orEmpty()
+            val serverDevices = deviceListResult.getOrNull().orEmpty()
+            devices = serverDevices.map { device ->
+                IoTDeviceItem(
+                    id = device.deviceId,
+                    place = deviceTypeLabel(device.deviceType),
+                    name = device.deviceName ?: device.deviceId,
+                    isOnline = device.isOnline,
+                    isPowerOn = false
+                )
+            }
 
-            val metric = devices.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
+            val metric = serverDevices.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
                 ?.let { device ->
                     getCurrentMetricUseCase(device.deviceId)
                         .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
@@ -129,13 +144,47 @@ class AdminHomeViewModel(
 
             navController.clearAndReset(
                 AdminHomeUiState.Home(
-                    hasDevices = devices.isNotEmpty(),
+                    hasDevices = serverDevices.isNotEmpty(),
+                    devices = devices,
                     metric = metric,
                     feedbackTotalCount = feedbacks.size,
                     feedbackWaitingCount = feedbacks.count { it.status == "PENDING" },
                     recentFeedbacks = recentFeedbacks
                 )
             )
+        }
+    }
+
+    // 서버 device 도메인에 방(room) 개념이 없어(#166) 대신 기기 종류로 그룹/부제목을 표시
+    private fun deviceTypeLabel(serverDeviceType: String): String = when (serverDeviceType) {
+        "ARDUINO" -> "아두이노"
+        "SMART_THINGS" -> "SmartThings"
+        "AI_SPEAKER" -> "AI 스피커"
+        else -> serverDeviceType
+    }
+
+    private fun togglePower(deviceId: String) {
+        val target = devices.find { it.id == deviceId } ?: return
+        val nextPowerOn = !target.isPowerOn
+
+        devices = devices.map { device ->
+            if (device.id == deviceId) device.copy(isPowerOn = nextPowerOn) else device
+        }
+        navController.updateCurrentState { state ->
+            (state as? AdminHomeUiState.Home)?.copy(devices = devices) ?: state
+        }
+
+        viewModelScope.launch {
+            controlDeviceUseCase(deviceId = deviceId, isPowerOn = nextPowerOn)
+                .onFailure {
+                    devices = devices.map { device ->
+                        if (device.id == deviceId) device.copy(isPowerOn = target.isPowerOn) else device
+                    }
+                    navController.updateCurrentState { state ->
+                        (state as? AdminHomeUiState.Home)?.copy(devices = devices) ?: state
+                    }
+                    navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it))
+                }
         }
     }
 
@@ -172,7 +221,7 @@ class AdminHomeViewModel(
         }
     }
 
-    private fun navigateToDeviceDetail(deviceId: Int) {
+    private fun navigateToDeviceDetail(deviceId: String) {
         viewModelScope.launch {
             navController.emitEvent(AdminHomeEvent.NavigateToDeviceDetail(deviceId))
         }
