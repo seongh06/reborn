@@ -9,6 +9,7 @@ import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
+import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
@@ -74,6 +75,7 @@ val appDependenciesModule = module {
     factory { ControlDeviceUseCase(get()) }
     factory { GetFeedbackListUseCase(get()) }
     factory { UpdateFeedbackStatusUseCase(get()) }
+    factory { GetCurrentMetricUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)

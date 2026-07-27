@@ -1,11 +1,22 @@
 package com.reborn.feature.admin.home.model
 
 import androidx.compose.runtime.Immutable
+import com.reborn.core.model.Metric
+import com.reborn.core.ui.component.FeedbackListItem
 
 @Immutable
 sealed interface AdminHomeUiState{
     data object Loading: AdminHomeUiState
-    data object Home: AdminHomeUiState
+    data class Home(
+        // TODO: 서버 device API 연동 전까지는 항상 true 취급(기기 그리드 자체는 여전히 목업, #166/#134
+        // 참고 - 방 그룹핑·파워 상태를 목록 API가 안 내려줘서 이번 범위 밖). 기기가 하나도 없는 실제
+        // 케이스만 device 목록 조회 결과로 정확히 반영.
+        val hasDevices: Boolean = true,
+        val metric: Metric? = null,
+        val feedbackTotalCount: Int = 0,
+        val feedbackWaitingCount: Int = 0,
+        val recentFeedbacks: List<FeedbackListItem> = emptyList()
+    ): AdminHomeUiState
     data class Alarm(
         val alarm: List<AlarmItem> = emptyList(),
         val filter: AlarmFilter = AlarmFilter.ALL

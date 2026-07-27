@@ -3,10 +3,21 @@ package com.reborn.feature.admin.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
+import com.reborn.core.domain.usecase.GetDeviceListUseCase
+import com.reborn.core.domain.usecase.GetFeedbackListUseCase
+import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.model.Feedback
+import com.reborn.core.ui.component.FeedbackListItem
+import com.reborn.core.ui.component.State
+import com.reborn.core.ui.component.classifyFeedbackType
 import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 
 sealed class AdminHomeEvent {
     data object Exit : AdminHomeEvent()
@@ -17,9 +28,17 @@ sealed class AdminHomeEvent {
     data object NavigateToDeviceList : AdminHomeEvent()
 }
 
-class AdminHomeViewModel : ViewModel() {
+private const val RECENT_FEEDBACK_COUNT = 3
+private val METRIC_CAPABLE_DEVICE_TYPES = setOf("ARDUINO", "SMART_THINGS")
+
+class AdminHomeViewModel(
+    private val getPlaceListUseCase: GetPlaceListUseCase,
+    private val getDeviceListUseCase: GetDeviceListUseCase,
+    private val getCurrentMetricUseCase: GetCurrentMetricUseCase,
+    private val getFeedbackListUseCase: GetFeedbackListUseCase,
+) : ViewModel() {
     private val navController = NavigationManager<AdminHomeUiState, AdminHomeEvent>(
-        initialState = AdminHomeUiState.Home,
+        initialState = AdminHomeUiState.Loading,
         exitEvent = AdminHomeEvent.Exit,
         scope = viewModelScope
     )
@@ -82,8 +101,56 @@ class AdminHomeViewModel : ViewModel() {
     private fun checkInitialState() {
         navController.clearAndReset(AdminHomeUiState.Loading)
         viewModelScope.launch {
-            delay(1500)
-            navController.clearAndReset(AdminHomeUiState.Home)
+            val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+            if (placeId == null) {
+                navController.clearAndReset(AdminHomeUiState.Home(hasDevices = false))
+                return@launch
+            }
+
+            val devices = getDeviceListUseCase(placeId).getOrNull().orEmpty()
+            val metric = devices.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
+                ?.let { device -> getCurrentMetricUseCase(device.deviceId).getOrNull() }
+
+            val feedbacks = getFeedbackListUseCase(placeId).getOrNull().orEmpty()
+            val recentFeedbacks = feedbacks
+                .sortedByDescending { it.createdAt }
+                .take(RECENT_FEEDBACK_COUNT)
+                .map { it.toFeedbackListItem() }
+
+            navController.clearAndReset(
+                AdminHomeUiState.Home(
+                    hasDevices = devices.isNotEmpty(),
+                    metric = metric,
+                    feedbackTotalCount = feedbacks.size,
+                    feedbackWaitingCount = feedbacks.count { it.status == "PENDING" },
+                    recentFeedbacks = recentFeedbacks
+                )
+            )
+        }
+    }
+
+    private fun Feedback.toFeedbackListItem(): FeedbackListItem =
+        FeedbackListItem(
+            id = feedbackId.toInt(),
+            type = classifyFeedbackType(content),
+            state = when (status) {
+                "APPROVED" -> State.APPROVE
+                "REJECTED" -> State.REJECT
+                else -> State.WAITING
+            },
+            time = formatRelativeTime(createdAt),
+            title = content
+        )
+
+    private fun formatRelativeTime(iso: String): String {
+        val createdInstant = LocalDateTime.parse(iso).toInstant(TimeZone.currentSystemDefault())
+        val minutes = (Clock.System.now() - createdInstant).inWholeMinutes
+        return when {
+            minutes < 1 -> "방금 전"
+            minutes < 60 -> "${minutes}분전"
+            minutes < 60 * 24 -> "${minutes / 60}시간전"
+            minutes < 60 * 24 * 2 -> "어제"
+            else -> "${minutes / (60 * 24)}일전"
         }
     }
 

@@ -9,8 +9,8 @@ import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
 import com.reborn.core.model.Feedback
 import com.reborn.core.network.AppConfig
-import com.reborn.core.ui.component.FeedbackType
 import com.reborn.core.ui.component.State
+import com.reborn.core.ui.component.classifyFeedbackType
 import com.reborn.feature.admin.feedback.model.AdminFeedbackIntent
 import com.reborn.feature.admin.feedback.model.AdminFeedbackUiState
 import kotlinx.coroutines.launch
@@ -160,7 +160,7 @@ class AdminFeedbackViewModel(
     private fun Feedback.toFeedbackItem(): AdminFeedbackUiState.FeedbackItem =
         AdminFeedbackUiState.FeedbackItem(
             id = feedbackId.toInt(),
-            type = classifyType(content),
+            type = classifyFeedbackType(content),
             state = statusToState(status),
             title = content,
             time = formatRelativeTime(createdAt),
@@ -172,21 +172,6 @@ class AdminFeedbackViewModel(
         "APPROVED" -> State.APPROVE
         "REJECTED" -> State.REJECT
         else -> State.WAITING
-    }
-
-    // 서버가 피드백 유형을 분류해주지 않아(content만 저장) 클라이언트에서 키워드로 추정 -
-    // 매칭되는 키워드가 없으면 AIR로 기본 처리
-    private fun classifyType(content: String): FeedbackType = when {
-        content.contains("덥") || content.contains("더워") -> FeedbackType.HOT
-        content.contains("춥") || content.contains("추워") -> FeedbackType.COLD
-        content.contains("어둡") -> FeedbackType.DARK
-        content.contains("밝") -> FeedbackType.LIGHT
-        content.contains("냄새") -> FeedbackType.SMELL
-        content.contains("먼지") -> FeedbackType.DIRT
-        content.contains("바람") || content.contains("환기") -> FeedbackType.WIND
-        content.contains("시끄럽") || content.contains("소음") -> FeedbackType.NOISE
-        content.contains("음악") || content.contains("소리") -> FeedbackType.MUSIC
-        else -> FeedbackType.AIR
     }
 
     private fun formatRelativeTime(iso: String): String {

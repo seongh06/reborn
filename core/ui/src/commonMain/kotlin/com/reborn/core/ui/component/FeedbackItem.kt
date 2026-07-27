@@ -160,6 +160,21 @@ enum class FeedbackType {
     HOT, SMELL, LIGHT, AIR, MUSIC, NOISE, COLD, WIND, DIRT, DARK
 }
 
+// 서버가 피드백 유형을 분류해주지 않아(content만 저장) 키워드로 추정한다 -
+// 매칭되는 키워드가 없으면 AIR로 기본 처리
+fun classifyFeedbackType(content: String): FeedbackType = when {
+    content.contains("덥") || content.contains("더워") -> FeedbackType.HOT
+    content.contains("춥") || content.contains("추워") -> FeedbackType.COLD
+    content.contains("어둡") -> FeedbackType.DARK
+    content.contains("밝") -> FeedbackType.LIGHT
+    content.contains("냄새") -> FeedbackType.SMELL
+    content.contains("먼지") -> FeedbackType.DIRT
+    content.contains("바람") || content.contains("환기") -> FeedbackType.WIND
+    content.contains("시끄럽") || content.contains("소음") -> FeedbackType.NOISE
+    content.contains("음악") || content.contains("소리") -> FeedbackType.MUSIC
+    else -> FeedbackType.AIR
+}
+
 enum class State {
     WAITING, REJECT, APPROVE
 }

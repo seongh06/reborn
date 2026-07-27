@@ -76,6 +76,7 @@ fun AdminHomeRoute(
         when(val state = uiState) {
             is AdminHomeUiState.Loading -> RebornLoadingScreen()
             is AdminHomeUiState.Home -> AdminHomeScreen(
+                state = state,
                 onAlarmClick = {viewModel.onIntent(AdminHomeIntent.NavigateToAlarm)},
                 onSettingClick = {viewModel.onIntent(AdminHomeIntent.NavigateToSetting)},
                 onFeedbackClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(id)) },
@@ -94,15 +95,14 @@ fun AdminHomeRoute(
 
 @Composable
 fun AdminHomeScreen(
+    state: AdminHomeUiState.Home,
     onAlarmClick: () -> Unit,
     onSettingClick: () -> Unit,
     onFeedbackClick: (Int) -> Unit,
     onMoreFeedbackClick: () -> Unit = {},
-    onDeviceListClick: () -> Unit = {},
-    // TODO: 서버 device API 연동 전까지의 임시 플래그. 실제로는 device 목록 상태(null/empty)로 대체 예정
-    hasDevices: Boolean = true
+    onDeviceListClick: () -> Unit = {}
 ) {
-    if (!hasDevices) {
+    if (!state.hasDevices) {
          Column(
              modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
          ) {
@@ -150,21 +150,22 @@ fun AdminHomeScreen(
             ) {
                 item {
                     Dashboard(
-                        temperature = /*state.metric?.temperature*/ 24.5f,
-                        humidity = /*state.metric?.humidity*/ 48.5f,
-                        illuminance = /*state.metric?.illuminance*/ 350f,
-                        peopleCount = /*state.metric?.peopleCount*/ 3f
+                        temperature = state.metric?.temperature?.toFloat(),
+                        humidity = state.metric?.humidity?.toFloat(),
+                        illuminance = state.metric?.illuminance?.toFloat(),
+                        peopleCount = state.metric?.peopleCount?.toFloat()
                     )
                 }
                 item {
                     FeedbackStatusSection(
                         modifier = Modifier.padding(16.dp, 8.dp),
-                        totalCount = /*state.feedbacks.size*/15,
-                        waitingCount = /*state.feedbacks.count { it.state == State.WAITING }*/ 3
+                        totalCount = state.feedbackTotalCount,
+                        waitingCount = state.feedbackWaitingCount
                     )
                 }
                 item {
                     FeedbackListSection(
+                        recentFeedbacks = state.recentFeedbacks,
                         onFeedbackClick = onFeedbackClick,
                         onMoreClick = onMoreFeedbackClick
                     )
