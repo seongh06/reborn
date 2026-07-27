@@ -7,5 +7,8 @@ import com.reborn.core.network.model.response.feedback.FeedbackStatusUpdateRespo
 
 interface FeedbackDataSource {
     suspend fun getList(placeId: Long): ApiResponse<FeedbackListResponse>
-    suspend fun updateStatus(feedbackId: Long, request: FeedbackStatusUpdateRequest): ApiResponse<FeedbackStatusUpdateResponse>
+    suspend fun updateStatus(
+        feedbackId: Long,
+        request: FeedbackStatusUpdateRequest,
+    ): ApiResponse<FeedbackStatusUpdateResponse>
 }

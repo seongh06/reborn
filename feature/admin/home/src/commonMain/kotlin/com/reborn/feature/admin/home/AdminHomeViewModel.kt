@@ -9,15 +9,12 @@ import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.model.Feedback
 import com.reborn.core.ui.component.FeedbackListItem
-import com.reborn.core.ui.component.State
 import com.reborn.core.ui.component.classifyFeedbackType
+import com.reborn.core.ui.component.feedbackStatusToState
+import com.reborn.core.ui.component.formatFeedbackRelativeTime
 import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 
 sealed class AdminHomeEvent {
     data object Exit : AdminHomeEvent()
@@ -101,17 +98,28 @@ class AdminHomeViewModel(
     private fun checkInitialState() {
         navController.clearAndReset(AdminHomeUiState.Loading)
         viewModelScope.launch {
-            val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+            val placeListResult = getPlaceListUseCase()
+            placeListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+            val placeId = placeListResult.getOrNull()?.firstOrNull()?.placeId
             if (placeId == null) {
                 navController.clearAndReset(AdminHomeUiState.Home(hasDevices = false))
                 return@launch
             }
 
-            val devices = getDeviceListUseCase(placeId).getOrNull().orEmpty()
-            val metric = devices.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
-                ?.let { device -> getCurrentMetricUseCase(device.deviceId).getOrNull() }
+            val deviceListResult = getDeviceListUseCase(placeId)
+            deviceListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+            val devices = deviceListResult.getOrNull().orEmpty()
 
-            val feedbacks = getFeedbackListUseCase(placeId).getOrNull().orEmpty()
+            val metric = devices.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
+                ?.let { device ->
+                    getCurrentMetricUseCase(device.deviceId)
+                        .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+                        .getOrNull()
+                }
+
+            val feedbackListResult = getFeedbackListUseCase(placeId)
+            feedbackListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+            val feedbacks = feedbackListResult.getOrNull().orEmpty()
             val recentFeedbacks = feedbacks
                 .sortedByDescending { it.createdAt }
                 .take(RECENT_FEEDBACK_COUNT)
@@ -133,26 +141,10 @@ class AdminHomeViewModel(
         FeedbackListItem(
             id = feedbackId.toInt(),
             type = classifyFeedbackType(content),
-            state = when (status) {
-                "APPROVED" -> State.APPROVE
-                "REJECTED" -> State.REJECT
-                else -> State.WAITING
-            },
-            time = formatRelativeTime(createdAt),
+            state = feedbackStatusToState(status),
+            time = formatFeedbackRelativeTime(createdAt),
             title = content
         )
-
-    private fun formatRelativeTime(iso: String): String {
-        val createdInstant = LocalDateTime.parse(iso).toInstant(TimeZone.currentSystemDefault())
-        val minutes = (Clock.System.now() - createdInstant).inWholeMinutes
-        return when {
-            minutes < 1 -> "방금 전"
-            minutes < 60 -> "${minutes}분전"
-            minutes < 60 * 24 -> "${minutes / 60}시간전"
-            minutes < 60 * 24 * 2 -> "어제"
-            else -> "${minutes / (60 * 24)}일전"
-        }
-    }
 
     private fun navigateToFeedbackDetail(feedbackId: Int) {
         viewModelScope.launch {

@@ -8,16 +8,14 @@ import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
 import com.reborn.core.model.Feedback
-import com.reborn.core.network.AppConfig
 import com.reborn.core.ui.component.State
 import com.reborn.core.ui.component.classifyFeedbackType
+import com.reborn.core.ui.component.feedbackStatusToState
+import com.reborn.core.ui.component.formatFeedbackRelativeTime
 import com.reborn.feature.admin.feedback.model.AdminFeedbackIntent
 import com.reborn.feature.admin.feedback.model.AdminFeedbackUiState
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 
 
 sealed class AdminFeedbackEvent {
@@ -103,9 +101,8 @@ class AdminFeedbackViewModel(
             navigationManager.navigateTo(AdminFeedbackUiState.FeedbackQR(placeId.toInt()))
             getPlaceDetailUseCase(placeId)
                 .onSuccess { detail ->
-                    val url = "${AppConfig.webBaseUrl}/feedback.html?qrCode=${detail.qrCode}"
                     navigationManager.updateCurrentState { state ->
-                        (state as? AdminFeedbackUiState.FeedbackQR)?.copy(qrUrl = url) ?: state
+                        (state as? AdminFeedbackUiState.FeedbackQR)?.copy(qrUrl = detail.qrUrl) ?: state
                     }
                 }
                 .onFailure {
@@ -161,31 +158,12 @@ class AdminFeedbackViewModel(
         AdminFeedbackUiState.FeedbackItem(
             id = feedbackId.toInt(),
             type = classifyFeedbackType(content),
-            state = statusToState(status),
+            state = feedbackStatusToState(status),
             title = content,
-            time = formatRelativeTime(createdAt),
+            time = formatFeedbackRelativeTime(createdAt),
             submittedAt = formatAbsoluteTime(createdAt),
             content = content,
         )
-
-    private fun statusToState(status: String): State = when (status) {
-        "APPROVED" -> State.APPROVE
-        "REJECTED" -> State.REJECT
-        else -> State.WAITING
-    }
-
-    private fun formatRelativeTime(iso: String): String {
-        val createdInstant = LocalDateTime.parse(iso).toInstant(TimeZone.currentSystemDefault())
-        val diff = Clock.System.now() - createdInstant
-        val minutes = diff.inWholeMinutes
-        return when {
-            minutes < 1 -> "방금 전"
-            minutes < 60 -> "${minutes}분전"
-            minutes < 60 * 24 -> "${minutes / 60}시간전"
-            minutes < 60 * 24 * 2 -> "어제"
-            else -> "${minutes / (60 * 24)}일전"
-        }
-    }
 
     private fun formatAbsoluteTime(iso: String): String {
         val dt = LocalDateTime.parse(iso)

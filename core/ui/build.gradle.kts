@@ -15,6 +15,7 @@ kotlin {
             implementation(projects.core.designsystem)
             implementation(projects.core.model)
             implementation(projects.core.common)
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
 
         }
     }

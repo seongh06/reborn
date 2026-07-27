@@ -36,6 +36,10 @@ import com.reborn.core.ui.ic_feedback_noise
 import com.reborn.core.ui.ic_feedback_smell
 import com.reborn.core.ui.ic_feedback_wind
 import com.reborn.core.ui.ic_none_feedback
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -158,6 +162,26 @@ fun FeedbackList(
 
 enum class FeedbackType {
     HOT, SMELL, LIGHT, AIR, MUSIC, NOISE, COLD, WIND, DIRT, DARK
+}
+
+// 서버 status 문자열 <-> UI State 매핑 - Home/Feedback 화면이 공유
+fun feedbackStatusToState(status: String): State = when (status) {
+    "APPROVED" -> State.APPROVE
+    "REJECTED" -> State.REJECT
+    else -> State.WAITING
+}
+
+// 서버 createdAt(오프셋 없는 LocalDateTime ISO 문자열)을 "n분전" 형태로 변환 - Home/Feedback 화면이 공유
+fun formatFeedbackRelativeTime(iso: String): String {
+    val createdInstant = LocalDateTime.parse(iso).toInstant(TimeZone.currentSystemDefault())
+    val minutes = (Clock.System.now() - createdInstant).inWholeMinutes
+    return when {
+        minutes < 1 -> "방금 전"
+        minutes < 60 -> "${minutes}분전"
+        minutes < 60 * 24 -> "${minutes / 60}시간전"
+        minutes < 60 * 24 * 2 -> "어제"
+        else -> "${minutes / (60 * 24)}일전"
+    }
 }
 
 // 서버가 피드백 유형을 분류해주지 않아(content만 저장) 키워드로 추정한다 -
