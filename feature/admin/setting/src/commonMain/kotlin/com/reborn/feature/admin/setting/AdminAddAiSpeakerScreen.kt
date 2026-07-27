@@ -29,6 +29,7 @@ fun AdminAddAiSpeakerRoute(
     placeId: Long,
     viewModel: AdminAddAiSpeakerViewModel = koinViewModel(),
     onBackClick: () -> Unit,
+    onRegisterSuccess: (deviceId: String) -> Unit = { onBackClick() },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -39,7 +40,7 @@ fun AdminAddAiSpeakerRoute(
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->
             when (event) {
-                is AdminAddAiSpeakerEvent.RegisterSuccess -> onBackClick()
+                is AdminAddAiSpeakerEvent.RegisterSuccess -> onRegisterSuccess(deviceId.trim())
                 is AdminAddAiSpeakerEvent.ShowErrorSnackbar ->
                     snackbarHostState.showSnackbar(event.throwable.message ?: "기기 등록에 실패했습니다.")
             }
