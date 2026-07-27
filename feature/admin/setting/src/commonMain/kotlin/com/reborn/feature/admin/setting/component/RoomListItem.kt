@@ -12,10 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,11 +28,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.feature.admin.setting.Res
 import com.reborn.feature.admin.setting.ic_admin
-import com.reborn.feature.admin.setting.ic_delete
 import com.reborn.feature.admin.setting.ic_device
 import com.reborn.feature.admin.setting.ic_more_vert
 import kotlinx.coroutines.launch
@@ -74,18 +77,11 @@ fun RoomListItem(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Icon(
-                    painterResource(Res.drawable.ic_delete),
-                    modifier = Modifier.size(24.dp).clickable(onClick = onDeleteClick),
-                    contentDescription = "장소 삭제",
-                    tint = RebornTheme.color.grayScale900
-                )
-                Icon(
                     painterResource(Res.drawable.ic_more_vert),
                     modifier = Modifier
-                        .padding(start = 8.dp)
                         .size(24.dp)
                         .clickable { showAddSheet = true },
-                    contentDescription = "추가하기",
+                    contentDescription = "더 보기",
                     tint = RebornTheme.color.grayScale900
                 )
             }
@@ -104,13 +100,17 @@ fun RoomListItem(
             onAddAdminClick = onAddAdminClick,
             onAddArduinoClick = onAddArduinoClick,
             onAddAiSpeakerClick = onAddAiSpeakerClick,
-            onAddDeviceClick = onAddDeviceClick
+            onAddDeviceClick = onAddDeviceClick,
+            onDeleteClick = onDeleteClick
         )
     }
 }
 
-// 장소 카드 우측 상단 점3개(⋮) 클릭 시 뜨는 4개 추가 항목 바텀시트 - Figma에는 별도 프레임 없이
-// 사용자가 구두로 지정한 스펙(관리자/아두이노/AI스피커/공기계 4개)을 그대로 구현
+// 장소 카드 우측 상단 점3개(⋮) 클릭 시 뜨는 바텀시트 - Figma에는 별도 프레임 없이 사용자가 구두로
+// 지정한 스펙(관리자/아두이노/AI스피커/공기계 4개 추가 항목) 그대로 구현. 장소 삭제는 원래 별도
+// 아이콘으로 상시 노출돼 있었는데(#155), 카드 헤더가 아이콘 2개로 붐비고 오조작 위험도 있어 이 시트
+// 안으로 통합(#177) - 구분선 아래 파괴적 동작으로 시각적으로 분리, 확인 없이 바로 실행되지 않도록
+// 별도 확인 다이얼로그를 한 번 더 거치게 함
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddSheet(
@@ -118,10 +118,12 @@ private fun AddSheet(
     onAddAdminClick: () -> Unit,
     onAddArduinoClick: () -> Unit,
     onAddAiSpeakerClick: () -> Unit,
-    onAddDeviceClick: () -> Unit
+    onAddDeviceClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     fun selectAndDismiss(onClick: () -> Unit) {
         scope.launch {
@@ -148,19 +150,56 @@ private fun AddSheet(
             AddSheetItem(text = "아두이노 추가", onClick = { selectAndDismiss(onAddArduinoClick) })
             AddSheetItem(text = "AI 스피커 추가", onClick = { selectAndDismiss(onAddAiSpeakerClick) })
             AddSheetItem(text = "공기계 추가", onClick = { selectAndDismiss(onAddDeviceClick) })
+            HorizontalDivider(color = RebornTheme.color.grayScale300)
+            AddSheetItem(
+                text = "장소 삭제",
+                textColor = RebornTheme.color.reject,
+                onClick = { showDeleteConfirm = true }
+            )
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = {
+                Text(
+                    "장소를 삭제할까요?",
+                    style = RebornTheme.typography.titleMedium,
+                    color = RebornTheme.color.grayScale900
+                )
+            },
+            text = {
+                Text(
+                    "삭제하면 이 장소에 연결된 모든 기기 정보도 함께 사라져요.",
+                    style = RebornTheme.typography.bodyMedium,
+                    color = RebornTheme.color.grayScale700
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showDeleteConfirm = false; selectAndDismiss(onDeleteClick) }) {
+                    Text("삭제", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.reject)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("취소", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale700)
+                }
+            }
+        )
     }
 }
 
 @Composable
 private fun AddSheetItem(
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    textColor: Color = RebornTheme.color.grayScale900
 ) {
     Text(
         text = text,
         style = RebornTheme.typography.titleSmall,
-        color = RebornTheme.color.grayScale900,
+        color = textColor,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)

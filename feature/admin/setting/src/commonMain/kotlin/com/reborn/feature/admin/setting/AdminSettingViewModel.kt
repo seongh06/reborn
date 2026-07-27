@@ -8,6 +8,7 @@ import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
+import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
 import kotlinx.coroutines.async
@@ -35,6 +36,7 @@ class AdminSettingViewModel(
     private val getPlaceDetailUseCase: GetPlaceDetailUseCase,
     private val deletePlaceUseCase: DeletePlaceUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
+    private val updateUserProfileUseCase: UpdateUserProfileUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminSettingUiState, AdminSettingEvent>(
         initialState = AdminSettingUiState.Loading,
@@ -46,6 +48,10 @@ class AdminSettingViewModel(
     val event = navigationManager.event
 
     private var isLoggingOut = false
+
+    // checkInitialState()의 병렬 프로필 조회가 늦게 끝나면 그 사이 사용자가 편집해 성공한 이름을
+    // 덮어쓸 수 있어(CodeRabbit #179), 편집 성공 시점 이후로는 이 값을 조회 결과보다 우선한다.
+    private var editedProfileName: String? = null
 
     fun onIntent(intent: AdminSettingIntent) {
         when (intent) {
@@ -62,6 +68,20 @@ class AdminSettingViewModel(
                 navigationManager.emitEvent(AdminSettingEvent.NavigateToAddAiSpeaker(intent.placeId))
             is AdminSettingIntent.ClickAddPlace -> navigationManager.emitEvent(AdminSettingEvent.NavigateToAddPlace)
             is AdminSettingIntent.ClickLogout -> logout()
+            is AdminSettingIntent.UpdateProfileName -> updateProfileName(intent.name)
+        }
+    }
+
+    private fun updateProfileName(name: String) {
+        viewModelScope.launch {
+            updateUserProfileUseCase(name)
+                .onSuccess { profile ->
+                    editedProfileName = profile.name
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminSettingUiState.Setting)?.copy(profileName = profile.name) ?: state
+                    }
+                }
+                .onFailure { navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it)) }
         }
     }
 
@@ -77,7 +97,10 @@ class AdminSettingViewModel(
                     val userProfile = profile.await() ?: return@launch
                     navigationManager.updateCurrentState { state ->
                         (state as? AdminSettingUiState.Setting)
-                            ?.copy(profileName = userProfile.name, profileImageUrl = userProfile.profileImage)
+                            ?.copy(
+                                profileName = editedProfileName ?: userProfile.name,
+                                profileImageUrl = userProfile.profileImage
+                            )
                             ?: state
                     }
                 }

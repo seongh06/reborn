@@ -8,4 +8,5 @@ interface AuthRepository {
     suspend fun logout(): Result<Unit>
     suspend fun updateFcmToken(fcmToken: String): Result<Unit>
     suspend fun getMe(): Result<UserProfile>
+    suspend fun updateProfile(name: String): Result<UserProfile>
 }

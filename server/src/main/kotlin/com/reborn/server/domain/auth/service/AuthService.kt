@@ -81,6 +81,17 @@ class AuthService(
     }
 
     @Transactional
+    fun updateProfile(userId: Long, request: AuthDto.UpdateProfileRequest): AuthDto.MeResponse {
+        val name = request.name?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "이름은 필수입니다.")
+        val user = userRepository.findById(userId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 회원 정보입니다.")
+        }
+        user.updateName(name)
+        return AuthConverter.toMeResponse(user)
+    }
+
+    @Transactional
     fun updateFcmToken(userId: Long, request: AuthDto.FcmTokenUpdateRequest) {
         val fcmToken = request.fcmToken?.takeIf { it.isNotBlank() }
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "fcmToken은 필수입니다.")
@@ -94,6 +105,12 @@ class AuthService(
         val existing = userRepository.findByProviderAndProviderId(provider, info.providerId)
 
         val (user, isNewUser) = if (existing != null) {
+            // 과거(닉네임 동의 검증 도입 전 등) 가입된 계정 중 name이 비어있는 경우를 로그인 시점에
+            // 소셜 프로바이더 최신 정보로 채워준다(#177) - 이후 사용자가 직접 수정한 이름은 절대
+            // 덮어쓰지 않도록 "비어있을 때만" 채우는 걸로 제한(매 로그인마다 덮어쓰면 프로필 편집이 무의미해짐)
+            if (existing.name.isBlank()) {
+                existing.updateName(info.name)
+            }
             existing to false
         } else {
             if (info.email != null && userRepository.existsByEmail(info.email)) {

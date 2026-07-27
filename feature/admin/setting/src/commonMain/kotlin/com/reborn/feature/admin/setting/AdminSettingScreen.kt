@@ -2,6 +2,7 @@ package com.reborn.feature.admin.setting
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,16 +15,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.reborn.core.designsystem.component.RebornButton
+import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
@@ -97,7 +103,8 @@ fun AdminSettingRoute(
                 onAddArduinoClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddArduino(placeId)) },
                 onAddAiSpeakerClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAiSpeaker(placeId)) },
                 onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) },
-                onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) }
+                onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) },
+                onProfileNameChange = { name -> viewModel.onIntent(AdminSettingIntent.UpdateProfileName(name)) }
             )
         }
     }
@@ -113,7 +120,8 @@ fun AdminSettingScreen(
     onAddArduinoClick: (Int) -> Unit,
     onAddAiSpeakerClick: (Int) -> Unit,
     onAddPlaceClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onProfileNameChange: (String) -> Unit = {}
 
 ) {
     Column(
@@ -136,7 +144,8 @@ fun AdminSettingScreen(
             ProfileSection(
                 name = state.profileName,
                 imageUrl = state.profileImageUrl,
-                placeTags = state.rooms.map { it.roomName }
+                placeTags = state.rooms.map { it.roomName },
+                onNameChange = onProfileNameChange
             )
         }
         Column(
@@ -209,8 +218,22 @@ fun AdminSettingScreen(
 private fun ProfileSection(
     name: String?,
     imageUrl: String?,
-    placeTags: List<String>
+    placeTags: List<String>,
+    onNameChange: (String) -> Unit = {}
 ) {
+    var isEditingName by remember { mutableStateOf(false) }
+
+    if (isEditingName) {
+        EditNameDialog(
+            initialName = name.orEmpty(),
+            onConfirm = { newName ->
+                onNameChange(newName)
+                isEditingName = false
+            },
+            onDismiss = { isEditingName = false }
+        )
+    }
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(20.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -260,11 +283,23 @@ private fun ProfileSection(
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = name ?: "-",
-                style = RebornTheme.typography.headlineMedium,
-                color = RebornTheme.color.grayScale900
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { isEditingName = true }
+            ) {
+                Text(
+                    text = name ?: "-",
+                    style = RebornTheme.typography.headlineMedium,
+                    color = RebornTheme.color.grayScale900
+                )
+                Icon(
+                    painter = painterResource(Res.drawable.ic_edit),
+                    contentDescription = "이름 수정",
+                    tint = RebornTheme.color.grayScale500,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
             val visibleTags = placeTags.take(2)
             val overflowCount = placeTags.size - visibleTags.size
             Row(
@@ -295,4 +330,39 @@ private fun ProfileSection(
             }
         }
     }
+}
+
+@Composable
+private fun EditNameDialog(
+    initialName: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("이름 수정", style = RebornTheme.typography.titleMedium, color = RebornTheme.color.grayScale900) },
+        text = {
+            RebornTextField(
+                value = name,
+                onValueChange = { name = it },
+                hint = "이름 입력",
+                maxLength = 30
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name.trim()) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("확인", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale900)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("취소", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale700)
+            }
+        }
+    )
 }

@@ -9,6 +9,7 @@ import com.reborn.feature.admin.home.AdminHomeEvent
 import com.reborn.feature.admin.home.AdminHomeRoute
 import com.reborn.feature.admin.home.AdminHomeScreen
 import com.reborn.feature.admin.home.AdminIotDeviceListRoute
+import com.reborn.feature.admin.home.AdminSmartThingsAddRoute
 
 fun NavController.navigateAdminHome(navOptions: NavOptions) {
     navigate(route = Route.Admin.Home, navOptions = navOptions)
@@ -17,6 +18,7 @@ fun NavController.navigateAdminHome(navOptions: NavOptions) {
 fun NavGraphBuilder.adminHomeNavGraph(
     onBackClick: () -> Unit,
     navigateToFeedbackDetail: (Int) -> Unit,
+    onNavigateToFeedbackList: () -> Unit = {},
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
@@ -25,6 +27,7 @@ fun NavGraphBuilder.adminHomeNavGraph(
         AdminHomeRoute(
             onBackClick = onBackClick,
             navigateToFeedbackDetail = navigateToFeedbackDetail,
+            onNavigateToFeedbackList = onNavigateToFeedbackList,
             onNavigateToSetting = onNavigateToSetting,
             onNavigateToDeviceList = onNavigateToDeviceList,
             onBottomBarVisibilityChange = onBottomBarVisibilityChange
@@ -33,9 +36,21 @@ fun NavGraphBuilder.adminHomeNavGraph(
 }
 
 fun NavGraphBuilder.adminIotDeviceListNavGraph(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToAddSmartThingsDevice: () -> Unit = {}
 ) {
     composable<Route.Admin.IotDeviceList> {
-        AdminIotDeviceListRoute(onBackClick = onBackClick)
+        AdminIotDeviceListRoute(
+            onBackClick = onBackClick,
+            onAddDeviceClick = onNavigateToAddSmartThingsDevice
+        )
+    }
+}
+
+fun NavGraphBuilder.adminSmartThingsAddNavGraph(
+    onBackClick: () -> Unit
+) {
+    composable<Route.Admin.AddSmartThingsDevice> {
+        AdminSmartThingsAddRoute(onBackClick = onBackClick)
     }
 }

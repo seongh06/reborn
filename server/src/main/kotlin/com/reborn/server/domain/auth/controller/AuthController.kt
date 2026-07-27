@@ -104,6 +104,24 @@ class AuthController(
     fun me(authentication: Authentication): ApiResponse<AuthDto.MeResponse> =
         ApiResponse.success(authService.getMe(extractUserId(authentication)))
 
+    @Operation(
+        summary = "내 프로필 수정",
+        description = "인증된 사용자의 이름(닉네임)을 수정합니다(#177, Setting 화면 프로필 편집).",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "수정 성공"),
+        SwaggerApiResponse(responseCode = "400", description = "name 누락"),
+        SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 AccessToken"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/me")
+    fun updateMe(
+        @Valid @RequestBody request: AuthDto.UpdateProfileRequest,
+        authentication: Authentication,
+    ): ApiResponse<AuthDto.MeResponse> =
+        ApiResponse.success(authService.updateProfile(extractUserId(authentication), request))
+
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long
             ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "인증 정보가 유효하지 않습니다.")

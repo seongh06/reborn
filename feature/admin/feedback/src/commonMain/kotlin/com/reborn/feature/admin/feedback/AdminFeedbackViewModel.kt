@@ -91,7 +91,7 @@ class AdminFeedbackViewModel(
 
     fun onIntent(intent: AdminFeedbackIntent) {
         when (intent) {
-            is AdminFeedbackIntent.LoadInitial -> checkInitialState()
+            is AdminFeedbackIntent.LoadInitial -> checkInitialState(intent.feedbackId)
             is AdminFeedbackIntent.NavigateBack -> navigationManager.navigateBack()
             is AdminFeedbackIntent.NavigateToFeedbackDetail -> navigateToFeedbackDetail(intent)
             is AdminFeedbackIntent.NavigateToQR -> navigateToQR(intent.placeId)
@@ -99,11 +99,14 @@ class AdminFeedbackViewModel(
         }
     }
 
-    private fun checkInitialState() {
+    private fun checkInitialState(feedbackId: Int? = null) {
         navigationManager.clearAndReset(AdminFeedbackUiState.Loading)
         viewModelScope.launch {
             delay(1500)
             navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(feedbacks))
+            if (feedbackId != null) {
+                navigateToFeedbackDetail(AdminFeedbackIntent.NavigateToFeedbackDetail(feedbackId))
+            }
         }
     }
 
