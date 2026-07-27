@@ -3,14 +3,21 @@ package com.reborn.feature.admin.feedback
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
+import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
+import com.reborn.core.model.Feedback
 import com.reborn.core.network.AppConfig
 import com.reborn.core.ui.component.FeedbackType
 import com.reborn.core.ui.component.State
 import com.reborn.feature.admin.feedback.model.AdminFeedbackIntent
 import com.reborn.feature.admin.feedback.model.AdminFeedbackUiState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 
 
 sealed class AdminFeedbackEvent {
@@ -19,7 +26,10 @@ sealed class AdminFeedbackEvent {
 }
 
 class AdminFeedbackViewModel(
-    private val getPlaceDetailUseCase: GetPlaceDetailUseCase
+    private val getPlaceListUseCase: GetPlaceListUseCase,
+    private val getPlaceDetailUseCase: GetPlaceDetailUseCase,
+    private val getFeedbackListUseCase: GetFeedbackListUseCase,
+    private val updateFeedbackStatusUseCase: UpdateFeedbackStatusUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminFeedbackUiState, AdminFeedbackEvent>(
         initialState = AdminFeedbackUiState.Loading,
@@ -30,92 +40,68 @@ class AdminFeedbackViewModel(
     val uiState = navigationManager.uiState
     val event = navigationManager.event
 
-    // TODO: 서버 feedback API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
-    private var feedbacks: List<AdminFeedbackUiState.FeedbackItem> = listOf(
-        AdminFeedbackUiState.FeedbackItem(
-            id = 1,
-            type = FeedbackType.HOT,
-            state = State.WAITING,
-            title = "너무 더워요",
-            time = "5분전",
-            submittedAt = "2026.07.27 14:20",
-            content = "너무 더운데여. 배도 고파요.",
-            sensorSnapshot = AdminFeedbackUiState.SensorSnapshot(28.4, 55.0, 600, 5),
-            temperatureAdjustment = AdminFeedbackUiState.TemperatureAdjustment(before = 26.0, after = 24.0)
-        ),
-        AdminFeedbackUiState.FeedbackItem(
-            id = 2,
-            type = FeedbackType.LIGHT,
-            state = State.APPROVE,
-            title = "불이 너무 밝아요",
-            time = "10분전",
-            submittedAt = "2026.07.27 14:15",
-            content = "불이 너무 밝아서 눈이 아파요.",
-            sensorSnapshot = AdminFeedbackUiState.SensorSnapshot(24.1, 48.0, 850, 3),
-            temperatureAdjustment = AdminFeedbackUiState.TemperatureAdjustment(before = 24.0, after = 24.0)
-        ),
-        AdminFeedbackUiState.FeedbackItem(
-            id = 3,
-            type = FeedbackType.AIR,
-            state = State.REJECT,
-            title = "공기가 안 좋아요",
-            time = "1시간전",
-            submittedAt = "2026.07.27 13:25",
-            content = "공기청정기 좀 틀어주세요.",
-            sensorSnapshot = AdminFeedbackUiState.SensorSnapshot(23.5, 60.0, 400, 6),
-            temperatureAdjustment = AdminFeedbackUiState.TemperatureAdjustment(before = 23.5, after = 23.5)
-        ),
-        AdminFeedbackUiState.FeedbackItem(
-            id = 4,
-            type = FeedbackType.COLD,
-            state = State.WAITING,
-            title = "너무 추워요",
-            time = "2시간전",
-            submittedAt = "2026.07.27 12:30",
-            content = "난방 좀 틀어주세요.",
-            sensorSnapshot = AdminFeedbackUiState.SensorSnapshot(19.2, 40.0, 300, 2),
-            temperatureAdjustment = AdminFeedbackUiState.TemperatureAdjustment(before = 19.0, after = 22.0)
-        ),
-        AdminFeedbackUiState.FeedbackItem(
-            id = 5,
-            type = FeedbackType.NOISE,
-            state = State.APPROVE,
-            title = "너무 시끄러워요",
-            time = "어제",
-            submittedAt = "2026.07.26 21:40",
-            content = "밖에서 소리가 너무 크게 들려요.",
-            sensorSnapshot = AdminFeedbackUiState.SensorSnapshot(22.0, 50.0, 100, 4),
-            temperatureAdjustment = AdminFeedbackUiState.TemperatureAdjustment(before = 22.0, after = 22.0)
-        ),
-    )
+    private var feedbacks: List<AdminFeedbackUiState.FeedbackItem> = emptyList()
+
+    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
+    private var resolvedPlaceId: Long? = null
+
+    private suspend fun resolvePlaceId(): Long? {
+        resolvedPlaceId?.let { return it }
+        val resolved = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        resolvedPlaceId = resolved
+        return resolved
+    }
 
     fun onIntent(intent: AdminFeedbackIntent) {
         when (intent) {
             is AdminFeedbackIntent.LoadInitial -> checkInitialState(intent.feedbackId)
             is AdminFeedbackIntent.NavigateBack -> navigationManager.navigateBack()
             is AdminFeedbackIntent.NavigateToFeedbackDetail -> navigateToFeedbackDetail(intent)
-            is AdminFeedbackIntent.NavigateToQR -> navigateToQR(intent.placeId)
+            is AdminFeedbackIntent.NavigateToQR -> navigateToQR()
             is AdminFeedbackIntent.ClickTab -> handleTabClick(intent.tab)
+            is AdminFeedbackIntent.UpdateStatus -> updateStatus(intent.feedbackId, intent.approve)
         }
     }
 
     private fun checkInitialState(feedbackId: Int? = null) {
         navigationManager.clearAndReset(AdminFeedbackUiState.Loading)
         viewModelScope.launch {
-            delay(1500)
-            navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(feedbacks))
-            if (feedbackId != null) {
-                navigateToFeedbackDetail(AdminFeedbackIntent.NavigateToFeedbackDetail(feedbackId))
+            val placeId = resolvePlaceId()
+            if (placeId == null) {
+                navigationManager.emitEvent(
+                    AdminFeedbackEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다."))
+                )
+                navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(emptyList()))
+                return@launch
             }
+            getFeedbackListUseCase(placeId)
+                .onSuccess { list ->
+                    feedbacks = list.map { it.toFeedbackItem() }
+                    navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(feedbacks))
+                    if (feedbackId != null) {
+                        navigateToFeedbackDetail(AdminFeedbackIntent.NavigateToFeedbackDetail(feedbackId))
+                    }
+                }
+                .onFailure {
+                    navigationManager.emitEvent(AdminFeedbackEvent.ShowErrorSnackbar(it))
+                    navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(emptyList()))
+                }
         }
     }
 
     // QR 화면으로 즉시 전환(로딩 표시)한 뒤, 장소의 qrCode를 조회해서 방문자용 피드백 웹페이지
     // URL을 완성한다 - QR 이미지는 별도 라이브러리 없이 공개 QR 생성 API로 렌더링(#163)
-    private fun navigateToQR(placeId: Int) {
-        navigationManager.navigateTo(AdminFeedbackUiState.FeedbackQR(placeId))
+    private fun navigateToQR() {
         viewModelScope.launch {
-            getPlaceDetailUseCase(placeId.toLong())
+            val placeId = resolvePlaceId()
+            if (placeId == null) {
+                navigationManager.emitEvent(
+                    AdminFeedbackEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다."))
+                )
+                return@launch
+            }
+            navigationManager.navigateTo(AdminFeedbackUiState.FeedbackQR(placeId.toInt()))
+            getPlaceDetailUseCase(placeId)
                 .onSuccess { detail ->
                     val url = "${AppConfig.webBaseUrl}/feedback.html?qrCode=${detail.qrCode}"
                     navigationManager.updateCurrentState { state ->
@@ -141,6 +127,27 @@ class AdminFeedbackViewModel(
         navigationManager.navigateTo(AdminFeedbackUiState.FeedbackDetail(intent.feedbackId, feedback))
     }
 
+    private fun updateStatus(feedbackId: Int, approve: Boolean) {
+        val target = feedbacks.find { it.id == feedbackId } ?: return
+        val nextState = if (approve) State.APPROVE else State.REJECT
+        val statusParam = if (approve) "APPROVED" else "REJECTED"
+
+        viewModelScope.launch {
+            updateFeedbackStatusUseCase(feedbackId.toLong(), statusParam)
+                .onSuccess {
+                    feedbacks = feedbacks.map { item ->
+                        if (item.id == feedbackId) item.copy(state = nextState) else item
+                    }
+                    navigationManager.navigateBack()
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminFeedbackUiState.Feedback)?.copy(feedbacks = feedbacks) ?: state
+                    }
+                }
+                .onFailure {
+                    navigationManager.emitEvent(AdminFeedbackEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
 
     private fun handleTabClick(tab: AdminFeedbackUiState.FeedbackFiltering) {
         navigationManager.updateCurrentState { state ->
@@ -148,13 +155,57 @@ class AdminFeedbackViewModel(
                 state.copy(feedbackFiltering = tab)
             } else state
         }
-        loadData(tab)
     }
 
-    private fun loadData(
-        tab: AdminFeedbackUiState.FeedbackFiltering?=null
-    ){
+    private fun Feedback.toFeedbackItem(): AdminFeedbackUiState.FeedbackItem =
+        AdminFeedbackUiState.FeedbackItem(
+            id = feedbackId.toInt(),
+            type = classifyType(content),
+            state = statusToState(status),
+            title = content,
+            time = formatRelativeTime(createdAt),
+            submittedAt = formatAbsoluteTime(createdAt),
+            content = content,
+        )
 
+    private fun statusToState(status: String): State = when (status) {
+        "APPROVED" -> State.APPROVE
+        "REJECTED" -> State.REJECT
+        else -> State.WAITING
     }
 
+    // 서버가 피드백 유형을 분류해주지 않아(content만 저장) 클라이언트에서 키워드로 추정 -
+    // 매칭되는 키워드가 없으면 AIR로 기본 처리
+    private fun classifyType(content: String): FeedbackType = when {
+        content.contains("덥") || content.contains("더워") -> FeedbackType.HOT
+        content.contains("춥") || content.contains("추워") -> FeedbackType.COLD
+        content.contains("어둡") -> FeedbackType.DARK
+        content.contains("밝") -> FeedbackType.LIGHT
+        content.contains("냄새") -> FeedbackType.SMELL
+        content.contains("먼지") -> FeedbackType.DIRT
+        content.contains("바람") || content.contains("환기") -> FeedbackType.WIND
+        content.contains("시끄럽") || content.contains("소음") -> FeedbackType.NOISE
+        content.contains("음악") || content.contains("소리") -> FeedbackType.MUSIC
+        else -> FeedbackType.AIR
+    }
+
+    private fun formatRelativeTime(iso: String): String {
+        val createdInstant = LocalDateTime.parse(iso).toInstant(TimeZone.currentSystemDefault())
+        val diff = Clock.System.now() - createdInstant
+        val minutes = diff.inWholeMinutes
+        return when {
+            minutes < 1 -> "방금 전"
+            minutes < 60 -> "${minutes}분전"
+            minutes < 60 * 24 -> "${minutes / 60}시간전"
+            minutes < 60 * 24 * 2 -> "어제"
+            else -> "${minutes / (60 * 24)}일전"
+        }
+    }
+
+    private fun formatAbsoluteTime(iso: String): String {
+        val dt = LocalDateTime.parse(iso)
+        return "${dt.year}.${dt.monthNumber.pad2()}.${dt.dayOfMonth.pad2()} ${dt.hour.pad2()}:${dt.minute.pad2()}"
+    }
+
+    private fun Int.pad2(): String = toString().padStart(2, '0')
 }

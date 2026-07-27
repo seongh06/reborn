@@ -10,6 +10,7 @@ import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
+import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
@@ -24,6 +25,7 @@ import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
+import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.core.domain.usecase.WithdrawUseCase
 import com.reborn.core.network.di.dataSourceModule
@@ -70,6 +72,8 @@ val appDependenciesModule = module {
     factory { RegisterSmartThingsDeviceUseCase(get()) }
     factory { ConfigureDeviceWifiUseCase(get()) }
     factory { ControlDeviceUseCase(get()) }
+    factory { GetFeedbackListUseCase(get()) }
+    factory { UpdateFeedbackStatusUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)

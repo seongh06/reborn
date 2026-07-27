@@ -67,7 +67,7 @@ fun AdminFeedbackRoute(
             is AdminFeedbackUiState.Feedback -> AdminFeedbackScreen(
                 state = state,
                 onBackClick = onBackClick,
-                navToFeedbackQR = { id -> viewModel.onIntent(AdminFeedbackIntent.NavigateToQR(id))},
+                navToFeedbackQR = { viewModel.onIntent(AdminFeedbackIntent.NavigateToQR) },
                 navToFeedbackDetail = { id -> viewModel.onIntent(AdminFeedbackIntent.NavigateToFeedbackDetail(id)) },
                 onTabClick = { tab -> viewModel.onIntent(AdminFeedbackIntent.ClickTab(tab))}
             )
@@ -79,8 +79,8 @@ fun AdminFeedbackRoute(
             is AdminFeedbackUiState.FeedbackDetail -> AdminFeedbackDetailScreen(
                 state = state,
                 onBackClick = onBackClick,
-                onRejectClick = {},
-                onApproveClick = {}
+                onRejectClick = { viewModel.onIntent(AdminFeedbackIntent.UpdateStatus(state.feedbackId, approve = false)) },
+                onApproveClick = { viewModel.onIntent(AdminFeedbackIntent.UpdateStatus(state.feedbackId, approve = true)) }
             )
         }
     }
@@ -91,18 +91,17 @@ fun AdminFeedbackScreen(
     state: AdminFeedbackUiState.Feedback,
     onBackClick: () -> Unit = {},
     onTabClick: (AdminFeedbackUiState.FeedbackFiltering) -> Unit = {},
-    navToFeedbackQR: (Int) -> Unit,
+    navToFeedbackQR: () -> Unit,
     navToFeedbackDetail: (Int) -> Unit
 ) {
 
     val currentTab = state.feedbackFiltering
-    val placeId = 1
     val filteredFeedbacks = state.filteredFeedbacks()
 
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
-        RebornTopAppBar(title = "피드백", onBackClick = onBackClick, onNavigateFeedbackQR = { navToFeedbackQR(placeId) })
+        RebornTopAppBar(title = "피드백", onBackClick = onBackClick, onNavigateFeedbackQR = navToFeedbackQR)
         TabBar(
             tabItems = AdminFeedbackUiState.FeedbackFiltering.entries,
             selectedTab = currentTab,
