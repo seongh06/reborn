@@ -17,6 +17,7 @@ fun NavController.navigateAdminHome(navOptions: NavOptions) {
 fun NavGraphBuilder.adminHomeNavGraph(
     onBackClick: () -> Unit,
     navigateToFeedbackDetail: (Int) -> Unit,
+    onNavigateToFeedbackList: () -> Unit = {},
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
@@ -25,6 +26,7 @@ fun NavGraphBuilder.adminHomeNavGraph(
         AdminHomeRoute(
             onBackClick = onBackClick,
             navigateToFeedbackDetail = navigateToFeedbackDetail,
+            onNavigateToFeedbackList = onNavigateToFeedbackList,
             onNavigateToSetting = onNavigateToSetting,
             onNavigateToDeviceList = onNavigateToDeviceList,
             onBottomBarVisibilityChange = onBottomBarVisibilityChange

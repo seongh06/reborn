@@ -39,6 +39,7 @@ fun AdminHomeRoute(
     viewModel: AdminHomeViewModel = koinViewModel(),
     onBackClick: () -> Unit,
     navigateToFeedbackDetail: (Int) -> Unit,
+    onNavigateToFeedbackList: () -> Unit = {},
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
@@ -62,6 +63,7 @@ fun AdminHomeRoute(
                 }
                 is AdminHomeEvent.Exit -> onBackClick()
                 is AdminHomeEvent.NavigateToFeedbackDetail -> navigateToFeedbackDetail(event.feedbackId)
+                is AdminHomeEvent.NavigateToFeedbackList -> onNavigateToFeedbackList()
                 is AdminHomeEvent.NavigateToSetting -> onNavigateToSetting()
                 is AdminHomeEvent.NavigateToDeviceList -> onNavigateToDeviceList()
             }
@@ -77,6 +79,7 @@ fun AdminHomeRoute(
                 onAlarmClick = {viewModel.onIntent(AdminHomeIntent.NavigateToAlarm)},
                 onSettingClick = {viewModel.onIntent(AdminHomeIntent.NavigateToSetting)},
                 onFeedbackClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(id)) },
+                onMoreFeedbackClick = { viewModel.onIntent(AdminHomeIntent.NavigateToFeedbackList) },
                 onDeviceListClick = { viewModel.onIntent(AdminHomeIntent.NavigateToDeviceList) }
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
@@ -94,6 +97,7 @@ fun AdminHomeScreen(
     onAlarmClick: () -> Unit,
     onSettingClick: () -> Unit,
     onFeedbackClick: (Int) -> Unit,
+    onMoreFeedbackClick: () -> Unit = {},
     onDeviceListClick: () -> Unit = {},
     // TODO: 서버 device API 연동 전까지의 임시 플래그. 실제로는 device 목록 상태(null/empty)로 대체 예정
     hasDevices: Boolean = true
@@ -162,8 +166,7 @@ fun AdminHomeScreen(
                 item {
                     FeedbackListSection(
                         onFeedbackClick = onFeedbackClick,
-                        // TODO: 전체 피드백 목록 화면 연동 전까지의 임시 동작 — 지금은 id=1 상세로 고정 이동함
-                        onMoreClick = { onFeedbackClick(1) }
+                        onMoreClick = onMoreFeedbackClick
                     )
                 }
                 item {

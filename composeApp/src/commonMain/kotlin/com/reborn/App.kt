@@ -225,7 +225,10 @@ fun App() {
                             navController.popBackStack()
                         },
                         navigateToFeedbackDetail = { feedbackId ->
-                            //navController.navigate(Route.FeedbackDetail(feedbackId))
+                            navController.navigate(Route.Admin.Feedback(feedbackId))
+                        },
+                        onNavigateToFeedbackList = {
+                            navController.navigate(Route.Admin.Feedback())
                         },
                         onNavigateToSetting = {
                             navController.navigate(Route.Admin.Setting)

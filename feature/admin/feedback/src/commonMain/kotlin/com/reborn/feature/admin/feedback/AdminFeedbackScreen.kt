@@ -31,6 +31,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AdminFeedbackRoute(
     viewModel: AdminFeedbackViewModel = koinViewModel(),
     onBackClick: () -> Unit,
+    initialFeedbackId: Int? = null,
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -44,7 +45,7 @@ fun AdminFeedbackRoute(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.onIntent(AdminFeedbackIntent.LoadInitial)
+        viewModel.onIntent(AdminFeedbackIntent.LoadInitial(initialFeedbackId))
 
         viewModel.event.collect { event ->
             when (event) {
