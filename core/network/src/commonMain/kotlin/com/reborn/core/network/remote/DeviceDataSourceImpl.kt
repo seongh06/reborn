@@ -2,8 +2,10 @@ package com.reborn.core.network.remote
 
 import com.reborn.core.network.datasource.DeviceDataSource
 import com.reborn.core.network.model.ApiResponse
+import com.reborn.core.network.model.request.device.ControlDeviceRequest
 import com.reborn.core.network.model.request.device.PairingRequest
 import com.reborn.core.network.model.request.device.RegisterDeviceRequest
+import com.reborn.core.network.model.response.device.ControlDeviceResponse
 import com.reborn.core.network.model.response.device.DeviceListResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
@@ -41,6 +43,12 @@ class DeviceDataSourceImpl(
 
     override suspend fun registerDevice(request: RegisterDeviceRequest): ApiResponse<RegisterDeviceResponse> = runCatching {
         httpClient.post("/api/device") {
+            setBody(request)
+        }
+    }.asApiResponse()
+
+    override suspend fun controlDevice(deviceId: String, request: ControlDeviceRequest): ApiResponse<ControlDeviceResponse> = runCatching {
+        httpClient.post("/api/device/$deviceId/control") {
             setBody(request)
         }
     }.asApiResponse()

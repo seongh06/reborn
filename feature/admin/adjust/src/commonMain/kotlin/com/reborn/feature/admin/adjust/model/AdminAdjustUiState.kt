@@ -26,7 +26,10 @@ sealed interface AdminAdjustUiState {
         val name: String,
         val isOnline: Boolean,
         val isPowerOn: Boolean,
-        val deviceType: DeviceType = DeviceType.OTHER
+        val deviceType: DeviceType = DeviceType.OTHER,
+        // 제어 API(#132/#134)가 요구하는 실제 식별자 - device.deviceKey(SmartThings 기기 ID). DB 내부
+        // id(위 id: Int, 목록/네비게이션용 로컬 식별자)와는 다른 값.
+        val deviceKey: String = ""
     )
 }
 

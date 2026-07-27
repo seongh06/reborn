@@ -3,6 +3,7 @@ package com.reborn.feature.admin.adjust
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.ui.component.DeviceType
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
@@ -15,7 +16,9 @@ sealed class AdminAdjustEvent {
     data class ShowSnackbar(val message: String) : AdminAdjustEvent()
 }
 
-class AdminAdjustViewModel : ViewModel() {
+class AdminAdjustViewModel(
+    private val controlDeviceUseCase: ControlDeviceUseCase
+) : ViewModel() {
     private val navController = NavigationManager<AdminAdjustUiState, AdminAdjustEvent>(
         initialState = AdminAdjustUiState.Loading,
         exitEvent = AdminAdjustEvent.Exit,
@@ -25,11 +28,13 @@ class AdminAdjustViewModel : ViewModel() {
     val uiState = navController.uiState
     val event = navController.event
 
-    // TODO: 서버 device API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정
+    // TODO: 서버 device 목록 API(GetDeviceListUseCase) 연동 전까지의 목업 데이터 - place(방)는 서버
+    // 도메인에 아예 없는 개념(#166)이고, 목록 API는 파워 상태도 안 내려줘서(제어 API로만 변경 가능) 이
+    // mock을 실 데이터로 옮기려면 그 두 gap을 먼저 메워야 함, 이번 이슈(#134)는 제어 명령 전송만 실연동
     private var devices: List<AdminAdjustUiState.DeviceItem> = listOf(
-        AdminAdjustUiState.DeviceItem(1, "거실", "거실 조명", isOnline = true, isPowerOn = true, deviceType = DeviceType.LAMP),
-        AdminAdjustUiState.DeviceItem(2, "거실", "거실 공기청정기", isOnline = true, isPowerOn = false, deviceType = DeviceType.AIR_CONDITIONER),
-        AdminAdjustUiState.DeviceItem(3, "안방", "안방 가습기", isOnline = false, isPowerOn = false, deviceType = DeviceType.OTHER)
+        AdminAdjustUiState.DeviceItem(1, "거실", "거실 조명", isOnline = true, isPowerOn = true, deviceType = DeviceType.LAMP, deviceKey = "mock-lamp-01"),
+        AdminAdjustUiState.DeviceItem(2, "거실", "거실 공기청정기", isOnline = true, isPowerOn = false, deviceType = DeviceType.AIR_CONDITIONER, deviceKey = "mock-ac-01"),
+        AdminAdjustUiState.DeviceItem(3, "안방", "안방 가습기", isOnline = false, isPowerOn = false, deviceType = DeviceType.OTHER, deviceKey = "mock-humidifier-01")
     )
 
     fun onIntent(intent: AdminAdjustIntent) {
@@ -60,11 +65,28 @@ class AdminAdjustViewModel : ViewModel() {
     }
 
     private fun togglePower(deviceId: Int) {
+        val target = devices.find { it.id == deviceId } ?: return
+        val nextPowerOn = !target.isPowerOn
+
         devices = devices.map { device ->
-            if (device.id == deviceId) device.copy(isPowerOn = !device.isPowerOn) else device
+            if (device.id == deviceId) device.copy(isPowerOn = nextPowerOn) else device
         }
         navController.updateCurrentState { state ->
             (state as? AdminAdjustUiState.Adjust)?.copy(devices = devices) ?: state
+        }
+
+        viewModelScope.launch {
+            controlDeviceUseCase(deviceId = target.deviceKey, isPowerOn = nextPowerOn)
+                .onFailure {
+                    // 실패 시 낙관적으로 바꿔둔 UI 상태를 되돌린다
+                    devices = devices.map { device ->
+                        if (device.id == deviceId) device.copy(isPowerOn = target.isPowerOn) else device
+                    }
+                    navController.updateCurrentState { state ->
+                        (state as? AdminAdjustUiState.Adjust)?.copy(devices = devices) ?: state
+                    }
+                    navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it))
+                }
         }
     }
 
@@ -96,11 +118,19 @@ class AdminAdjustViewModel : ViewModel() {
 
     }
 
-    // TODO: 서버 기기 제어 명령 API 연동 전까지의 목업. 실제 연동 시 UseCase/Repository로 대체 예정
     private fun sendRemoteControl(intent: AdminAdjustIntent.SendRemoteControl) {
+        val target = devices.find { it.id == intent.deviceId } ?: return
+
         viewModelScope.launch {
-            delay(500)
-            navController.emitEvent(AdminAdjustEvent.ShowSnackbar("제어 명령을 전송했습니다."))
+            controlDeviceUseCase(
+                deviceId = target.deviceKey,
+                isPowerOn = intent.isPowerOn,
+                operationMode = intent.operationMode.name,
+                windSpeed = intent.windSpeed.name,
+                temperature = intent.temperature.toInt(),
+            )
+                .onSuccess { navController.emitEvent(AdminAdjustEvent.ShowSnackbar("제어 명령을 전송했습니다.")) }
+                .onFailure { navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it)) }
         }
     }
 

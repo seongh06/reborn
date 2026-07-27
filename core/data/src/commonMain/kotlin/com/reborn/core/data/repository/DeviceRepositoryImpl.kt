@@ -12,6 +12,7 @@ import com.reborn.core.model.PairedDevice
 import com.reborn.core.model.PairingCode
 import com.reborn.core.model.RegisteredDevice
 import com.reborn.core.network.datasource.DeviceDataSource
+import com.reborn.core.network.model.request.device.ControlDeviceRequest
 import com.reborn.core.network.model.request.device.PairingRequest
 import com.reborn.core.network.model.request.device.RegisterDeviceRequest
 
@@ -36,4 +37,14 @@ class DeviceRepositoryImpl(
     override suspend fun registerDevice(placeId: Long, deviceId: String, deviceName: String): Result<RegisteredDevice> =
         remote.registerDevice(RegisterDeviceRequest(placeId, deviceId, deviceName))
             .toResult { it.toRegisteredDevice() }
+
+    override suspend fun controlDevice(
+        deviceId: String,
+        isPowerOn: Boolean?,
+        operationMode: String?,
+        windSpeed: String?,
+        temperature: Int?,
+    ): Result<Unit> =
+        remote.controlDevice(deviceId, ControlDeviceRequest(isPowerOn, operationMode, windSpeed, temperature))
+            .toResult { }
 }

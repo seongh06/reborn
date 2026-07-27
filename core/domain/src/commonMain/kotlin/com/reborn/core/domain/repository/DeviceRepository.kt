@@ -13,4 +13,12 @@ interface DeviceRepository {
     suspend fun getList(placeId: Long): Result<List<Device>>
 
     suspend fun registerDevice(placeId: Long, deviceId: String, deviceName: String): Result<RegisteredDevice>
+
+    suspend fun controlDevice(
+        deviceId: String,
+        isPowerOn: Boolean?,
+        operationMode: String?,
+        windSpeed: String?,
+        temperature: Int?,
+    ): Result<Unit>
 }
