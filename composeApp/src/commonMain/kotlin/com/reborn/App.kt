@@ -43,6 +43,7 @@ import com.reborn.feature.admin.data.navigation.adminDataNavGraph
 import com.reborn.feature.admin.feedback.navigation.adminFeedbackNavGraph
 import com.reborn.feature.admin.home.navigation.adminHomeNavGraph
 import com.reborn.feature.admin.home.navigation.adminIotDeviceListNavGraph
+import com.reborn.feature.admin.home.navigation.adminSmartThingsAddNavGraph
 import com.reborn.feature.admin.setting.navigation.adminAddAiSpeakerNavGraph
 import com.reborn.feature.admin.setting.navigation.adminAddArduinoNavGraph
 import com.reborn.feature.admin.setting.navigation.adminSettingNavGraph
@@ -93,9 +94,10 @@ fun App() {
                     val isAdminAddArduino = currentDestination?.hasRoute<Route.Admin.AddArduino>() == true
                     val isAdminAddAiSpeaker = currentDestination?.hasRoute<Route.Admin.AddAiSpeaker>() == true
                     val isAdminIotDeviceList = currentDestination?.hasRoute<Route.Admin.IotDeviceList>() == true
+                    val isAdminAddSmartThingsDevice = currentDestination?.hasRoute<Route.Admin.AddSmartThingsDevice>() == true
                     val isSubScreenWithoutBottomBar = isIntro || isAerometer || isAdminSetting ||
                         isAdminInviteCode || isAdminAddDevice || isAdminAddArduino ||
-                        isAdminAddAiSpeaker || isAdminIotDeviceList
+                        isAdminAddAiSpeaker || isAdminIotDeviceList || isAdminAddSmartThingsDevice
                     val isHomeLikeTabHidden = (isAdminHome || isAdminAdjust || isAdminFeedback) &&
                         !isAdminHomeBottomBarVisible
                     if (!isSubScreenWithoutBottomBar && !isHomeLikeTabHidden) {
@@ -241,6 +243,14 @@ fun App() {
                         }
                     )
                     adminIotDeviceListNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onNavigateToAddSmartThingsDevice = {
+                            navController.navigate(Route.Admin.AddSmartThingsDevice)
+                        }
+                    )
+                    adminSmartThingsAddNavGraph(
                         onBackClick = {
                             navController.popBackStack()
                         }

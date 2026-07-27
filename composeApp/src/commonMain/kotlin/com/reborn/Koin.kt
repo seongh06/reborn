@@ -10,6 +10,8 @@ import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
+import com.reborn.core.domain.usecase.GetSmartThingsDeviceListUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
@@ -18,6 +20,7 @@ import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
 import com.reborn.core.domain.usecase.RegisterAiSpeakerDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
+import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.core.network.di.dataSourceModule
@@ -26,6 +29,7 @@ import com.reborn.feature.admin.adjust.AdminAdjustViewModel
 import com.reborn.feature.admin.data.AdminDataViewModel
 import com.reborn.feature.admin.feedback.AdminFeedbackViewModel
 import com.reborn.feature.admin.home.AdminHomeViewModel
+import com.reborn.feature.admin.home.AdminSmartThingsAddViewModel
 import com.reborn.feature.admin.setting.AdminAddAiSpeakerViewModel
 import com.reborn.feature.admin.setting.AdminAddArduinoViewModel
 import com.reborn.feature.admin.setting.AdminSettingViewModel
@@ -56,9 +60,13 @@ val appDependenciesModule = module {
     factory { GetDeviceListUseCase(get()) }
     factory { RegisterArduinoDeviceUseCase(get()) }
     factory { RegisterAiSpeakerDeviceUseCase(get()) }
+    factory { GetSmartThingsAuthorizeUrlUseCase(get()) }
+    factory { GetSmartThingsDeviceListUseCase(get()) }
+    factory { RegisterSmartThingsDeviceUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)
+    viewModelOf(::AdminSmartThingsAddViewModel)
     viewModelOf(::AdminAdjustViewModel)
     viewModelOf(::AdminFeedbackViewModel)
     viewModelOf(::AdminDataViewModel)

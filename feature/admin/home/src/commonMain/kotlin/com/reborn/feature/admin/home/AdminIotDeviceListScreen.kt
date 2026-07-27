@@ -36,13 +36,15 @@ private val mockRoomDevices = listOf(
 
 @Composable
 fun AdminIotDeviceListRoute(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onAddDeviceClick: () -> Unit = {}
 ) {
     var devices by remember { mutableStateOf(mockRoomDevices) }
 
     AdminIotDeviceListScreen(
         devices = devices,
         onBackClick = onBackClick,
+        onAddDeviceClick = onAddDeviceClick,
         onPowerToggle = { deviceId ->
             devices = devices.map {
                 if (it.id == deviceId) it.copy(isPowerOn = !it.isPowerOn) else it
@@ -55,14 +57,15 @@ fun AdminIotDeviceListRoute(
 fun AdminIotDeviceListScreen(
     devices: List<IoTDeviceItem>,
     onBackClick: () -> Unit,
-    onPowerToggle: (Int) -> Unit
+    onPowerToggle: (Int) -> Unit,
+    onAddDeviceClick: () -> Unit = {}
 ) {
     val groupedDevices = devices.groupBy { it.place }
 
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
-        RebornTopAppBar(title = "기기", onBackClick = onBackClick)
+        RebornTopAppBar(title = "기기", onBackClick = onBackClick, onNavigateAddDevice = onAddDeviceClick)
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),

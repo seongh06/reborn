@@ -3,9 +3,11 @@ package com.reborn.core.network.di
 import com.reborn.core.network.datasource.AuthDataSource
 import com.reborn.core.network.datasource.DeviceDataSource
 import com.reborn.core.network.datasource.PlaceDataSource
+import com.reborn.core.network.datasource.SmartThingsDataSource
 import com.reborn.core.network.remote.AuthDataSourceImpl
 import com.reborn.core.network.remote.DeviceDataSourceImpl
 import com.reborn.core.network.remote.PlaceDataSourceImpl
+import com.reborn.core.network.remote.SmartThingsDataSourceImpl
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -16,6 +18,7 @@ val dataSourceModule = module {
     single<AuthDataSource> { AuthDataSourceImpl(get(named("auth"))) }
     single<PlaceDataSource> { PlaceDataSourceImpl(get(named("auth"))) }
     single<DeviceDataSource> { DeviceDataSourceImpl(get(named("auth"))) }
+    single<SmartThingsDataSource> { SmartThingsDataSourceImpl(get(named("auth"))) }
 }
 
 expect val platformDataSourceModule: Module
