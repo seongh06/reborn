@@ -11,6 +11,7 @@ sealed interface Route {
     sealed interface Admin : Route {
         @Serializable data object Home : Admin
         @Serializable data object Adjust : Admin
+        @Serializable data object IotDeviceList : Admin
         @Serializable data object Feedback : Admin
         @Serializable data object Data : Admin
         @Serializable data object Setting : Admin
