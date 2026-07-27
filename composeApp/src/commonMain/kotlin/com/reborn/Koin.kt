@@ -10,6 +10,7 @@ import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
 import com.reborn.core.domain.usecase.PairDeviceUseCase
@@ -45,6 +46,7 @@ val appDependenciesModule = module {
     factory { GenerateAdminCodeUseCase(get()) }
     factory { RedeemAdminCodeUseCase(get()) }
     factory { GetPlaceListUseCase(get()) }
+    factory { GetUserProfileUseCase(get()) }
     factory { GetPlaceDetailUseCase(get()) }
     factory { DeletePlaceUseCase(get()) }
     factory { GeneratePairingCodeUseCase(get()) }

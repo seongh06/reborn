@@ -73,6 +73,13 @@ class AuthService(
         redisUtil.delete("refresh:$userId")
     }
 
+    fun getMe(userId: Long): AuthDto.MeResponse {
+        val user = userRepository.findById(userId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 회원 정보입니다.")
+        }
+        return AuthConverter.toMeResponse(user)
+    }
+
     @Transactional
     fun updateFcmToken(userId: Long, request: AuthDto.FcmTokenUpdateRequest) {
         val fcmToken = request.fcmToken?.takeIf { it.isNotBlank() }

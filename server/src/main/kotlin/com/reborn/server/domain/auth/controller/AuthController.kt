@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -88,6 +89,20 @@ class AuthController(
         authService.updateFcmToken(extractUserId(authentication), request)
         return ApiResponse.success("FCM 토큰이 정상적으로 갱신되었습니다.")
     }
+
+    @Operation(
+        summary = "내 프로필 조회",
+        description = "인증된 사용자의 이름/프로필 이미지를 조회합니다. Setting 화면 상단 Profile 섹션(#155)에서 사용.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 AccessToken"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/me")
+    fun me(authentication: Authentication): ApiResponse<AuthDto.MeResponse> =
+        ApiResponse.success(authService.getMe(extractUserId(authentication)))
 
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long

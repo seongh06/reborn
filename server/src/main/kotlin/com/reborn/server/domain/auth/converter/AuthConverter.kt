@@ -18,4 +18,11 @@ object AuthConverter {
             name = user.name,
             isNewUser = isNewUser,
         )
+
+    fun toMeResponse(user: User): AuthDto.MeResponse =
+        AuthDto.MeResponse(
+            userId = user.id,
+            name = user.name,
+            profileImage = user.profileImage,
+        )
 }

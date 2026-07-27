@@ -127,6 +127,7 @@ device_serial ──(assignedDeviceId, 등록 시 1회 연결)──> device
 | POST | `/api/auth/kakao` | 카카오 소셜 로그인 | ❌ |
 | POST | `/api/auth/google` | 구글 소셜 로그인 | ❌ |
 | POST | `/api/auth/refresh` | AccessToken 재발급 | ❌ |
+| GET | `/api/auth/me` | 내 프로필(이름/프로필 이미지) 조회 (2026-07-27 신설, #155) | ✅ |
 | POST | `/api/metric/collect` | 메트릭 수집 (Arduino) | X-Device-Id 헤더 |
 | GET | `/api/metric/current` | 특정 기기 최신 메트릭 조회 | ❌ |
 | GET | `/api/metric/history` | 메트릭 히스토리 조회 | ✅ |

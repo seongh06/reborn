@@ -3,13 +3,19 @@ package com.reborn.feature.admin.setting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -18,20 +24,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.SettingItem
 import com.reborn.core.ui.ext.rebornDefault
+import com.reborn.feature.admin.setting.Res
 import com.reborn.feature.admin.setting.component.RoomListItem
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -118,6 +129,23 @@ fun AdminSettingScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
+                text = "Profile",
+                style = RebornTheme.typography.titleMedium,
+                color = RebornTheme.color.grayScale900
+            )
+            ProfileSection(
+                name = state.profileName,
+                imageUrl = state.profileImageUrl,
+                placeTags = state.rooms.map { it.roomName }
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp, 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
                 text = "Place",
                 style = RebornTheme.typography.titleMedium,
                 color = RebornTheme.color.grayScale900
@@ -170,6 +198,100 @@ fun AdminSettingScreen(
                 SettingItem(label = "로그아웃", onClick = onLogoutClick)
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
                 SettingItem(label = "탈퇴", onClick = {})
+            }
+        }
+    }
+}
+
+// Figma 595:5356 기준 - 아바타(+편집 뱃지)/이름/소속 place 태그. 아바타 업로드 자체는 서버 API가 없어
+// 편집 뱃지는 자리만 잡아두고 아직 동작하지 않는다(#155 범위 밖, 후속 이슈).
+@Composable
+private fun ProfileSection(
+    name: String?,
+    imageUrl: String?,
+    placeTags: List<String>
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(RebornTheme.color.grayScale300),
+                contentAlignment = Alignment.Center
+            ) {
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(Res.drawable.ic_person),
+                        modifier = Modifier.size(80.dp).clip(CircleShape)
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_person),
+                        contentDescription = null,
+                        tint = RebornTheme.color.grayScale500,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .padding(8.dp)
+            ) {
+                // 실제 업로드 동작이 아직 없어(#155 범위 밖) 클릭 불가능한 장식용 뱃지 -
+                // contentDescription을 주면 스크린리더가 조작 가능한 컨트롤처럼 안내해 misleading함(CodeRabbit 리뷰)
+                Icon(
+                    painter = painterResource(Res.drawable.ic_edit),
+                    contentDescription = null,
+                    tint = RebornTheme.color.grayScale900,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = name ?: "-",
+                style = RebornTheme.typography.headlineMedium,
+                color = RebornTheme.color.grayScale900
+            )
+            val visibleTags = placeTags.take(2)
+            val overflowCount = placeTags.size - visibleTags.size
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                visibleTags.forEach { tag ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(RebornTheme.color.grayScale300)
+                            .padding(8.dp, 4.dp)
+                    ) {
+                        Text(
+                            text = tag,
+                            style = RebornTheme.typography.labelMedium,
+                            color = RebornTheme.color.grayScale800
+                        )
+                    }
+                }
+                if (overflowCount > 0) {
+                    Text(
+                        text = "+$overflowCount",
+                        style = RebornTheme.typography.labelMedium,
+                        color = RebornTheme.color.grayScale800
+                    )
+                }
             }
         }
     }

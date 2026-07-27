@@ -6,7 +6,10 @@ import androidx.compose.runtime.Immutable
 sealed interface AdminSettingUiState {
     data object Loading : AdminSettingUiState
     data class Setting(
-        val rooms: List<RoomItem> = emptyList()
+        val rooms: List<RoomItem> = emptyList(),
+        val profileName: String? = null,
+        // 서버에 프로필 이미지 조회 API(#155)는 있으나 로그인 이후 이미지가 없는 유저(카카오 미동의 등)는 null일 수 있음
+        val profileImageUrl: String? = null
     ) : AdminSettingUiState
 
     data class RoomItem(

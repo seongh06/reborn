@@ -31,7 +31,11 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.reborn.core.designsystem.theme.RebornTheme
+import io.ktor.client.HttpClient
 import com.reborn.core.navigation.MainTab
 import com.reborn.core.navigation.Route
 import com.reborn.feature.admin.adjust.navigation.adjustNavGraph
@@ -50,6 +54,14 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun App() {
+    // 프로필 이미지(Kakao/Google CDN) 로딩용 - core:network의 인증된 HttpClient는 우리 API 서버
+    // 전용이라 재사용하지 않고, 별도의 플레인 HttpClient로 외부 이미지 호스트에 접근한다(#155).
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .components { add(KtorNetworkFetcherFactory(httpClient = { HttpClient() })) }
+            .build()
+    }
+
     PreComposeApp {
         val navController = rememberNavController()
 

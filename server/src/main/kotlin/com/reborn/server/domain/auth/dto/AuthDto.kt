@@ -29,4 +29,10 @@ class AuthDto {
         val name: String,
         val isNewUser: Boolean,
     )
+
+    data class MeResponse(
+        val userId: Long,
+        val name: String,
+        val profileImage: String?,
+    )
 }

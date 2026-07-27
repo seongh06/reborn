@@ -5,8 +5,10 @@ import com.reborn.core.network.model.ApiResponse
 import com.reborn.core.network.model.request.auth.FcmTokenUpdateRequest
 import com.reborn.core.network.model.request.auth.LoginRequest
 import com.reborn.core.network.model.response.auth.LoginResponse
+import com.reborn.core.network.model.response.auth.MeResponse
 import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.get
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -31,5 +33,9 @@ private val httpClient: HttpClient
         httpClient.patch("/api/auth/fcm") {
             setBody(request)
         }
+    }.asApiResponse()
+
+    override suspend fun getMe(): ApiResponse<MeResponse> = runCatching {
+        httpClient.get("/api/auth/me")
     }.asApiResponse()
 }
