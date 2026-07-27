@@ -8,6 +8,8 @@ import com.reborn.server.domain.auth.User
 import com.reborn.server.domain.feedback.Feedback
 import com.reborn.server.domain.feedback.FeedbackRepository
 import com.reborn.server.domain.feedback.FeedbackStatus
+import com.reborn.server.domain.feedback.client.GeminiClient
+import com.reborn.server.domain.feedback.client.VoiceTtsCache
 import com.reborn.server.domain.feedback.dto.FeedbackDto
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.Place
@@ -50,6 +52,15 @@ class FeedbackServiceTest {
 
     @Mock
     private lateinit var fcmClient: FcmClient
+
+    @Mock
+    private lateinit var geminiClient: GeminiClient
+
+    @Mock
+    private lateinit var voiceTtsCache: VoiceTtsCache
+
+    @Mock
+    private lateinit var voiceFeedbackPersister: VoiceFeedbackPersister
 
     @InjectMocks
     private lateinit var feedbackService: FeedbackService
