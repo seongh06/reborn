@@ -40,7 +40,15 @@ fun AdminFeedbackQRScreen(
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ){
-            if (qrUrl == null) {
+            if (state.failed) {
+                Text(
+                    modifier = Modifier.padding(24.dp),
+                    text = "QR 코드를 불러오지 못했어요. 다시 시도해주세요.",
+                    style = RebornTheme.typography.bodyMedium,
+                    color = RebornTheme.color.grayScale700,
+                    textAlign = TextAlign.Center
+                )
+            } else if (qrUrl == null) {
                 CircularProgressIndicator(color = RebornTheme.color.grayScale900)
             } else {
                 Column(

@@ -207,9 +207,13 @@ private fun buildTemperatureAdjustmentText(adjustment: AdminFeedbackUiState.Temp
         append("희망 온도: ${adjustment.before} → ")
     }
     val diff = adjustment.after - adjustment.before
-    val direction = if (diff >= 0) "증가" else "감소"
+    val suffix = when {
+        diff > 0 -> "(${formatDiff(diff)} 증가)"
+        diff < 0 -> "(${formatDiff(abs(diff))} 감소)"
+        else -> "(유지)"
+    }
     withStyle(SpanStyle(color = RebornTheme.color.humidity, fontWeight = FontWeight.Bold)) {
-        append("${adjustment.after} (${formatDiff(abs(diff))} $direction)")
+        append("${adjustment.after} $suffix")
     }
 }
 

@@ -121,6 +121,9 @@ class AdminFeedbackViewModel(
                 }
                 .onFailure {
                     navigationManager.emitEvent(AdminFeedbackEvent.ShowErrorSnackbar(it))
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminFeedbackUiState.FeedbackQR)?.copy(failed = true) ?: state
+                    }
                 }
         }
     }

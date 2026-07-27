@@ -65,7 +65,11 @@ class FeedbackService(
 
         val place = placeRepository.findByQrCode(qrCode)
             ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
-        val device = deviceRepository.findByDeviceKey(deviceId)
+        // QR 웹페이지(#163)는 GET /api/feedback/context가 내려준 DB 내부 id로 deviceId를 보낸다 -
+        // deviceKey는 기기 자체 인증 비밀값이라 비로그인 공개 API로 노출하지 않기 위함(CodeRabbit 리뷰).
+        // deviceKey 문자열을 그대로 보내는 기존 호출부(테스트 등)도 계속 동작하도록 폴백을 둔다.
+        val device = (deviceId.toLongOrNull()?.let { deviceRepository.findById(it).orElse(null) }
+            ?: deviceRepository.findByDeviceKey(deviceId))
             ?.takeIf { it.place.id == place.id }
             ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 또는 기기입니다.")
 
