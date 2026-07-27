@@ -2,21 +2,24 @@ package com.reborn.feature.admin.home
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -27,24 +30,42 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.home.model.AdminHomeUiState
+import com.reborn.feature.admin.home.model.filteredGroupedAlarms
 
 @Composable
 fun AdminAlarmScreen(
     state: AdminHomeUiState.Alarm,
     onBackClick: () -> Unit,
-    onAlarmDelete: (Int) -> Unit,
-    onAlarmAllDelete: () -> Unit
+    onFilterClick: (AdminHomeUiState.AlarmFilter) -> Unit,
+    onAlarmDelete: (Int) -> Unit
 ) {
+    val groupedAlarms = state.filteredGroupedAlarms()
+
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
-        RebornTopAppBar(title = "알람", onBackClick = onBackClick)
+        RebornTopAppBar(title = "알림", onBackClick = onBackClick)
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            AdminHomeUiState.AlarmFilter.entries.forEach { filter ->
+                AlarmFilterChip(
+                    label = filter.label,
+                    selected = filter == state.filter,
+                    onClick = { onFilterClick(filter) }
+                )
+            }
+        }
 
         LazyColumn(
             modifier = Modifier
@@ -52,33 +73,66 @@ fun AdminAlarmScreen(
                 .fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            if (state.alarm.isEmpty()) {
+            if (groupedAlarms.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier.fillParentMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "알람이 없습니다",
+                            text = "알림이 없습니다",
                             style = RebornTheme.typography.bodyMedium,
                             color = RebornTheme.color.grayScale500
                         )
                     }
                 }
             } else {
-                items(items = state.alarm, key = { it.id }) { alarm ->
-                    SwipeToDeleteAlarmItem(
-                        alarm = alarm,
-                        onDelete = { onAlarmDelete(alarm.id) }
-                    )
-                    HorizontalDivider(color = RebornTheme.color.grayScale300)
+                groupedAlarms.forEach { (group, items) ->
+                    item(key = "group_${group.name}") {
+                        Text(
+                            text = group.label,
+                            style = RebornTheme.typography.labelLarge,
+                            color = RebornTheme.color.grayScale600,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    items(items = items, key = { it.id }) { alarm ->
+                        SwipeToDeleteAlarmItem(
+                            alarm = alarm,
+                            onDelete = { onAlarmDelete(alarm.id) }
+                        )
+                    }
                 }
             }
         }
+    }
+}
 
-        RebornButton(
-            text = "알람 전체 삭제하기",
-            onClick = onAlarmAllDelete
+@Composable
+private fun AlarmFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .then(
+                if (selected) {
+                    Modifier.background(RebornTheme.color.grayScale300)
+                } else {
+                    Modifier.border(1.dp, RebornTheme.color.grayScale400, RoundedCornerShape(8.dp))
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = label,
+            style = RebornTheme.typography.labelLarge,
+            color = if (selected) RebornTheme.color.grayScale900 else RebornTheme.color.grayScale600
         )
     }
 }
@@ -126,43 +180,68 @@ private fun SwipeToDeleteAlarmItem(
             }
         }
     ) {
-        AlarmItem(alarm = alarm, onDelete = onDelete)
+        AlarmItemRow(alarm = alarm)
     }
 }
 
 @Composable
-private fun AlarmItem(
-    alarm: AdminHomeUiState.AlarmItem,
-    onDelete: () -> Unit
-) {
+private fun AlarmItemRow(alarm: AdminHomeUiState.AlarmItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = alarm.alarmContent,
-                style = RebornTheme.typography.bodyMedium,
-                color = RebornTheme.color.grayScale900
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(RebornTheme.color.grayScale300)
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = alarm.time,
-                style = RebornTheme.typography.caption,
-                color = RebornTheme.color.grayScale500
+            if (alarm.title != null) {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
+                    Text(
+                        text = alarm.title,
+                        style = RebornTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = RebornTheme.color.grayScale900
+                    )
+                    Text(
+                        text = alarm.content,
+                        style = RebornTheme.typography.caption,
+                        color = RebornTheme.color.grayScale900
+                    )
+                    alarm.time?.let { time ->
+                        Text(
+                            text = time,
+                            style = RebornTheme.typography.caption,
+                            color = RebornTheme.color.grayScale900
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = alarm.content,
+                    style = RebornTheme.typography.bodyLarge,
+                    color = RebornTheme.color.grayScale900
+                )
+            }
+        }
+
+        if (alarm.title != null) {
+            Box(
+                modifier = Modifier
+                    .width(140.dp)
+                    .height(70.dp)
+                    .background(RebornTheme.color.grayScale300)
             )
         }
-        Text(
-            text = "삭제",
-            style = RebornTheme.typography.labelMedium,
-            color = RebornTheme.color.reject,
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(onClick = onDelete)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        )
     }
 }
