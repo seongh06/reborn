@@ -47,7 +47,10 @@ class DeviceDataSourceImpl(
         }
     }.asApiResponse()
 
-    override suspend fun controlDevice(deviceId: String, request: ControlDeviceRequest): ApiResponse<ControlDeviceResponse> = runCatching {
+    override suspend fun controlDevice(
+        deviceId: String,
+        request: ControlDeviceRequest
+    ): ApiResponse<ControlDeviceResponse> = runCatching {
         httpClient.post("/api/device/$deviceId/control") {
             setBody(request)
         }
