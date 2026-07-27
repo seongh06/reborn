@@ -6,7 +6,7 @@ import com.reborn.core.model.SensorPoint
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-data class GetSensorHistoryParams(val deviceId: Int, val sensorType: String)
+data class GetSensorHistoryParams(val deviceId: String, val sensorType: String)
 
 class GetSensorHistoryUseCase(
     private val repository: SensorHistoryRepository

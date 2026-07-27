@@ -14,6 +14,8 @@ import com.reborn.core.network.remote.FeedbackDataSourceImpl
 import com.reborn.core.network.remote.MetricDataSourceImpl
 import com.reborn.core.network.remote.PlaceDataSourceImpl
 import com.reborn.core.network.remote.SmartThingsDataSourceImpl
+import com.reborn.core.network.service.SensorHistoryApi
+import com.reborn.core.network.service.SensorHistoryApiImpl
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -28,6 +30,7 @@ val dataSourceModule = module {
     single<DeviceProvisioningDataSource> { DeviceProvisioningDataSourceImpl() }
     single<FeedbackDataSource> { FeedbackDataSourceImpl(get(named("auth"))) }
     single<MetricDataSource> { MetricDataSourceImpl(get(named("auth"))) }
+    single<SensorHistoryApi> { SensorHistoryApiImpl(get()) }
 }
 
 expect val platformDataSourceModule: Module

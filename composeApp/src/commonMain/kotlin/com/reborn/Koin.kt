@@ -14,6 +14,7 @@ import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsDeviceListUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
@@ -76,6 +77,7 @@ val appDependenciesModule = module {
     factory { GetFeedbackListUseCase(get()) }
     factory { UpdateFeedbackStatusUseCase(get()) }
     factory { GetCurrentMetricUseCase(get()) }
+    factory { GetSensorHistoryUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)
