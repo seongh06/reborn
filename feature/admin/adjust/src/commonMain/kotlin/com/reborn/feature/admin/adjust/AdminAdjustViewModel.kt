@@ -88,7 +88,10 @@ class AdminAdjustViewModel(
     }
 
     private fun navigateToDeviceDetail(intent: AdminAdjustIntent.NavigateToDeviceDetail) {
-        val device = devices.find { it.id == intent.deviceId } ?: return
+        val device = devices.find { it.id == intent.deviceId }
+            ?: return navController.emitEvent(
+                AdminAdjustEvent.ShowErrorSnackbar(IllegalArgumentException("기기를 찾을 수 없습니다."))
+            )
         navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.controlMethod, intent.deviceId, device))
     }
 
