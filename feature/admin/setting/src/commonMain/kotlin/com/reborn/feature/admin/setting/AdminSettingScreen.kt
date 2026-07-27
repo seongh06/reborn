@@ -228,6 +228,7 @@ private fun ProfileSection(
                         model = imageUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
+                        error = painterResource(Res.drawable.ic_person),
                         modifier = Modifier.size(80.dp).clip(CircleShape)
                     )
                 } else {
@@ -246,9 +247,11 @@ private fun ProfileSection(
                     .background(Color.White)
                     .padding(8.dp)
             ) {
+                // 실제 업로드 동작이 아직 없어(#155 범위 밖) 클릭 불가능한 장식용 뱃지 -
+                // contentDescription을 주면 스크린리더가 조작 가능한 컨트롤처럼 안내해 misleading함(CodeRabbit 리뷰)
                 Icon(
                     painter = painterResource(Res.drawable.ic_edit),
-                    contentDescription = "프로필 사진 변경",
+                    contentDescription = null,
                     tint = RebornTheme.color.grayScale900,
                     modifier = Modifier.size(16.dp)
                 )

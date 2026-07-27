@@ -127,8 +127,12 @@ private fun AddSheet(
         scope.launch {
             sheetState.hide()
         }.invokeOnCompletion {
-            onDismiss()
-            onClick()
+            // hide 애니메이션이 취소/중단돼 시트가 여전히 보이는 상태면(예: 드래그로 다시 올림)
+            // 콜백을 실행하지 않는다 - CodeRabbit 리뷰(#155)
+            if (!sheetState.isVisible) {
+                onDismiss()
+                onClick()
+            }
         }
     }
 

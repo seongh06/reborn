@@ -68,8 +68,20 @@ class AdminSettingViewModel(
     private fun checkInitialState() {
         navigationManager.clearAndReset(AdminSettingUiState.Loading)
         viewModelScope.launch {
-            // 프로필 조회(#155)는 장소 목록과 무관한 별도 API라 실패해도 장소 목록 표시를 막지 않는다 - best-effort.
+            // 프로필 조회(#155)는 장소 목록과 무관한 별도 API - 여기서 병렬로 시작해두되, 그 결과를
+            // 기다리는 시점을 장소 목록이 이미 화면에 반영된 뒤로 미뤄서 장소 목록 표시를 지연시키지 않는다.
             val profile = async { getUserProfileUseCase().getOrNull() }
+
+            fun applyProfileWhenReady() {
+                viewModelScope.launch {
+                    val userProfile = profile.await() ?: return@launch
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminSettingUiState.Setting)
+                            ?.copy(profileName = userProfile.name, profileImageUrl = userProfile.profileImage)
+                            ?: state
+                    }
+                }
+            }
 
             getPlaceListUseCase()
                 .onSuccess { places ->
@@ -94,25 +106,13 @@ class AdminSettingViewModel(
                             }
                         }.awaitAll()
                     }
-                    val userProfile = profile.await()
-                    navigationManager.clearAndReset(
-                        AdminSettingUiState.Setting(
-                            rooms = rooms,
-                            profileName = userProfile?.name,
-                            profileImageUrl = userProfile?.profileImage,
-                        )
-                    )
+                    navigationManager.clearAndReset(AdminSettingUiState.Setting(rooms = rooms))
+                    applyProfileWhenReady()
                 }
                 .onFailure {
                     navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
-                    val userProfile = profile.await()
-                    navigationManager.clearAndReset(
-                        AdminSettingUiState.Setting(
-                            rooms = emptyList(),
-                            profileName = userProfile?.name,
-                            profileImageUrl = userProfile?.profileImage,
-                        )
-                    )
+                    navigationManager.clearAndReset(AdminSettingUiState.Setting(rooms = emptyList()))
+                    applyProfileWhenReady()
                 }
         }
     }

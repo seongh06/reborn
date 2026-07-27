@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 data class MeResponse(
     val userId: Long,
     val name: String,
-    val profileImage: String?
+    val profileImage: String? = null
 )
