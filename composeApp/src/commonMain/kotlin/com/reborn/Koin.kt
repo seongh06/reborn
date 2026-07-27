@@ -4,6 +4,8 @@ import com.reborn.core.common.platformSensorModule
 import com.reborn.core.data.di.repositoryModule
 import com.reborn.core.datastore.di.dataStoreModule
 import com.reborn.core.datastore.di.platformDataStoreModule
+import com.reborn.core.domain.usecase.ConfigureDeviceWifiUseCase
+import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
@@ -32,6 +34,7 @@ import com.reborn.feature.admin.home.AdminHomeViewModel
 import com.reborn.feature.admin.home.AdminSmartThingsAddViewModel
 import com.reborn.feature.admin.setting.AdminAddAiSpeakerViewModel
 import com.reborn.feature.admin.setting.AdminAddArduinoViewModel
+import com.reborn.feature.admin.setting.AdminDeviceWifiSetupViewModel
 import com.reborn.feature.admin.setting.AdminSettingViewModel
 import com.reborn.feature.aerometer.AerometerViewModel
 import com.reborn.feature.intro.IntroViewModel
@@ -63,6 +66,8 @@ val appDependenciesModule = module {
     factory { GetSmartThingsAuthorizeUrlUseCase(get()) }
     factory { GetSmartThingsDeviceListUseCase(get()) }
     factory { RegisterSmartThingsDeviceUseCase(get()) }
+    factory { ConfigureDeviceWifiUseCase(get()) }
+    factory { ControlDeviceUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)
@@ -73,6 +78,7 @@ val appDependenciesModule = module {
     viewModelOf(::AdminSettingViewModel)
     viewModelOf(::AdminAddArduinoViewModel)
     viewModelOf(::AdminAddAiSpeakerViewModel)
+    viewModelOf(::AdminDeviceWifiSetupViewModel)
     viewModelOf(::AerometerViewModel)
 }
 fun initKoin(

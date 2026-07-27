@@ -46,6 +46,7 @@ import com.reborn.feature.admin.home.navigation.adminIotDeviceListNavGraph
 import com.reborn.feature.admin.home.navigation.adminSmartThingsAddNavGraph
 import com.reborn.feature.admin.setting.navigation.adminAddAiSpeakerNavGraph
 import com.reborn.feature.admin.setting.navigation.adminAddArduinoNavGraph
+import com.reborn.feature.admin.setting.navigation.adminDeviceWifiSetupNavGraph
 import com.reborn.feature.admin.setting.navigation.adminSettingNavGraph
 import com.reborn.feature.aerometer.navigation.aerometerNavGraph
 import com.reborn.feature.intro.navigation.introAdminCodeNavGraph
@@ -95,8 +96,9 @@ fun App() {
                     val isAdminAddAiSpeaker = currentDestination?.hasRoute<Route.Admin.AddAiSpeaker>() == true
                     val isAdminIotDeviceList = currentDestination?.hasRoute<Route.Admin.IotDeviceList>() == true
                     val isAdminAddSmartThingsDevice = currentDestination?.hasRoute<Route.Admin.AddSmartThingsDevice>() == true
+                    val isAdminDeviceWifiSetup = currentDestination?.hasRoute<Route.Admin.DeviceWifiSetup>() == true
                     val isSubScreenWithoutBottomBar = isIntro || isAerometer || isAdminSetting ||
-                        isAdminInviteCode || isAdminAddDevice || isAdminAddArduino ||
+                        isAdminInviteCode || isAdminAddDevice || isAdminAddArduino || isAdminDeviceWifiSetup ||
                         isAdminAddAiSpeaker || isAdminIotDeviceList || isAdminAddSmartThingsDevice
                     val isHomeLikeTabHidden = (isAdminHome || isAdminAdjust || isAdminFeedback) &&
                         !isAdminHomeBottomBarVisible
@@ -302,9 +304,20 @@ fun App() {
                     adminAddArduinoNavGraph(
                         onBackClick = {
                             navController.popBackStack()
+                        },
+                        onNavigateToWifiSetup = { deviceId ->
+                            navController.navigate(Route.Admin.DeviceWifiSetup(deviceId))
                         }
                     )
                     adminAddAiSpeakerNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        },
+                        onNavigateToWifiSetup = { deviceId ->
+                            navController.navigate(Route.Admin.DeviceWifiSetup(deviceId))
+                        }
+                    )
+                    adminDeviceWifiSetupNavGraph(
                         onBackClick = {
                             navController.popBackStack()
                         }

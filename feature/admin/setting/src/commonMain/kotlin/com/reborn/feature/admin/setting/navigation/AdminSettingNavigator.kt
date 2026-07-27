@@ -8,6 +8,7 @@ import androidx.navigation.toRoute
 import com.reborn.core.navigation.Route
 import com.reborn.feature.admin.setting.AdminAddAiSpeakerRoute
 import com.reborn.feature.admin.setting.AdminAddArduinoRoute
+import com.reborn.feature.admin.setting.AdminDeviceWifiSetupRoute
 import com.reborn.feature.admin.setting.AdminSettingRoute
 
 fun NavController.navigateAdminSetting(navOptions: NavOptions) {
@@ -38,23 +39,39 @@ fun NavGraphBuilder.adminSettingNavGraph(
 
 fun NavGraphBuilder.adminAddArduinoNavGraph(
     onBackClick: () -> Unit,
+    onNavigateToWifiSetup: (deviceId: String) -> Unit = {},
 ) {
     composable<Route.Admin.AddArduino> { backStackEntry ->
         val route = backStackEntry.toRoute<Route.Admin.AddArduino>()
         AdminAddArduinoRoute(
             placeId = route.placeId.toLong(),
             onBackClick = onBackClick,
+            onRegisterSuccess = onNavigateToWifiSetup,
         )
     }
 }
 
 fun NavGraphBuilder.adminAddAiSpeakerNavGraph(
     onBackClick: () -> Unit,
+    onNavigateToWifiSetup: (deviceId: String) -> Unit = {},
 ) {
     composable<Route.Admin.AddAiSpeaker> { backStackEntry ->
         val route = backStackEntry.toRoute<Route.Admin.AddAiSpeaker>()
         AdminAddAiSpeakerRoute(
             placeId = route.placeId.toLong(),
+            onBackClick = onBackClick,
+            onRegisterSuccess = onNavigateToWifiSetup,
+        )
+    }
+}
+
+fun NavGraphBuilder.adminDeviceWifiSetupNavGraph(
+    onBackClick: () -> Unit,
+) {
+    composable<Route.Admin.DeviceWifiSetup> { backStackEntry ->
+        val route = backStackEntry.toRoute<Route.Admin.DeviceWifiSetup>()
+        AdminDeviceWifiSetupRoute(
+            deviceId = route.deviceId,
             onBackClick = onBackClick,
         )
     }
