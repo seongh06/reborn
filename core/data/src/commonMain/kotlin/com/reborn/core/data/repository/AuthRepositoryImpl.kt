@@ -44,4 +44,11 @@ class AuthRepositoryImpl(
         remote.updateProfile(UpdateProfileRequest(name))
             .toResult()
             .mapCatching { dto -> UserProfile(userId = dto.userId, name = dto.name, profileImage = dto.profileImage) }
+
+    // 실패(예: 유일 관리자라 차단됨) 시에는 로컬 세션을 유지해야 사용자가 오류를 보고 재시도할 수 있다 -
+    // logout()과 달리 성공했을 때만 토큰을 지운다.
+    override suspend fun withdraw(): Result<Unit> =
+        remote.withdraw()
+            .toResult()
+            .mapCatching { local.clearTokens() }
 }

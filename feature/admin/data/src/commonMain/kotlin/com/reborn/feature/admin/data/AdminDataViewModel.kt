@@ -3,11 +3,11 @@ package com.reborn.feature.admin.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
-import com.reborn.core.data.repository.SensorHistoryRepositoryImpl
+import com.reborn.core.domain.usecase.GetDeviceListUseCase
+import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryParams
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
-import com.reborn.core.network.model.SensorHistoryResponse
-import com.reborn.core.network.service.SensorHistoryApi
+import com.reborn.core.model.SensorPoint
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
 import kotlinx.coroutines.CancellationException
@@ -16,7 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private const val MOCK_DEVICE_ID = 1
+private val METRIC_CAPABLE_DEVICE_TYPES = setOf("ARDUINO", "SMART_THINGS")
 
 // 목업 시간별 히스토리("어제"/"오늘")의 실제 일수. hourlyDayPatternsFor의 패턴 개수와 항상 같이 맞춰서 사용
 private const val MOCK_HISTORY_DAY_COUNT = 2
@@ -158,42 +158,38 @@ private fun yearlyMockValues(category: AdminDataUiState.Category): List<Double> 
     AdminDataUiState.Category.DISCOMFORT -> listOf(70.0, 72.0, 69.0, 71.0, 73.0)
 }
 
-// TODO: 서버 /api/metric/history 연동 확정 후 실제 Ktor 구현체로 교체하고 Koin으로 주입받도록 변경 예정.
-// 카테고리당 리터럴 패턴 2개 = 딱 2일치("어제", "오늘")만 생성 — 반복/순환 없이 그대로 사용
-private class MockSensorHistoryApi : SensorHistoryApi {
-    override suspend fun getSensorHistory(deviceId: Int, sensorType: String): SensorHistoryResponse {
-        val category = AdminDataUiState.Category.entries.first { it.name == sensorType }
-        val patterns = hourlyDayPatternsFor(category)
-
-        val dailyData = patterns.indices.associate { index ->
-            val daysAgo = patterns.size - 1 - index
-            val date = today.minusDays(daysAgo)
-            date.toDateKey() to patterns[index]
-        }
-        return SensorHistoryResponse(deviceId = deviceId, sensorType = sensorType, dailyData = dailyData)
-    }
-}
-
 sealed class AdminDataEvent {
     data object Exit : AdminDataEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminDataEvent()
     data class ShowSnackbar(val message: String) : AdminDataEvent()
 }
 
-class AdminDataViewModel : ViewModel() {
+class AdminDataViewModel(
+    private val getPlaceListUseCase: GetPlaceListUseCase,
+    private val getDeviceListUseCase: GetDeviceListUseCase,
+    private val getSensorHistoryUseCase: GetSensorHistoryUseCase,
+) : ViewModel() {
     private val navigationManager = NavigationManager<AdminDataUiState, AdminDataEvent>(
         initialState = AdminDataUiState.Loading,
         exitEvent = AdminDataEvent.Exit,
         scope = viewModelScope
     )
 
-    // TODO: Koin으로 실제 SensorHistoryApi 구현체를 주입받도록 교체 예정. ViewModel은 core:domain UseCase만 알고
-    // core:network/core:data 구현 세부사항(Repository, Api)에는 의존하지 않도록 경계를 지킴
-    private val getSensorHistoryUseCase = GetSensorHistoryUseCase(
-        SensorHistoryRepositoryImpl(MockSensorHistoryApi())
-    )
-
     private var loadJob: Job? = null
+
+    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소의 첫 ARDUINO/SMART_THINGS
+    // 기기로 임시 고정한다.
+    private var resolvedDeviceId: String? = null
+
+    private suspend fun resolveDeviceId(): String? {
+        resolvedDeviceId?.let { return it }
+        val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId ?: return null
+        val resolved = getDeviceListUseCase(placeId).getOrNull()
+            ?.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
+            ?.deviceId
+        resolvedDeviceId = resolved
+        return resolved
+    }
 
     val uiState = navigationManager.uiState
     val event = navigationManager.event
@@ -301,6 +297,12 @@ class AdminDataViewModel : ViewModel() {
 
     // Period는 "총 조회 범위"가 아니라 "점 사이의 간격"을 의미함 (1시간 = 점 하나가 1시간 간격, 일 = 점 하나가 하루 간격 ...)
     // 모든 기간이 실제 달력 개념(시각/날짜/월)으로 통일된 라벨을 쓰도록 함, 자연스러운 개수만큼만 표시(억지로 채우지 않음)
+    //
+    // 주의: HOUR/DAY의 라벨은 여전히 이 2일(MOCK_HISTORY_DAY_COUNT) 가정으로 생성된다. 실 데이터
+    // (hourlyValues/dailyAverageValues)가 실제로 몇 일치를 반환하는지는 기기 수집 이력에 따라
+    // 달라질 수 있어 정확히 일치하지 않을 수 있음 - 차트 컴포넌트가 labels.getOrNull()로 범위를
+    // 벗어난 인덱스는 라벨 없이 넘어가도록 이미 방어하고 있어 크래시 없이 일부 라벨만 비게 되는
+    // 정도의 코스메틱 이슈로 그침. 실 수집 이력 기준으로 라벨을 동적 생성하는 건 별도 개선 필요.
     private fun chartLabelsFor(period: AdminDataUiState.Period): List<String> {
         return when (period) {
             // 1시간 간격 · 목업이 딱 2일치(어제/오늘)라 그 2일을 이어서 표시. 자정(0시)엔 "HH:00" 대신 그날 날짜(ex. "3일")로 표시해 날짜가 바뀌었음을 알림
@@ -323,6 +325,9 @@ class AdminDataViewModel : ViewModel() {
         }
     }
 
+    // HOUR/DAY는 category==DISCOMFORT일 때만 목업 유지(서버 히스토리 API에 불쾌지수 필드 자체가
+    // 없음) - 나머지 4개 카테고리는 실 기기가 있으면 실 데이터를 쓰고, 없으면 빈 그래프를 반환한다
+    // (라벨-값 개수가 어긋나지 않도록 빈 값일 땐 라벨도 비워서 호출부에서 함께 처리)
     private suspend fun mockChartValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
         if (!hasEnoughDataFor(period)) return emptyList()
         return when (period) {
@@ -336,21 +341,37 @@ class AdminDataViewModel : ViewModel() {
         }
     }
 
-    // TODO: 서버 sensorLogs 히스토리 조회 API 연동 전까지의 목업. 실제 연동 시 SensorHistoryApi의 Ktor 구현체로 대체 예정
-    // 오늘 하루로 제한하지 않고 목업 전체 기간을 이어서 반환 — 축소하면 여러 날짜가 쭉 이어져 보이도록 함
     private suspend fun hourlyValues(category: AdminDataUiState.Category): List<Float> {
-        // toSensorPoints()가 이미 날짜 오름차순 → 하루 내 시간 오름차순으로 정렬해서 반환하므로 그대로 사용
-        val params = GetSensorHistoryParams(MOCK_DEVICE_ID, category.name)
+        if (category == AdminDataUiState.Category.DISCOMFORT) return mockDiscomfortPoints().map { it.value.toFloat() }
+        val deviceId = resolveDeviceId() ?: return emptyList()
+        val params = GetSensorHistoryParams(deviceId, category.name)
         return getSensorHistoryUseCase(params).first().map { point -> point.value.toFloat() }
     }
 
     private suspend fun dailyAverageValues(category: AdminDataUiState.Category): List<Float> {
-        val params = GetSensorHistoryParams(MOCK_DEVICE_ID, category.name)
-        val points = getSensorHistoryUseCase(params).first()
+        val points = if (category == AdminDataUiState.Category.DISCOMFORT) {
+            mockDiscomfortPoints()
+        } else {
+            val deviceId = resolveDeviceId() ?: return emptyList()
+            getSensorHistoryUseCase(GetSensorHistoryParams(deviceId, category.name)).first()
+        }
         return points.groupBy { it.date }
             .toList()
             .sortedBy { (date, _) -> date }
             .map { (_, dayPoints) -> dayPoints.map { point -> point.value }.average().toFloat() }
+    }
+
+    // DISCOMFORT는 서버 히스토리 API에 없는 필드라 목업 그대로 유지 - 예전 MockSensorHistoryApi가
+    // 하던 변환(리터럴 패턴 -> 날짜별 SensorPoint)을 API 계층 없이 직접 재현
+    private fun mockDiscomfortPoints(): List<SensorPoint> {
+        val patterns = hourlyDayPatternsFor(AdminDataUiState.Category.DISCOMFORT)
+        return patterns.indices.flatMap { index ->
+            val daysAgo = patterns.size - 1 - index
+            val date = today.minusDays(daysAgo)
+            patterns[index].mapIndexed { hour, value ->
+                SensorPoint(date = date.toDateKey(), hour = hour, value = value)
+            }
+        }
     }
 
     // 주/월/년 목업도 계산식이 아니라 리터럴 숫자 배열을 그대로 사용

@@ -8,6 +8,8 @@ import com.reborn.server.domain.auth.client.KakaoAuthClient
 import com.reborn.server.domain.auth.client.SocialUserInfo
 import com.reborn.server.domain.auth.converter.AuthConverter
 import com.reborn.server.domain.auth.dto.AuthDto
+import com.reborn.server.domain.place.AccessLevel
+import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.redis.RedisUtil
@@ -27,6 +29,7 @@ class AuthService(
     private val kakaoAuthClient: KakaoAuthClient,
     private val jwtProvider: JwtProvider,
     private val redisUtil: RedisUtil,
+    private val userPlaceMappingRepository: UserPlaceMappingRepository,
 ) {
 
     @Transactional
@@ -99,6 +102,36 @@ class AuthService(
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 회원 정보입니다.")
         }
         user.updateFcmToken(fcmToken)
+    }
+
+    // 탈퇴 시 이 사용자가 유일한 ADMIN인 장소가 있으면 그 장소의 관리 주체가 사라지므로 차단한다 -
+    // cascade 삭제(장소/기기까지 함께 삭제)는 다른 관리자/사용자의 데이터까지 날리는 위험한 작업이라
+    // 채택하지 않고, 사용자가 먼저 다른 관리자를 초대하거나 장소를 정리하도록 안내한다.
+    @Transactional
+    fun withdraw(userId: Long) {
+        val adminMappings = userPlaceMappingRepository.findAllByUserIdAndAccessLevel(userId, AccessLevel.ADMIN)
+        val soleAdminPlaceNames = adminMappings
+            .filter { mapping ->
+                val otherAdmins = userPlaceMappingRepository
+                    .findAllByPlaceIdAndAccessLevel(mapping.place.id, AccessLevel.ADMIN)
+                otherAdmins.none { it.user.id != userId }
+            }
+            .map { it.place.name }
+
+        if (soleAdminPlaceNames.isNotEmpty()) {
+            throw BusinessAlertException(
+                CommonErrorCode.CONFLICT,
+                "${soleAdminPlaceNames.joinToString(", ")} 장소의 유일한 관리자입니다. " +
+                    "다른 관리자를 먼저 초대하거나 장소를 삭제한 뒤 탈퇴할 수 있습니다.",
+            )
+        }
+
+        userPlaceMappingRepository.deleteAll(userPlaceMappingRepository.findAllByUserId(userId))
+        val user = userRepository.findById(userId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 회원 정보입니다.")
+        }
+        userRepository.delete(user)
+        redisUtil.delete("refresh:$userId")
     }
 
     private fun login(provider: OAuthProvider, info: SocialUserInfo): AuthDto.LoginResponse {

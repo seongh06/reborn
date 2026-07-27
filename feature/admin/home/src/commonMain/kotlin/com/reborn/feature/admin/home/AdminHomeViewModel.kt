@@ -3,9 +3,17 @@ package com.reborn.feature.admin.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
+import com.reborn.core.domain.usecase.GetDeviceListUseCase
+import com.reborn.core.domain.usecase.GetFeedbackListUseCase
+import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.model.Feedback
+import com.reborn.core.ui.component.FeedbackListItem
+import com.reborn.core.ui.component.classifyFeedbackType
+import com.reborn.core.ui.component.feedbackStatusToState
+import com.reborn.core.ui.component.formatFeedbackRelativeTime
 import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 sealed class AdminHomeEvent {
@@ -15,11 +23,20 @@ sealed class AdminHomeEvent {
     data object NavigateToFeedbackList : AdminHomeEvent()
     data object NavigateToSetting : AdminHomeEvent()
     data object NavigateToDeviceList : AdminHomeEvent()
+    data class NavigateToDeviceDetail(val deviceId: Int) : AdminHomeEvent()
 }
 
-class AdminHomeViewModel : ViewModel() {
+private const val RECENT_FEEDBACK_COUNT = 3
+private val METRIC_CAPABLE_DEVICE_TYPES = setOf("ARDUINO", "SMART_THINGS")
+
+class AdminHomeViewModel(
+    private val getPlaceListUseCase: GetPlaceListUseCase,
+    private val getDeviceListUseCase: GetDeviceListUseCase,
+    private val getCurrentMetricUseCase: GetCurrentMetricUseCase,
+    private val getFeedbackListUseCase: GetFeedbackListUseCase,
+) : ViewModel() {
     private val navController = NavigationManager<AdminHomeUiState, AdminHomeEvent>(
-        initialState = AdminHomeUiState.Home,
+        initialState = AdminHomeUiState.Loading,
         exitEvent = AdminHomeEvent.Exit,
         scope = viewModelScope
     )
@@ -65,6 +82,7 @@ class AdminHomeViewModel : ViewModel() {
             is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm(alarm = alarmItems))
             is AdminHomeIntent.NavigateToSetting -> navigateToSetting()
             is AdminHomeIntent.NavigateToDeviceList -> navigateToDeviceList()
+            is AdminHomeIntent.NavigateToDeviceDetail -> navigateToDeviceDetail(intent.deviceId)
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
             is AdminHomeIntent.NavigateToFeedback -> navigateToFeedbackDetail(intent.feedbackId)
             is AdminHomeIntent.NavigateToFeedbackList -> navigateToFeedbackList()
@@ -82,10 +100,53 @@ class AdminHomeViewModel : ViewModel() {
     private fun checkInitialState() {
         navController.clearAndReset(AdminHomeUiState.Loading)
         viewModelScope.launch {
-            delay(1500)
-            navController.clearAndReset(AdminHomeUiState.Home)
+            val placeListResult = getPlaceListUseCase()
+            placeListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+            val placeId = placeListResult.getOrNull()?.firstOrNull()?.placeId
+            if (placeId == null) {
+                navController.clearAndReset(AdminHomeUiState.Home(hasDevices = false))
+                return@launch
+            }
+
+            val deviceListResult = getDeviceListUseCase(placeId)
+            deviceListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+            val devices = deviceListResult.getOrNull().orEmpty()
+
+            val metric = devices.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
+                ?.let { device ->
+                    getCurrentMetricUseCase(device.deviceId)
+                        .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+                        .getOrNull()
+                }
+
+            val feedbackListResult = getFeedbackListUseCase(placeId)
+            feedbackListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+            val feedbacks = feedbackListResult.getOrNull().orEmpty()
+            val recentFeedbacks = feedbacks
+                .sortedByDescending { it.createdAt }
+                .take(RECENT_FEEDBACK_COUNT)
+                .map { it.toFeedbackListItem() }
+
+            navController.clearAndReset(
+                AdminHomeUiState.Home(
+                    hasDevices = devices.isNotEmpty(),
+                    metric = metric,
+                    feedbackTotalCount = feedbacks.size,
+                    feedbackWaitingCount = feedbacks.count { it.status == "PENDING" },
+                    recentFeedbacks = recentFeedbacks
+                )
+            )
         }
     }
+
+    private fun Feedback.toFeedbackListItem(): FeedbackListItem =
+        FeedbackListItem(
+            id = feedbackId.toInt(),
+            type = classifyFeedbackType(content),
+            state = feedbackStatusToState(status),
+            time = formatFeedbackRelativeTime(createdAt),
+            title = content
+        )
 
     private fun navigateToFeedbackDetail(feedbackId: Int) {
         viewModelScope.launch {
@@ -108,6 +169,12 @@ class AdminHomeViewModel : ViewModel() {
     private fun navigateToDeviceList() {
         viewModelScope.launch {
             navController.emitEvent(AdminHomeEvent.NavigateToDeviceList)
+        }
+    }
+
+    private fun navigateToDeviceDetail(deviceId: Int) {
+        viewModelScope.launch {
+            navController.emitEvent(AdminHomeEvent.NavigateToDeviceDetail(deviceId))
         }
     }
 

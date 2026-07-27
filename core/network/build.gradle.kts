@@ -41,6 +41,7 @@ kotlin {
             implementation(projects.core.common)
             //implementation(projects.core.notification)
             implementation(projects.core.datastore)
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
         }
         iosMain.dependencies {
             //Todo: iOS 카카오 로그인 구현하기

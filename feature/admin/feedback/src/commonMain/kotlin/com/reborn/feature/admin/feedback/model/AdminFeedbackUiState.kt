@@ -28,8 +28,10 @@ sealed interface AdminFeedbackUiState {
         val time: String, // 목록용 상대 시각(ex. "5분전")
         val submittedAt: String, // 상세용 절대 시각(ex. "2026.06.11 10:24") - Figma 596:3555
         val content: String,
-        val sensorSnapshot: SensorSnapshot,
-        val temperatureAdjustment: TemperatureAdjustment
+        // 서버 GET /api/feedback 응답에는 접수 시점 센서 스냅샷/AI 추천 조절값이 없음(별도 분석
+        // 기능이 아직 없음) - 실 데이터는 항상 null, 상세 화면에서 null이면 해당 섹션을 숨긴다.
+        val sensorSnapshot: SensorSnapshot? = null,
+        val temperatureAdjustment: TemperatureAdjustment? = null
     )
 
     // 피드백 접수 시점 센서 스냅샷 - Figma 596:3594 4개 칩(온도/습도/조도/재실 인원)
@@ -62,7 +64,8 @@ sealed interface AdminFeedbackIntent{
     // feedbackId가 있으면 목록 로드 후 바로 해당 상세로 이동(Home 딥링크, #177)
     data class LoadInitial(val feedbackId: Int? = null) : AdminFeedbackIntent
     data object NavigateBack : AdminFeedbackIntent
-    data class NavigateToQR(val placeId: Int) : AdminFeedbackIntent
+    data object NavigateToQR : AdminFeedbackIntent
     data class NavigateToFeedbackDetail(val feedbackId : Int) : AdminFeedbackIntent
     data class ClickTab(val tab: AdminFeedbackUiState.FeedbackFiltering) : AdminFeedbackIntent
+    data class UpdateStatus(val feedbackId: Int, val approve: Boolean) : AdminFeedbackIntent
 }
