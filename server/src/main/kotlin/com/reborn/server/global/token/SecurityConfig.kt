@@ -68,6 +68,10 @@ class SecurityConfig(
 
                     // QR 웹페이지에서 비로그인 방문자가 제출 — 조회/상태변경은 anyRequest().authenticated()로 보호
                     .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
+                    // QR 웹페이지(#163) 진입 시 장소명/기기 목록 조회 — 제출과 동일하게 비로그인 방문자용
+                    .requestMatchers(HttpMethod.GET, "/api/feedback/context").permitAll()
+                    // QR 웹페이지 정적 리소스(#163) 자체도 비로그인 방문자가 접근해야 함
+                    .requestMatchers(HttpMethod.GET, "/feedback.html").permitAll()
 
                     // AI 스피커(#142)는 X-Device-Id로만 인증하고 JWT를 보내지 않는다 — "/api/feedback"
                     // permitAll은 하위 경로("/voice")에 매칭되지 않아 누락돼 있었음.

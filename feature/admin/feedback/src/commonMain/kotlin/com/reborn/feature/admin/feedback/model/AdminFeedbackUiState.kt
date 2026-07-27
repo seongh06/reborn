@@ -17,14 +17,33 @@ sealed interface AdminFeedbackUiState {
         val feedback: FeedbackItem
     ) : AdminFeedbackUiState
 
-    data class FeedbackQR(val placeId: Int) : AdminFeedbackUiState
+    // qrUrl==null && !failed면 조회 중(로딩) - Figma에 없는 화면이라 QR 코드 이미지는 공개 QR 생성 API로
+    // 렌더링. failed=true면 조회가 끝내 실패한 것 - 로딩 스피너에 무한히 갇히지 않도록 별도 표시(CodeRabbit 리뷰)
+    data class FeedbackQR(val placeId: Int, val qrUrl: String? = null, val failed: Boolean = false) : AdminFeedbackUiState
     data class FeedbackItem(
         val id: Int,
         val type: FeedbackType,
         val state: State,
         val title: String,
-        val time: String,
-        val content: String
+        val time: String, // 목록용 상대 시각(ex. "5분전")
+        val submittedAt: String, // 상세용 절대 시각(ex. "2026.06.11 10:24") - Figma 596:3555
+        val content: String,
+        val sensorSnapshot: SensorSnapshot,
+        val temperatureAdjustment: TemperatureAdjustment
+    )
+
+    // 피드백 접수 시점 센서 스냅샷 - Figma 596:3594 4개 칩(온도/습도/조도/재실 인원)
+    data class SensorSnapshot(
+        val temperature: Double,
+        val humidity: Double,
+        val illuminance: Int,
+        val peopleCount: Int
+    )
+
+    // "AI 맞춤 피드백" 추천 조절값 - Figma 596:3628 "희망 온도: 24.0 → 25.0 (1 증가)"
+    data class TemperatureAdjustment(
+        val before: Double,
+        val after: Double
     )
     enum class FeedbackFiltering(val filtering: String, val state: State? = null) {
         ALL("전체", null),
