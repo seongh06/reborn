@@ -72,7 +72,6 @@ fun AdminIotDeviceListScreen(
                 item(key = "room_$place") {
                     SectionTitleComponent(
                         title = place,
-                        onMoreClick = {},
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

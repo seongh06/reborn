@@ -93,9 +93,12 @@ fun App() {
                     val isAdminAddArduino = currentDestination?.hasRoute<Route.Admin.AddArduino>() == true
                     val isAdminAddAiSpeaker = currentDestination?.hasRoute<Route.Admin.AddAiSpeaker>() == true
                     val isAdminIotDeviceList = currentDestination?.hasRoute<Route.Admin.IotDeviceList>() == true
-                    if (!isIntro && !isAerometer && !isAdminSetting && !isAdminInviteCode && !isAdminAddDevice && !isAdminAddArduino && !isAdminAddAiSpeaker && !isAdminIotDeviceList &&
-                        (!(isAdminHome || isAdminAdjust || isAdminFeedback) || isAdminHomeBottomBarVisible)
-                    ) {
+                    val isSubScreenWithoutBottomBar = isIntro || isAerometer || isAdminSetting ||
+                        isAdminInviteCode || isAdminAddDevice || isAdminAddArduino ||
+                        isAdminAddAiSpeaker || isAdminIotDeviceList
+                    val isHomeLikeTabHidden = (isAdminHome || isAdminAdjust || isAdminFeedback) &&
+                        !isAdminHomeBottomBarVisible
+                    if (!isSubScreenWithoutBottomBar && !isHomeLikeTabHidden) {
                         // Figma BottomNavSection(595:5074) 스펙: 위쪽 투명 -> 아래쪽 불투명 그라데이션
                         // 스크림 위에, 캡슐형(pill) 네비가 가운데 떠 있는 구조.
                         Box(
