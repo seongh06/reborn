@@ -58,7 +58,7 @@ fun App() {
             val currentDestination = navBackStackEntry?.destination
 
             var isAdminHomeBottomBarVisible by remember { mutableStateOf(true) }
-            var introSkipToAdminModeSelect by remember { mutableStateOf(false) }
+            var introSkipToSignup by remember { mutableStateOf(false) }
 
             val surfaceColor = RebornTheme.color.grayScale100
             val scrimColor = RebornTheme.color.grayScale200
@@ -171,22 +171,22 @@ fun App() {
                 ) {
                     introNavGraph(
                         onNavigateToAdmin = {
-                            introSkipToAdminModeSelect = false
+                            introSkipToSignup = false
                             navController.navigate(Route.Admin.Home) {
                                 popUpTo(navController.graph.id) { inclusive = true }
                             }
                         },
                         onNavigateToAerometer = {
-                            introSkipToAdminModeSelect = false
+                            introSkipToSignup = false
                             navController.navigate(Route.Aerometer) {
                                 popUpTo(navController.graph.id) { inclusive = true }
                             }
                         },
                         onBackClick = {
-                            introSkipToAdminModeSelect = false
+                            introSkipToSignup = false
                             navController.popBackStack()
                         },
-                        skipToAdminModeSelect = { introSkipToAdminModeSelect }
+                        skipToSignup = { introSkipToSignup }
                     )
                     introAdminCodeNavGraph(
                         onBackClick = {
@@ -254,11 +254,11 @@ fun App() {
                             navController.navigate(Route.Admin.AddAiSpeaker(placeId))
                         },
                         onNavigateToAddPlace = {
-                            introSkipToAdminModeSelect = true
+                            introSkipToSignup = true
                             navController.navigate(Route.Intro)
                         },
                         onLoggedOut = {
-                            introSkipToAdminModeSelect = false
+                            introSkipToSignup = false
                             navController.navigate(Route.Intro) {
                                 popUpTo(navController.graph.id) { inclusive = true }
                             }

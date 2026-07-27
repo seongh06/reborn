@@ -1,6 +1,8 @@
 package com.reborn.feature.intro.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,7 +32,8 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun PlaceTypeList(
     placeType: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    selected: Boolean = false
 ) {
     val image = when (placeType) {
         "HOME" -> Res.drawable.img_home
@@ -40,7 +43,20 @@ fun PlaceTypeList(
     }
 
     Row(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clickable(onClick = onClick).fillMaxWidth(),
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .background(RebornTheme.color.grayScale100)
+            .then(
+                if (selected) {
+                    Modifier.border(2.dp, RebornTheme.color.grayScale900, RoundedCornerShape(4.dp))
+                } else {
+                    Modifier
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

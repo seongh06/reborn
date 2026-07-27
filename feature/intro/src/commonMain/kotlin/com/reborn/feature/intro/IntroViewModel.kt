@@ -27,7 +27,6 @@ import kotlinx.coroutines.withContext
 sealed class IntroEvent {
     data object NavigateToAdmin : IntroEvent()
     data object NavigateToAerometer : IntroEvent()
-    data object PermissionGranted : IntroEvent()
     data object ExitIntro : IntroEvent()
     // isNewUser뿐 아니라 "소속 장소가 하나도 없는 기존 유저"도 true - 관리자 등록 절차를 거쳐야 하는지 여부
     data class LoginSuccess(val needsPlaceSetup: Boolean) : IntroEvent()
@@ -59,9 +58,6 @@ class IntroViewModel(
 
     private val backStack = mutableListOf<IntroUiState>()
 
-    // 장소 등록(이름 입력 → 유형 선택)이 두 화면에 걸쳐 있어, 등록 API 호출 시점(유형 선택 완료)까지 이름을 들고 있어야 함
-    private var pendingPlaceName: String = ""
-
     // 공기계 페어링(코드 입력 → 기기 이름 입력)도 두 화면에 걸쳐 있어, pairDevice 호출 시점(기기 이름 입력 완료)까지
     // 코드를 들고 있어야 함 - 별도 코드 검증 API가 없어 코드+이름을 한 번에 보내야 하기 때문(#113)
     private var pendingPairingCode: String = ""
@@ -73,20 +69,13 @@ class IntroViewModel(
 
     fun onIntent(intent: IntroIntent){
         when(intent){
-            is IntroIntent.LoadInitial -> checkInitialState(intent.skipToAdminModeSelect)
-            is IntroIntent.NavigateToTerm -> navigateTo(IntroUiState.Term)
-            is IntroIntent.NavigateToPermission -> navigateTo(IntroUiState.Permission)
-            is IntroIntent.NavigateToModeSelect -> navigateTo(IntroUiState.ModeSelect)
-            is IntroIntent.NavigateToAdminLogin -> navigateTo(IntroUiState.AdminLogin)
-            is IntroIntent.NavigateToAdminModeSelect -> navigateTo(IntroUiState.AdminModeSelect)
-            is IntroIntent.NavigateToAdminPlaceName -> navigateTo(IntroUiState.AdminPlaceName)
-            is IntroIntent.NavigateToAdminPlaceSelect -> navigateTo(IntroUiState.AdminPlaceSelect)
+            is IntroIntent.LoadInitial -> checkInitialState(intent.skipToSignup)
+            is IntroIntent.NavigateToSignup -> navigateTo(IntroUiState.Signup)
             is IntroIntent.NavigateToAerometerPairing -> navigateTo(IntroUiState.AerometerPairing)
             is IntroIntent.NavigateToInviteCode -> navigateTo(IntroUiState.InviteCode)
             is IntroIntent.NavigateToDevicePairing -> navigateTo(IntroUiState.DevicePairing)
             is IntroIntent.NavigateToAerometerDeviceName -> navigateTo(IntroUiState.AerometerDeviceName)
             is IntroIntent.NavigateBack -> navigateBack()
-            is IntroIntent.PermissionsGranted -> onPermissionsGranted()
             is IntroIntent.NavigateToAdmin -> navigateToAdmin()
             is IntroIntent.NavigateToAerometer -> navigateToAerometer()
         }
@@ -110,26 +99,20 @@ class IntroViewModel(
         }
     }
 
-    // skipToAdminModeSelect: Setting의 "새로운 place 추가"에서 진입할 때, Admin Login은 건너뛰고
-    // 바로 그 다음 화면(AdminModeSelect)부터 보여주기 위한 플래그. 뒤로가기 시 backStack이 비어있어
+    // skipToSignup: Setting의 "새로운 place 추가"에서 진입할 때, Welcome(로그인)은 건너뛰고
+    // 바로 그 다음 화면(Signup)부터 보여주기 위한 플래그. 뒤로가기 시 backStack이 비어있어
     // ExitIntro가 곧바로 emit되므로, 건너뛴 화면들을 거치지 않고 호출부(Setting)로 바로 돌아감
-    private fun checkInitialState(skipToAdminModeSelect: Boolean = false) {
+    private fun checkInitialState(skipToSignup: Boolean = false) {
         backStack.clear()
-        if (skipToAdminModeSelect) {
+        if (skipToSignup) {
             // 이미 로그인된 관리자가 재진입하는 경로이므로 Loading 스플래시 없이 바로 진입
-            _uiState.value = IntroUiState.AdminModeSelect
+            _uiState.value = IntroUiState.Signup
             return
         }
         _uiState.value = IntroUiState.Loading
         viewModelScope.launch {
             delay(1500)
-            _uiState.value = IntroUiState.Start
-        }
-    }
-
-    private fun onPermissionsGranted() {
-        viewModelScope.launch {
-            _event.emit(IntroEvent.PermissionGranted)
+            _uiState.value = IntroUiState.Welcome
         }
     }
 
@@ -192,13 +175,9 @@ class IntroViewModel(
         }
     }
 
-    fun setPlaceName(name: String) {
-        pendingPlaceName = name
-    }
-
-    fun registerPlace(type: String) {
+    fun registerPlace(name: String, type: String) {
         viewModelScope.launch {
-            registerPlaceUseCase(pendingPlaceName, type)
+            registerPlaceUseCase(name, type)
                 .onSuccess { place ->
                     registeredPlaceId = place.placeId
                     _event.emit(IntroEvent.PlaceRegistered(place.placeId))

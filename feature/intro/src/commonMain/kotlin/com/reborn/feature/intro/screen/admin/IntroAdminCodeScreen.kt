@@ -48,7 +48,6 @@ fun IntroAdminCodeScreen(
                 is IntroEvent.ShowErrorSnackbar -> onBackClick()
                 is IntroEvent.NavigateToAdmin,
                 is IntroEvent.NavigateToAerometer,
-                is IntroEvent.PermissionGranted,
                 is IntroEvent.ExitIntro,
                 is IntroEvent.LoginSuccess,
                 is IntroEvent.PlaceRegistered,
