@@ -6,5 +6,6 @@ import com.reborn.core.model.SmartThingsDevice
 class GetSmartThingsDeviceListUseCase(
     private val smartThingsRepository: SmartThingsRepository
 ) {
-    suspend operator fun invoke(placeId: Long): Result<List<SmartThingsDevice>> = smartThingsRepository.getDevices(placeId)
+    suspend operator fun invoke(placeId: Long): Result<List<SmartThingsDevice>> =
+        smartThingsRepository.getDevices(placeId)
 }

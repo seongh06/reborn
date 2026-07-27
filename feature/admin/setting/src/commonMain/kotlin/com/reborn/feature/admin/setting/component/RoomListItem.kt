@@ -162,7 +162,13 @@ private fun AddSheet(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("장소를 삭제할까요?", style = RebornTheme.typography.titleMedium, color = RebornTheme.color.grayScale900) },
+            title = {
+                Text(
+                    "장소를 삭제할까요?",
+                    style = RebornTheme.typography.titleMedium,
+                    color = RebornTheme.color.grayScale900
+                )
+            },
             text = {
                 Text(
                     "삭제하면 이 장소에 연결된 모든 기기 정보도 함께 사라져요.",

@@ -29,7 +29,9 @@ class SmartThingsDataSourceImpl(
         }
     }.asApiResponse()
 
-    override suspend fun registerDevice(request: RegisterSmartThingsDeviceRequest): ApiResponse<RegisterDeviceResponse> = runCatching {
+    override suspend fun registerDevice(
+        request: RegisterSmartThingsDeviceRequest,
+    ): ApiResponse<RegisterDeviceResponse> = runCatching {
         httpClient.post("/api/smartthings/devices") {
             setBody(request)
         }

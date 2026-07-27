@@ -18,9 +18,15 @@ class SmartThingsRepositoryImpl(
 
     override suspend fun getDevices(placeId: Long): Result<List<SmartThingsDevice>> =
         remote.getDevices(placeId)
-            .toResult { response -> response.devices.map { SmartThingsDevice(deviceId = it.deviceId, label = it.label) } }
+            .toResult { response ->
+                response.devices.map { SmartThingsDevice(deviceId = it.deviceId, label = it.label) }
+            }
 
-    override suspend fun registerDevice(placeId: Long, smartThingsDeviceId: String, deviceName: String): Result<RegisteredDevice> =
+    override suspend fun registerDevice(
+        placeId: Long,
+        smartThingsDeviceId: String,
+        deviceName: String,
+    ): Result<RegisteredDevice> =
         remote.registerDevice(RegisterSmartThingsDeviceRequest(placeId, smartThingsDeviceId, deviceName))
             .toResult { it.toRegisteredDevice() }
 }

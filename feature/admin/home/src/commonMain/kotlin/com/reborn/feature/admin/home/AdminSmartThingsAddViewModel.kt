@@ -114,12 +114,22 @@ class AdminSmartThingsAddViewModel(
     fun registerDevice() {
         val current = _uiState.value
         if (current !is AdminSmartThingsAddUiState.DeviceNaming) return
-        val pid = placeId ?: return
+        val pid = placeId
+        if (pid == null) {
+            viewModelScope.launch {
+                _event.emit(AdminSmartThingsAddEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
+            }
+            return
+        }
 
+        _uiState.value = AdminSmartThingsAddUiState.Loading
         viewModelScope.launch {
             registerSmartThingsDeviceUseCase(pid, current.device.deviceId, current.name)
                 .onSuccess { _event.emit(AdminSmartThingsAddEvent.RegisterSuccess) }
-                .onFailure { _event.emit(AdminSmartThingsAddEvent.ShowErrorSnackbar(it)) }
+                .onFailure {
+                    _event.emit(AdminSmartThingsAddEvent.ShowErrorSnackbar(it))
+                    _uiState.value = current
+                }
         }
     }
 }

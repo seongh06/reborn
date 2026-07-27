@@ -49,6 +49,10 @@ class AdminSettingViewModel(
 
     private var isLoggingOut = false
 
+    // checkInitialState()의 병렬 프로필 조회가 늦게 끝나면 그 사이 사용자가 편집해 성공한 이름을
+    // 덮어쓸 수 있어(CodeRabbit #179), 편집 성공 시점 이후로는 이 값을 조회 결과보다 우선한다.
+    private var editedProfileName: String? = null
+
     fun onIntent(intent: AdminSettingIntent) {
         when (intent) {
             is AdminSettingIntent.LoadInitial -> checkInitialState()
@@ -72,6 +76,7 @@ class AdminSettingViewModel(
         viewModelScope.launch {
             updateUserProfileUseCase(name)
                 .onSuccess { profile ->
+                    editedProfileName = profile.name
                     navigationManager.updateCurrentState { state ->
                         (state as? AdminSettingUiState.Setting)?.copy(profileName = profile.name) ?: state
                     }
@@ -92,7 +97,10 @@ class AdminSettingViewModel(
                     val userProfile = profile.await() ?: return@launch
                     navigationManager.updateCurrentState { state ->
                         (state as? AdminSettingUiState.Setting)
-                            ?.copy(profileName = userProfile.name, profileImageUrl = userProfile.profileImage)
+                            ?.copy(
+                                profileName = editedProfileName ?: userProfile.name,
+                                profileImageUrl = userProfile.profileImage
+                            )
                             ?: state
                     }
                 }

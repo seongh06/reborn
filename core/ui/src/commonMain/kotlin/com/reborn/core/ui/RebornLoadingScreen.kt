@@ -19,6 +19,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.ext.rebornDefault
@@ -26,7 +28,10 @@ import com.reborn.core.ui.ext.rebornDefault
 @Composable
 fun RebornLoadingScreen() {
     Box(
-        modifier = Modifier.rebornDefault(Color.White).fillMaxSize(),
+        modifier = Modifier
+            .rebornDefault(Color.White)
+            .fillMaxSize()
+            .semantics { contentDescription = "로딩 중" },
         contentAlignment = Alignment.Center
     ) {
         LoadingDotsIndicator()
