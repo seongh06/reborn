@@ -5,6 +5,7 @@ import com.reborn.core.data.di.repositoryModule
 import com.reborn.core.datastore.di.dataStoreModule
 import com.reborn.core.datastore.di.platformDataStoreModule
 import com.reborn.core.domain.usecase.ConfigureDeviceWifiUseCase
+import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
@@ -57,6 +58,7 @@ val appDependenciesModule = module {
     factory { RegisterArduinoDeviceUseCase(get()) }
     factory { RegisterAiSpeakerDeviceUseCase(get()) }
     factory { ConfigureDeviceWifiUseCase(get()) }
+    factory { ControlDeviceUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)

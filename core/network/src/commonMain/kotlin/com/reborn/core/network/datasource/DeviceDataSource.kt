@@ -1,8 +1,10 @@
 package com.reborn.core.network.datasource
 
 import com.reborn.core.network.model.ApiResponse
+import com.reborn.core.network.model.request.device.ControlDeviceRequest
 import com.reborn.core.network.model.request.device.PairingRequest
 import com.reborn.core.network.model.request.device.RegisterDeviceRequest
+import com.reborn.core.network.model.response.device.ControlDeviceResponse
 import com.reborn.core.network.model.response.device.DeviceListResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
@@ -18,4 +20,8 @@ interface DeviceDataSource {
 
     // Arduino 기기 등록 - 펌웨어에 하드코딩한 deviceId를 관리자가 직접 입력해 서버에 매칭시킨다.
     suspend fun registerDevice(request: RegisterDeviceRequest): ApiResponse<RegisterDeviceResponse>
+
+    // SmartThings로 등록된 기기(SMART_THINGS 타입)에 제어 명령 전송(#132/#134). deviceId는 device.deviceKey
+    // (= SmartThings 기기 ID) 문자열 - DB 내부 id 아님, getList가 내려주는 DeviceItem.deviceId와 동일한 값.
+    suspend fun controlDevice(deviceId: String, request: ControlDeviceRequest): ApiResponse<ControlDeviceResponse>
 }
