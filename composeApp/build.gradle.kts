@@ -77,6 +77,9 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.ktor.client.core)
 
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
+
             api(project(":core:network"))
         }
 

@@ -6,6 +6,7 @@ import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
@@ -33,6 +34,7 @@ class AdminSettingViewModel(
     private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getPlaceDetailUseCase: GetPlaceDetailUseCase,
     private val deletePlaceUseCase: DeletePlaceUseCase,
+    private val getUserProfileUseCase: GetUserProfileUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminSettingUiState, AdminSettingEvent>(
         initialState = AdminSettingUiState.Loading,
@@ -66,6 +68,9 @@ class AdminSettingViewModel(
     private fun checkInitialState() {
         navigationManager.clearAndReset(AdminSettingUiState.Loading)
         viewModelScope.launch {
+            // 프로필 조회(#155)는 장소 목록과 무관한 별도 API라 실패해도 장소 목록 표시를 막지 않는다 - best-effort.
+            val profile = async { getUserProfileUseCase().getOrNull() }
+
             getPlaceListUseCase()
                 .onSuccess { places ->
                     // 장소 목록(#27)에는 deviceCount가 없어 장소별로 상세(#28)를 추가 조회해 채운다.
@@ -89,11 +94,25 @@ class AdminSettingViewModel(
                             }
                         }.awaitAll()
                     }
-                    navigationManager.clearAndReset(AdminSettingUiState.Setting(rooms = rooms))
+                    val userProfile = profile.await()
+                    navigationManager.clearAndReset(
+                        AdminSettingUiState.Setting(
+                            rooms = rooms,
+                            profileName = userProfile?.name,
+                            profileImageUrl = userProfile?.profileImage,
+                        )
+                    )
                 }
                 .onFailure {
                     navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
-                    navigationManager.clearAndReset(AdminSettingUiState.Setting(rooms = emptyList()))
+                    val userProfile = profile.await()
+                    navigationManager.clearAndReset(
+                        AdminSettingUiState.Setting(
+                            rooms = emptyList(),
+                            profileName = userProfile?.name,
+                            profileImageUrl = userProfile?.profileImage,
+                        )
+                    )
                 }
         }
     }

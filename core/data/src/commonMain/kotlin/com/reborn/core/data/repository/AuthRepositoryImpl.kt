@@ -4,6 +4,7 @@ import com.reborn.core.data.datasource.AuthLocalDataSource
 import com.reborn.core.data.mapper.toResult
 import com.reborn.core.domain.repository.AuthRepository
 import com.reborn.core.model.LoginResult
+import com.reborn.core.model.UserProfile
 import com.reborn.core.network.datasource.AuthDataSource
 import com.reborn.core.network.model.request.auth.FcmTokenUpdateRequest
 import com.reborn.core.network.model.request.auth.LoginRequest
@@ -32,4 +33,9 @@ class AuthRepositoryImpl(
         remote.updateFcmToken(FcmTokenUpdateRequest(fcmToken))
             .toResult()
             .mapCatching { }
+
+    override suspend fun getMe(): Result<UserProfile> =
+        remote.getMe()
+            .toResult()
+            .mapCatching { dto -> UserProfile(userId = dto.userId, name = dto.name, profileImage = dto.profileImage) }
 }
