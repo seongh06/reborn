@@ -45,4 +45,28 @@ class MetricDto {
         val peopleCount: Int?,
         val createdAt: LocalDateTime,
     )
+
+    data class AggregateResponse(
+        val deviceId: String,
+        val period: String,
+        val buckets: List<AggregateBucket>,
+    )
+
+    data class AggregateBucket(
+        val temperature: Double?,
+        val humidity: Double?,
+        val illuminance: Double?,
+        val peopleCount: Double?,
+        val discomfort: Double?,
+    )
+
+    data class AnalysisResponse(
+        val deviceId: String,
+        val category: String,
+        val analysisText: String,
+    )
+
+    data class ExportResponse(
+        val spreadsheetUrl: String,
+    )
 }

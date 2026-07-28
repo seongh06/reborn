@@ -8,6 +8,7 @@ import com.reborn.core.data.repository.AuthRepositoryImpl
 import com.reborn.core.data.repository.DeviceProvisioningRepositoryImpl
 import com.reborn.core.data.repository.DeviceRepositoryImpl
 import com.reborn.core.data.repository.FeedbackRepositoryImpl
+import com.reborn.core.data.repository.GoogleSheetsRepositoryImpl
 import com.reborn.core.data.repository.MetricRepositoryImpl
 import com.reborn.core.data.repository.PlaceRepositoryImpl
 import com.reborn.core.data.repository.SensorHistoryRepositoryImpl
@@ -16,6 +17,7 @@ import com.reborn.core.domain.repository.AuthRepository
 import com.reborn.core.domain.repository.DeviceProvisioningRepository
 import com.reborn.core.domain.repository.DeviceRepository
 import com.reborn.core.domain.repository.FeedbackRepository
+import com.reborn.core.domain.repository.GoogleSheetsRepository
 import com.reborn.core.domain.repository.MetricRepository
 import com.reborn.core.domain.repository.PlaceRepository
 import com.reborn.core.domain.repository.SensorHistoryRepository
@@ -31,6 +33,7 @@ val repositoryModule = module {
     single<PlaceRepository> { PlaceRepositoryImpl(get()) }
     single<DeviceRepository> { DeviceRepositoryImpl(get(), get()) }
     single<SmartThingsRepository> { SmartThingsRepositoryImpl(get()) }
+    single<GoogleSheetsRepository> { GoogleSheetsRepositoryImpl(get()) }
     single<DeviceProvisioningRepository> { DeviceProvisioningRepositoryImpl(get()) }
     single<FeedbackRepository> { FeedbackRepositoryImpl(get()) }
     single<MetricRepository> { MetricRepositoryImpl(get()) }

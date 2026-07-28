@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.designsystem.component.RebornTopAppBar
@@ -38,6 +39,7 @@ fun AdminDataRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(AdminDataIntent.LoadInitial)
@@ -52,6 +54,7 @@ fun AdminDataRoute(
                 is AdminDataEvent.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(message = event.message)
                 }
+                is AdminDataEvent.OpenUrl -> uriHandler.openUri(event.url)
                 is AdminDataEvent.Exit -> onBackClick()
             }
         }
