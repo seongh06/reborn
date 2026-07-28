@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS `device`
     `device_type` VARCHAR(20)  NOT NULL COMMENT '기기 유형 (ARDUINO / AEROMETER / SMART_THINGS / AI_SPEAKER)',
     `device_key`  VARCHAR(255) NOT NULL COMMENT '인증용 고유 키',
     `name`        VARCHAR(100) NULL COMMENT '기기 이름',
+    `category`    VARCHAR(20)  NULL COMMENT '아이콘 구분용 카테고리 (LAMP/PLUG/TV/AIR_CONDITIONER/CURTAIN/OTHER) - SmartThings 등록 시 관리자가 직접 선택, Arduino/AI스피커는 항상 NULL',
     `app_token`   VARCHAR(512) NULL COMMENT 'FCM 앱 토큰 (AEROMETER 전용)',
     `is_online`   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '온라인 여부',
     `created_at`  DATETIME(6)  NOT NULL COMMENT '등록일시',
@@ -239,3 +240,26 @@ CREATE TABLE IF NOT EXISTS `auto_control_rule`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '기기별 자동 제어 규칙';
+
+-- ------------------------------------------------
+-- 10. google_sheets_credential (2026-07-28, 데이터 화면 내보내기)
+-- 장소별 Google Sheets OAuth 토큰. smart_things_credential과 동일 패턴 - 서버가
+-- 토큰을 직접 보유하고 Sheets API를 호출해 데이터를 내보낸다.
+-- ------------------------------------------------
+CREATE TABLE IF NOT EXISTS `google_sheets_credential`
+(
+    `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '자격증명 PK',
+    `place_id`      BIGINT       NOT NULL COMMENT '장소 FK (장소당 1개)',
+    `access_token`  VARCHAR(1024) NOT NULL COMMENT 'Google OAuth AccessToken',
+    `refresh_token` VARCHAR(1024) NOT NULL COMMENT 'Google OAuth RefreshToken',
+    `expires_at`    DATETIME(6)  NOT NULL COMMENT 'AccessToken 만료 시각',
+    `created_at`    DATETIME(6)  NOT NULL COMMENT '연동일시',
+    `updated_at`    DATETIME(6)  NOT NULL COMMENT '수정일시',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_google_sheets_credential_place` (`place_id`),
+    CONSTRAINT `fk_google_sheets_credential_place`
+        FOREIGN KEY (`place_id`) REFERENCES `place` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT = '장소별 Google Sheets OAuth 자격증명';

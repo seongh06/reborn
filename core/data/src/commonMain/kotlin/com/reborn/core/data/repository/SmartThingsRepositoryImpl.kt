@@ -26,7 +26,8 @@ class SmartThingsRepositoryImpl(
         placeId: Long,
         smartThingsDeviceId: String,
         deviceName: String,
+        category: String?,
     ): Result<RegisteredDevice> =
-        remote.registerDevice(RegisterSmartThingsDeviceRequest(placeId, smartThingsDeviceId, deviceName))
+        remote.registerDevice(RegisterSmartThingsDeviceRequest(placeId, smartThingsDeviceId, deviceName, category))
             .toResult { it.toRegisteredDevice() }
 }

@@ -6,5 +6,10 @@ import com.reborn.core.model.SmartThingsDevice
 interface SmartThingsRepository {
     suspend fun getAuthorizeUrl(placeId: Long): Result<String>
     suspend fun getDevices(placeId: Long): Result<List<SmartThingsDevice>>
-    suspend fun registerDevice(placeId: Long, smartThingsDeviceId: String, deviceName: String): Result<RegisteredDevice>
+    suspend fun registerDevice(
+        placeId: Long,
+        smartThingsDeviceId: String,
+        deviceName: String,
+        category: String? = null,
+    ): Result<RegisteredDevice>
 }

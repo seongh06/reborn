@@ -11,6 +11,7 @@ object DeviceConverter {
             deviceId = entity.deviceKey,
             deviceName = entity.name,
             deviceType = entity.deviceType.name,
+            category = entity.category,
             createdAt = requireNotNull(entity.createdAt),
         )
 
@@ -19,6 +20,7 @@ object DeviceConverter {
             deviceId = entity.deviceKey,
             deviceName = entity.name,
             deviceType = entity.deviceType.name,
+            category = entity.category,
             isOnline = entity.isOnline,
             createdAt = requireNotNull(entity.createdAt),
         )

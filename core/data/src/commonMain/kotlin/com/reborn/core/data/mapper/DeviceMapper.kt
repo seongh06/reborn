@@ -24,6 +24,7 @@ fun DeviceItemResponse.toDevice(): Device =
         deviceType = deviceType,
         isOnline = isOnline,
         createdAt = createdAt,
+        category = category,
     )
 
 fun RegisterDeviceResponse.toRegisteredDevice(): RegisteredDevice =
@@ -32,6 +33,7 @@ fun RegisterDeviceResponse.toRegisteredDevice(): RegisteredDevice =
         deviceName = deviceName,
         deviceType = deviceType,
         createdAt = createdAt,
+        category = category,
     )
 
 fun AutoControlRuleResponse.toAutoControlRule(): AutoControlRule =

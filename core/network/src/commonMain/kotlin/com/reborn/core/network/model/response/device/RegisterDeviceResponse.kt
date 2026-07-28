@@ -8,4 +8,5 @@ data class RegisterDeviceResponse(
     val deviceName: String?,
     val deviceType: String,
     val createdAt: String,
+    val category: String? = null,
 )
