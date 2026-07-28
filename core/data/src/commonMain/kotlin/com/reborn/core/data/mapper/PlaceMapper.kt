@@ -24,6 +24,7 @@ fun PlaceDetailResponse.toPlaceDetail(): PlaceDetail =
         type = type,
         accessLevel = accessLevel,
         deviceCount = deviceCount,
+        adminCount = adminCount,
         qrCode = qrCode,
         qrUrl = "${AppConfig.webBaseUrl}/feedback.html?qrCode=$qrCode",
         createdAt = createdAt,

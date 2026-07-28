@@ -53,6 +53,7 @@ class PlaceDto {
         val type: String,
         val accessLevel: String,
         val deviceCount: Int,
+        val adminCount: Int,
         val qrCode: String,
         val createdAt: LocalDateTime,
     )

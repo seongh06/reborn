@@ -43,7 +43,7 @@ import org.jetbrains.compose.resources.painterResource
 fun RoomListItem(
     placeId: Int,
     roomName: String,
-    adminCount: Int,
+    adminCount: Int?,
     deviceCount: Int?,
     onDeleteClick: () -> Unit,
     onAddAdminClick: () -> Unit,

@@ -195,16 +195,25 @@ class PlaceServiceTest {
 
     @Test
     fun `getDetail - 접근 권한이 있으면 장소 상세 정보를 반환한다`() {
+        val admin1 = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN)
+        val admin2 = UserPlaceMapping(
+            user = User(email = "other@reborn.com", name = "다른관리자", provider = OAuthProvider.GOOGLE, providerId = "google-3", id = 3),
+            place = place,
+            accessLevel = AccessLevel.ADMIN,
+        )
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
         given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
             .willReturn(AccessLevel.USER)
         given(deviceRepository.countByPlaceId(501L)).willReturn(3L)
+        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN))
+            .willReturn(listOf(admin1, admin2))
 
         val response = placeService.getDetail(1L, 501L)
 
         assertThat(response.placeId).isEqualTo(501L)
         assertThat(response.accessLevel).isEqualTo("USER")
         assertThat(response.deviceCount).isEqualTo(3)
+        assertThat(response.adminCount).isEqualTo(2)
         assertThat(response.qrCode).isEqualTo("qr-uuid")
     }
 
