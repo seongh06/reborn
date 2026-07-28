@@ -198,6 +198,47 @@ class DeviceService(
         deviceRepository.delete(device)
     }
 
+    @Transactional
+    fun saveAutoControlRule(
+        userId: Long,
+        deviceKey: String,
+        request: DeviceDto.AutoControlRuleRequest,
+    ): DeviceDto.AutoControlRuleResponse {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        requireAdmin(userId, device.place.id)
+
+        val rule = autoControlRuleRepository.findByDeviceId(device.id)
+            ?: AutoControlRule(device = device)
+        rule.apply {
+            discomfortThreshold = request.discomfortThreshold
+            discomfortAction = request.discomfortAction
+            humidityHighThreshold = request.humidityHighThreshold
+            humidityHighAction = request.humidityHighAction
+            humidityLowThreshold = request.humidityLowThreshold
+            humidityLowAction = request.humidityLowAction
+            temperatureHighThreshold = request.temperatureHighThreshold
+            temperatureHighAction = request.temperatureHighAction
+            temperatureLowThreshold = request.temperatureLowThreshold
+            temperatureLowAction = request.temperatureLowAction
+            occupancyThreshold = request.occupancyThreshold
+            occupancyAction = request.occupancyAction
+            isAutoOffEnabled = request.isAutoOffEnabled
+            autoOffMinutes = request.autoOffMinutes
+        }
+        val saved = autoControlRuleRepository.save(rule)
+        return DeviceConverter.toAutoControlRuleResponse(saved)
+    }
+
+    fun getAutoControlRule(userId: Long, deviceKey: String): DeviceDto.AutoControlRuleResponse? {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        requireAdmin(userId, device.place.id)
+
+        return autoControlRuleRepository.findByDeviceId(device.id)
+            ?.let { DeviceConverter.toAutoControlRuleResponse(it) }
+    }
+
     private fun requireAdmin(userId: Long, placeId: Long) {
         val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
         if (mapping == null || mapping.accessLevel != AccessLevel.ADMIN) {

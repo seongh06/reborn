@@ -11,7 +11,9 @@ sealed interface AdminAdjustUiState {
     data class DeviceDetail(
         val selectedTab: ControlMethod = ControlMethod.Remote,
         val deviceId: String,
-        val device: DeviceItem
+        val device: DeviceItem,
+        // null이면 아직 서버에서 불러오지 않은 상태(#190) - MANUALEdit 탭 진입 시 채워짐
+        val autoControlState: AutoControlUiState? = null
     ) : AdminAdjustUiState
 
     enum class ControlMethod(val method: String) {

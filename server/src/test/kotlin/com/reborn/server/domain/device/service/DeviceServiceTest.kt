@@ -2,10 +2,12 @@ package com.reborn.server.domain.device.service
 
 import com.reborn.server.domain.auth.OAuthProvider
 import com.reborn.server.domain.auth.User
+import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.Device
 import com.reborn.server.domain.device.DeviceSerial
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.dto.DeviceDto
+import com.reborn.server.domain.device.repository.AutoControlRuleRepository
 import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.device.repository.DeviceSerialRepository
 import com.reborn.server.domain.place.AccessLevel
@@ -55,6 +57,9 @@ class DeviceServiceTest {
     private lateinit var deviceSerialRepository: DeviceSerialRepository
 
     @Mock
+    private lateinit var autoControlRuleRepository: AutoControlRuleRepository
+
+    @Mock
     private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
 
     @Mock
@@ -77,6 +82,7 @@ class DeviceServiceTest {
             placeRepository = placeRepository,
             deviceRepository = deviceRepository,
             deviceSerialRepository = deviceSerialRepository,
+            autoControlRuleRepository = autoControlRuleRepository,
             userPlaceMappingRepository = userPlaceMappingRepository,
             redisUtil = redisUtil,
             operatorApiKey = "test-operator-key",
@@ -425,5 +431,78 @@ class DeviceServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `saveAutoControlRule - 기존 규칙이 없으면 새로 만들어 저장한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val request = DeviceDto.AutoControlRuleRequest(
+            temperatureHighThreshold = "28",
+            temperatureHighAction = "냉방 시작",
+        )
+        given(deviceRepository.findByDeviceKey("ST001")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(autoControlRuleRepository.findByDeviceId(10L)).willReturn(null)
+        given(autoControlRuleRepository.save(any())).willAnswer { it.arguments[0] }
+
+        val response = deviceService.saveAutoControlRule(1L, "ST001", request)
+
+        assertThat(response.temperatureHighThreshold).isEqualTo("28")
+        assertThat(response.temperatureHighAction).isEqualTo("냉방 시작")
+        verify(autoControlRuleRepository).save(any())
+    }
+
+    @Test
+    fun `saveAutoControlRule - 기존 규칙이 있으면 값을 덮어써서 저장한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val existing = AutoControlRule(device = device, temperatureHighThreshold = "26", temperatureHighAction = "송풍 시작")
+        val request = DeviceDto.AutoControlRuleRequest(
+            temperatureHighThreshold = "28",
+            temperatureHighAction = "냉방 시작",
+        )
+        given(deviceRepository.findByDeviceKey("ST001")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(autoControlRuleRepository.findByDeviceId(10L)).willReturn(existing)
+        given(autoControlRuleRepository.save(any())).willAnswer { it.arguments[0] }
+
+        val response = deviceService.saveAutoControlRule(1L, "ST001", request)
+
+        assertThat(response.temperatureHighThreshold).isEqualTo("28")
+        assertThat(response.temperatureHighAction).isEqualTo("냉방 시작")
+    }
+
+    @Test
+    fun `saveAutoControlRule - ADMIN 권한이 없으면 예외가 발생한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val userMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.USER)
+        given(deviceRepository.findByDeviceKey("ST001")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(userMapping)
+
+        assertThatThrownBy { deviceService.saveAutoControlRule(1L, "ST001", DeviceDto.AutoControlRuleRequest()) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `getAutoControlRule - 저장된 규칙이 없으면 null을 반환한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        given(deviceRepository.findByDeviceKey("ST001")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(autoControlRuleRepository.findByDeviceId(10L)).willReturn(null)
+
+        val response = deviceService.getAutoControlRule(1L, "ST001")
+
+        assertThat(response).isNull()
+    }
+
+    @Test
+    fun `getAutoControlRule - 존재하지 않는 기기면 예외가 발생한다`() {
+        given(deviceRepository.findByDeviceKey("UNKNOWN")).willReturn(null)
+
+        assertThatThrownBy { deviceService.getAutoControlRule(1L, "UNKNOWN") }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
     }
 }

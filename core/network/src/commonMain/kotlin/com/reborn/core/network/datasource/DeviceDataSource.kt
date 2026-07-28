@@ -1,9 +1,11 @@
 package com.reborn.core.network.datasource
 
 import com.reborn.core.network.model.ApiResponse
+import com.reborn.core.network.model.request.device.AutoControlRuleRequest
 import com.reborn.core.network.model.request.device.ControlDeviceRequest
 import com.reborn.core.network.model.request.device.PairingRequest
 import com.reborn.core.network.model.request.device.RegisterDeviceRequest
+import com.reborn.core.network.model.response.device.AutoControlRuleResponse
 import com.reborn.core.network.model.response.device.ControlDeviceResponse
 import com.reborn.core.network.model.response.device.DeviceListResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
@@ -27,4 +29,10 @@ interface DeviceDataSource {
 
     // 기기 등록 해제(#189) - deviceId는 controlDevice와 동일하게 deviceKey
     suspend fun deleteDevice(deviceId: String): ApiResponse<Unit?>
+
+    // 자동 제어 규칙 저장/조회(#190) - deviceId는 controlDevice와 동일하게 deviceKey
+    suspend fun saveAutoControlRule(deviceId: String, request: AutoControlRuleRequest): ApiResponse<AutoControlRuleResponse>
+
+    // 저장된 규칙이 없으면 서버가 data: null을 내려준다(#190)
+    suspend fun getAutoControlRule(deviceId: String): ApiResponse<AutoControlRuleResponse?>
 }
