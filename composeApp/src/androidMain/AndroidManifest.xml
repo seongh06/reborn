@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- API 29+는 MediaStore 스코프드 스토리지로 별도 권한 없이 저장 가능 - API 28(minSdk)만을 위한
+         레거시 갤러리 저장 경로(GalleryImageSaver)에 필요 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <application
         android:name=".RebornApplication"

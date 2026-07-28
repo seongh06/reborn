@@ -6,4 +6,5 @@ import org.koin.dsl.module
 
 actual val platformSensorModule: Module = module {
     single { SensorAnalyzer(androidContext()) }
+    single { GalleryImageSaver(androidContext()) }
 }

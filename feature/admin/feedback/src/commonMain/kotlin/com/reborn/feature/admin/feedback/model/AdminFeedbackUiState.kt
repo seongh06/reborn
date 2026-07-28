@@ -19,7 +19,11 @@ sealed interface AdminFeedbackUiState {
 
     // qrUrl==null && !failed면 조회 중(로딩) - Figma에 없는 화면이라 QR 코드 이미지는 공개 QR 생성 API로
     // 렌더링. failed=true면 조회가 끝내 실패한 것 - 로딩 스피너에 무한히 갇히지 않도록 별도 표시(CodeRabbit 리뷰)
-    data class FeedbackQR(val placeId: Int, val qrUrl: String? = null, val failed: Boolean = false) : AdminFeedbackUiState
+    data class FeedbackQR(val placeId: Int, val qrUrl: String? = null, val failed: Boolean = false) : AdminFeedbackUiState {
+        // QR 이미지는 별도 라이브러리 없이 공개 QR 생성 API로 렌더링(#163) - 화면(AsyncImage)과
+        // 다운로드(GalleryImageSaver) 양쪽에서 동일한 URL을 써야 해서 한 곳에서만 조립한다.
+        fun qrImageUrl(): String? = qrUrl?.let { "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$it" }
+    }
     data class FeedbackItem(
         val id: Int,
         val type: FeedbackType,
@@ -68,4 +72,5 @@ sealed interface AdminFeedbackIntent{
     data class NavigateToFeedbackDetail(val feedbackId : Int) : AdminFeedbackIntent
     data class ClickTab(val tab: AdminFeedbackUiState.FeedbackFiltering) : AdminFeedbackIntent
     data class UpdateStatus(val feedbackId: Int, val approve: Boolean) : AdminFeedbackIntent
+    data object DownloadQr : AdminFeedbackIntent
 }
