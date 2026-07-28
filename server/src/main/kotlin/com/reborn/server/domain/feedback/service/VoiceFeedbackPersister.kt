@@ -41,7 +41,12 @@ class VoiceFeedbackPersister(
         userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(device.place.id, AccessLevel.ADMIN)
             .mapNotNull { it.user.fcmToken }
             .forEach { token ->
-                fcmClient.send(token, "새로운 피드백이 도착했습니다.", "$deviceName - ${feedback.content}")
+                fcmClient.send(
+                    token,
+                    "새로운 피드백이 도착했습니다.",
+                    "$deviceName - ${feedback.content}",
+                    data = mapOf("feedbackId" to feedback.id.toString()),
+                )
             }
 
         return feedback
