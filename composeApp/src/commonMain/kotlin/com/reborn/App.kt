@@ -1,5 +1,13 @@
 package com.reborn
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -148,6 +157,18 @@ fun App(initialFeedbackId: Int? = null) {
                                     val isSelected =
                                         currentDestination?.hasRoute(tab.route::class) == true
 
+                                    // One UI 스타일 탭 전환: 선택된 탭 아이콘이 살짝 커졌다가 바운스되며
+                                    // 자리잡는 효과 - 눌렀을 때뿐 아니라 다른 진입 경로(딥링크 등)로
+                                    // 탭이 바뀌어도 동일하게 애니메이션되도록 isSelected를 그대로 트리거로 사용.
+                                    val iconScale by animateFloatAsState(
+                                        targetValue = if (isSelected) 1.15f else 1f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        ),
+                                        label = "bottomNavIconScale"
+                                    )
+
                                     // Figma 스펙: 아이템당 64x32 아이콘 컨테이너 + 위 12dp/아래 16dp 여백
                                     // = 아이템 높이 60dp. 2개 탭 * 64dp + Row 좌우 padding(8+8) = 144dp
                                     Box(
@@ -173,7 +194,9 @@ fun App(initialFeedbackId: Int? = null) {
                                             painter = painterResource(
                                                 if (isSelected) tab.selectedIcon else tab.unselectedIcon
                                             ),
-                                            modifier = Modifier.size(24.dp),
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .scale(iconScale),
                                             contentDescription = tab.label,
                                             tint = RebornTheme.color.grayScale700
                                         )
@@ -191,7 +214,13 @@ fun App(initialFeedbackId: Int? = null) {
                 NavHost(
                     navController = navController,
                     startDestination = Route.Intro,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    // One UI 스타일 화면 전환: 페이드 + 미세한 수직 슬라이드. 화면 전체를 슬라이드시키면
+                    // 무거워 보여서 이동량은 최소화(rebornDefault 등 화면 높이의 1/20 정도)하고 페이드를 주로 사용.
+                    enterTransition = { fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 20 } },
+                    exitTransition = { fadeOut(tween(180)) },
+                    popEnterTransition = { fadeIn(tween(220)) },
+                    popExitTransition = { fadeOut(tween(180)) + slideOutVertically(tween(180)) { it / 20 } }
                 ) {
                     introNavGraph(
                         onNavigateToAdmin = {
