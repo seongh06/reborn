@@ -10,6 +10,7 @@ class RegisterSmartThingsDeviceUseCase(
         placeId: Long,
         smartThingsDeviceId: String,
         deviceName: String,
+        category: String? = null,
     ): Result<RegisteredDevice> =
-        smartThingsRepository.registerDevice(placeId, smartThingsDeviceId, deviceName)
+        smartThingsRepository.registerDevice(placeId, smartThingsDeviceId, deviceName, category)
 }

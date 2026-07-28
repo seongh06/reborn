@@ -14,4 +14,5 @@ data class DeviceItemResponse(
     val deviceType: String,
     val isOnline: Boolean,
     val createdAt: String,
+    val category: String? = null,
 )

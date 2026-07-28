@@ -18,6 +18,7 @@ class DeviceDto {
         val deviceId: String,
         val deviceName: String?,
         val deviceType: String,
+        val category: String?,
         val createdAt: LocalDateTime,
     )
 
@@ -60,6 +61,7 @@ class DeviceDto {
         val deviceId: String,
         val deviceName: String?,
         val deviceType: String,
+        val category: String?,
         val isOnline: Boolean,
         val createdAt: LocalDateTime,
     )

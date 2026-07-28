@@ -9,6 +9,7 @@ import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.model.Feedback
+import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.FeedbackListItem
 import com.reborn.core.ui.component.classifyFeedbackType
 import com.reborn.core.ui.component.feedbackStatusToState
@@ -100,6 +101,7 @@ class AdminHomeViewModel(
                     place = deviceTypeLabel(device.deviceType),
                     name = device.deviceName ?: device.deviceId,
                     isOnline = device.isOnline,
+                    deviceType = categoryToDeviceType(device.category),
                     isPowerOn = false
                 )
             }
@@ -140,6 +142,10 @@ class AdminHomeViewModel(
         "AI_SPEAKER" -> "AI 스피커"
         else -> serverDeviceType
     }
+
+    // SmartThings 기기만 category(아이콘 구분용)가 있을 수 있고, 나머지는 null이라 항상 OTHER
+    private fun categoryToDeviceType(category: String?): DeviceType =
+        category?.let { runCatching { DeviceType.valueOf(it) }.getOrNull() } ?: DeviceType.OTHER
 
     private fun togglePower(deviceId: String) {
         val target = devices.find { it.id == deviceId } ?: return

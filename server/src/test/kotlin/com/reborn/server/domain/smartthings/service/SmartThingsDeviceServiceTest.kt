@@ -120,6 +120,50 @@ class SmartThingsDeviceServiceTest {
     }
 
     @Test
+    fun `registerDevice - category를 지정하면 기기에 저장한다`() {
+        val request = SmartThingsDto.RegisterDeviceRequest(
+            placeId = 501,
+            smartThingsDeviceId = "st-device-1",
+            deviceName = "거실 에어컨",
+            category = "AIR_CONDITIONER",
+        )
+        val savedDevice = Device(
+            place = place,
+            deviceType = DeviceType.SMART_THINGS,
+            deviceKey = "st-device-1",
+            name = "거실 에어컨",
+            category = "AIR_CONDITIONER",
+            isOnline = true,
+        ).apply { prePersist() }
+
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L)).willReturn(AccessLevel.ADMIN)
+        given(deviceRepository.save(Mockito.any(Device::class.java))).willReturn(savedDevice)
+
+        val response = smartThingsDeviceService.registerDevice(1L, request)
+
+        assertThat(response.category).isEqualTo("AIR_CONDITIONER")
+    }
+
+    @Test
+    fun `registerDevice - 잘못된 category면 예외가 발생한다`() {
+        val request = SmartThingsDto.RegisterDeviceRequest(
+            placeId = 501,
+            smartThingsDeviceId = "st-device-1",
+            deviceName = "거실 에어컨",
+            category = "HEATER",
+        )
+
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L)).willReturn(AccessLevel.ADMIN)
+
+        assertThatThrownBy { smartThingsDeviceService.registerDevice(1L, request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
     fun `registerDevice - 이미 등록된 기기면 예외가 발생한다`() {
         val request = SmartThingsDto.RegisterDeviceRequest(placeId = 501, smartThingsDeviceId = "st-device-1", deviceName = "거실 에어컨")
 
