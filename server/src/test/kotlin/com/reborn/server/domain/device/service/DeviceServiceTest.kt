@@ -392,4 +392,38 @@ class DeviceServiceTest {
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.NOT_FOUND)
     }
+
+    @Test
+    fun `delete - ADMIN이면 기기를 삭제한다`() {
+        val device = Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = "AR7K2P9M", id = 10)
+        given(deviceRepository.findByDeviceKey("AR7K2P9M")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+
+        deviceService.delete(1L, "AR7K2P9M")
+
+        verify(deviceRepository).delete(device)
+    }
+
+    @Test
+    fun `delete - 존재하지 않는 기기면 예외가 발생한다`() {
+        given(deviceRepository.findByDeviceKey("UNKNOWN")).willReturn(null)
+
+        assertThatThrownBy { deviceService.delete(1L, "UNKNOWN") }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `delete - ADMIN 권한이 없으면 예외가 발생한다`() {
+        val device = Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = "AR7K2P9M", id = 10)
+        val userMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.USER)
+        given(deviceRepository.findByDeviceKey("AR7K2P9M")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(userMapping)
+
+        assertThatThrownBy { deviceService.delete(1L, "AR7K2P9M") }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
 }

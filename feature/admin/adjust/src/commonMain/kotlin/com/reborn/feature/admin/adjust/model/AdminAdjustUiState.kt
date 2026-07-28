@@ -57,4 +57,5 @@ sealed interface AdminAdjustIntent {
         val deviceId: String,
         val autoControlState: AutoControlUiState
     ) : AdminAdjustIntent
+    data class DeleteDevice(val deviceId: String) : AdminAdjustIntent
 }
