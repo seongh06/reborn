@@ -171,6 +171,76 @@
     line-height: 1.6;
   }
   .hidden { display: none !important; }
+  .form-state {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  /* 데스크톱(≥860px): 좁은 화면에서만 쓰던 폭 430px 카드가 넓은 모니터에서 화면 가운데 실처럼
+     떠 있어 보이던 것을, 브랜드 패널 + 폼 패널 2단 카드로 재배치한다. 마크업/JS는 그대로 두고
+     grid-template-areas로 header를 왼쪽 열로만 재배치 — DOM 순서, id 참조 전부 무변경.
+     주의: .header/.content/.submit-bar는 .page가 아니라 #formState(.form-state)의 자식이라
+     grid는 .form-state에 걸어야 한다(.page에 걸면 조부모-손자 관계라 grid-area가 먹지 않음).
+     스타일시트 맨 뒤에 둬야 위쪽의 동일 specificity 규칙(.header, .content 등)을 실제로 덮어씀. */
+  @media (min-width: 860px) {
+    body {
+      align-items: center;
+      padding: 48px 24px;
+    }
+    .page {
+      max-width: 880px;
+      min-height: 560px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px -30px rgba(18,18,18,0.35), 0 1px 0 rgba(18,18,18,0.04);
+    }
+    .form-state {
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) 1fr;
+      grid-template-rows: auto 1fr auto;
+      grid-template-areas:
+        "header content"
+        "header content"
+        "header submit";
+    }
+    .header {
+      grid-area: header;
+      background: var(--gray-900);
+      color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.06) 1.5px, transparent 1.5px);
+      background-size: 22px 22px;
+      mask-image: linear-gradient(to bottom, transparent, #000 55%, transparent);
+    }
+    .header .place, .header .subtitle { position: relative; }
+    .header .place { color: #FFFFFF; font-size: 32px; }
+    .header .subtitle { color: var(--gray-500); }
+    .content {
+      grid-area: content;
+      padding: 44px 44px 20px;
+    }
+    .submit-bar {
+      grid-area: submit;
+      padding: 8px 44px 40px;
+    }
+    .type-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .state-screen {
+      min-height: 520px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -193,7 +263,7 @@
     </div>
 
     <!-- 입력 폼 -->
-    <div id="formState" class="hidden" style="display:flex; flex-direction:column; flex:1;">
+    <div id="formState" class="hidden form-state">
       <div class="header">
         <p class="place" id="placeName"></p>
         <p class="subtitle">지금 이 공간은 어떠신가요? 느끼신 점을 알려주세요.</p>
