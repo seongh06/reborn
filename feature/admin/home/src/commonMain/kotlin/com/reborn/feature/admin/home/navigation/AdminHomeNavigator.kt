@@ -21,7 +21,7 @@ fun NavGraphBuilder.adminHomeNavGraph(
     onNavigateToFeedbackList: () -> Unit = {},
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
-    onNavigateToDeviceDetail: (Int) -> Unit = {},
+    onNavigateToDeviceDetail: (String) -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ) {
     composable<Route.Admin.Home> {
@@ -39,12 +39,14 @@ fun NavGraphBuilder.adminHomeNavGraph(
 
 fun NavGraphBuilder.adminIotDeviceListNavGraph(
     onBackClick: () -> Unit,
-    onNavigateToAddSmartThingsDevice: () -> Unit = {}
+    onNavigateToAddSmartThingsDevice: () -> Unit = {},
+    onNavigateToDeviceDetail: (String) -> Unit = {}
 ) {
     composable<Route.Admin.IotDeviceList> {
         AdminIotDeviceListRoute(
             onBackClick = onBackClick,
-            onAddDeviceClick = onNavigateToAddSmartThingsDevice
+            onAddDeviceClick = onNavigateToAddSmartThingsDevice,
+            onDeviceClick = onNavigateToDeviceDetail
         )
     }
 }

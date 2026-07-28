@@ -42,7 +42,7 @@ fun AdminHomeRoute(
     onNavigateToFeedbackList: () -> Unit = {},
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
-    onNavigateToDeviceDetail: (Int) -> Unit = {},
+    onNavigateToDeviceDetail: (String) -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -84,7 +84,8 @@ fun AdminHomeRoute(
                 onFeedbackClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(id)) },
                 onMoreFeedbackClick = { viewModel.onIntent(AdminHomeIntent.NavigateToFeedbackList) },
                 onDeviceListClick = { viewModel.onIntent(AdminHomeIntent.NavigateToDeviceList) },
-                onDeviceDetailClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToDeviceDetail(id)) }
+                onDeviceDetailClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToDeviceDetail(id)) },
+                onDevicePowerToggle = { id -> viewModel.onIntent(AdminHomeIntent.TogglePower(id)) }
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
                 state = state,
@@ -104,7 +105,8 @@ fun AdminHomeScreen(
     onFeedbackClick: (Int) -> Unit,
     onMoreFeedbackClick: () -> Unit = {},
     onDeviceListClick: () -> Unit = {},
-    onDeviceDetailClick: (Int) -> Unit = {}
+    onDeviceDetailClick: (String) -> Unit = {},
+    onDevicePowerToggle: (String) -> Unit = {}
 ) {
     if (!state.hasDevices) {
          Column(
@@ -176,7 +178,9 @@ fun AdminHomeScreen(
                 }
                 item {
                     IoTListSection(
+                        devices = state.devices,
                         onDeviceClick = onDeviceDetailClick,
+                        onPowerToggle = onDevicePowerToggle,
                         onMoreClick = onDeviceListClick
                     )
                 }

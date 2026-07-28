@@ -258,6 +258,9 @@ fun App(initialFeedbackId: Int? = null) {
                         },
                         onNavigateToAddSmartThingsDevice = {
                             navController.navigate(Route.Admin.AddSmartThingsDevice)
+                        },
+                        onNavigateToDeviceDetail = { deviceId ->
+                            navController.navigate(Route.Admin.Adjust(deviceId))
                         }
                     )
                     adminSmartThingsAddNavGraph(

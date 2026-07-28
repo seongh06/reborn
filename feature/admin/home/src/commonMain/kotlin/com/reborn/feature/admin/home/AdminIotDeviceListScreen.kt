@@ -5,59 +5,77 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.designsystem.component.RebornTopAppBar
+import com.reborn.core.designsystem.theme.RebornTheme
+import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.DeviceListItem
-import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.SectionTitleComponent
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.home.component.IoTDeviceItem
-
-// TODO: 서버 device API 연동 전까지의 목업 데이터. 실제 연동 시 UseCase로 대체 예정 - Figma 595:5471
-// 방(room) 개념이 device/place 도메인 모델에 없어(#166), device.place 문자열로 클라이언트에서만 그룹핑
-private val mockRoomDevices = listOf(
-    IoTDeviceItem(1, "거실", "거실 조명", isOnline = true, isPowerOn = true, deviceType = DeviceType.LAMP),
-    IoTDeviceItem(2, "거실", "거실 TV", isOnline = true, isPowerOn = false, deviceType = DeviceType.TV),
-    IoTDeviceItem(3, "거실", "거실 공기청정기", isOnline = true, isPowerOn = false, deviceType = DeviceType.AIR_CONDITIONER),
-    IoTDeviceItem(4, "거실", "거실 커튼", isOnline = false, isPowerOn = false, deviceType = DeviceType.CURTAIN),
-    IoTDeviceItem(5, "안방", "안방 가습기", isOnline = false, isPowerOn = false, deviceType = DeviceType.OTHER),
-    IoTDeviceItem(6, "안방", "안방 콘센트", isOnline = true, isPowerOn = true, deviceType = DeviceType.PLUG),
-)
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun AdminIotDeviceListRoute(
+    viewModel: AdminIotDeviceListViewModel = koinViewModel(),
     onBackClick: () -> Unit,
+    onDeviceClick: (String) -> Unit = {},
     onAddDeviceClick: () -> Unit = {}
 ) {
-    var devices by remember { mutableStateOf(mockRoomDevices) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    AdminIotDeviceListScreen(
-        devices = devices,
-        onBackClick = onBackClick,
-        onAddDeviceClick = onAddDeviceClick,
-        onPowerToggle = { deviceId ->
-            devices = devices.map {
-                if (it.id == deviceId) it.copy(isPowerOn = !it.isPowerOn) else it
+    LaunchedEffect(Unit) {
+        viewModel.loadDevices()
+
+        viewModel.event.collect { event ->
+            when (event) {
+                is AdminIotDeviceListEvent.ShowErrorSnackbar -> {
+                    snackbarHostState.showSnackbar(message = event.throwable.message ?: "에러가 발생했습니다.")
+                }
             }
         }
-    )
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { _ ->
+        when (val state = uiState) {
+            is AdminIotDeviceListUiState.Loading -> RebornLoadingScreen()
+            is AdminIotDeviceListUiState.Loaded -> AdminIotDeviceListScreen(
+                devices = state.devices,
+                onBackClick = onBackClick,
+                onAddDeviceClick = onAddDeviceClick,
+                onPowerToggle = { deviceId -> viewModel.togglePower(deviceId) },
+                onDeviceClick = onDeviceClick
+            )
+        }
+    }
 }
 
 @Composable
 fun AdminIotDeviceListScreen(
     devices: List<IoTDeviceItem>,
     onBackClick: () -> Unit,
-    onPowerToggle: (Int) -> Unit,
+    onPowerToggle: (String) -> Unit,
+    onDeviceClick: (String) -> Unit = {},
     onAddDeviceClick: () -> Unit = {}
 ) {
     val groupedDevices = devices.groupBy { it.place }
@@ -67,37 +85,50 @@ fun AdminIotDeviceListScreen(
     ) {
         RebornTopAppBar(title = "기기", onBackClick = onBackClick, onNavigateAddDevice = onAddDeviceClick)
 
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            groupedDevices.forEach { (place, roomDevices) ->
-                item(key = "room_$place") {
-                    SectionTitleComponent(
-                        title = place,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                items(roomDevices.chunked(2), key = { it.first().id }) { rowDevices ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        rowDevices.forEach { device ->
-                            Box(modifier = Modifier.weight(1f)) {
-                                DeviceListItem(
-                                    place = device.place,
-                                    name = device.name,
-                                    isOnline = device.isOnline,
-                                    isPowerOn = device.isPowerOn,
-                                    deviceType = device.deviceType,
-                                    onPowerToggle = { onPowerToggle(device.id) },
-                                    onClick = {}
-                                )
+        if (devices.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "연결된 기기가 없습니다",
+                    style = RebornTheme.typography.bodyMedium,
+                    color = RebornTheme.color.grayScale500
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                groupedDevices.forEach { (place, roomDevices) ->
+                    item(key = "room_$place") {
+                        SectionTitleComponent(
+                            title = place,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    items(roomDevices.chunked(2), key = { it.first().id }) { rowDevices ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowDevices.forEach { device ->
+                                Box(modifier = Modifier.weight(1f)) {
+                                    DeviceListItem(
+                                        place = device.place,
+                                        name = device.name,
+                                        isOnline = device.isOnline,
+                                        isPowerOn = device.isPowerOn,
+                                        deviceType = device.deviceType,
+                                        onPowerToggle = { onPowerToggle(device.id) },
+                                        onClick = { onDeviceClick(device.id) }
+                                    )
+                                }
                             }
-                        }
-                        if (rowDevices.size < 2) {
-                            Box(modifier = Modifier.weight(1f))
+                            if (rowDevices.size < 2) {
+                                Box(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
