@@ -100,7 +100,8 @@ class PlaceService(
             ?: throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "권한이 없습니다.")
 
         val deviceCount = deviceRepository.countByPlaceId(placeId).toInt()
-        return PlaceConverter.toDetailResponse(place, accessLevel, deviceCount)
+        val adminCount = userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(placeId, AccessLevel.ADMIN).size
+        return PlaceConverter.toDetailResponse(place, accessLevel, deviceCount, adminCount)
     }
 
     @Transactional

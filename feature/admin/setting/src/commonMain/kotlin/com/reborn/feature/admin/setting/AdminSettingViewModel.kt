@@ -117,17 +117,16 @@ class AdminSettingViewModel(
                     val rooms = coroutineScope {
                         places.map { place ->
                             async {
-                                val deviceCount = detailSemaphore.withPermit {
-                                    getPlaceDetailUseCase(place.placeId).getOrNull()?.deviceCount
+                                val detail = detailSemaphore.withPermit {
+                                    getPlaceDetailUseCase(place.placeId).getOrNull()
                                 }
                                 AdminSettingUiState.RoomItem(
                                     // Route 인자(Route.Admin.InviteCode/AddDevice)가 Int라 기존 관례를 따라 Int로 보관
                                     placeId = place.placeId.toInt(),
                                     roomName = place.name,
-                                    // TODO: 장소별 관리자 수를 반환하는 API가 아직 없어 0으로 표시 (#106 범위 밖)
-                                    adminCount = 0,
-                                    // 상세 조회 실패 시 null - 실제 대수 0과 구분해서 UI에서 별도 표시
-                                    deviceCount = deviceCount,
+                                    // 상세 조회 실패 시 null - 실제 0명/0대와 구분해서 UI에서 별도 표시
+                                    adminCount = detail?.adminCount,
+                                    deviceCount = detail?.deviceCount,
                                 )
                             }
                         }.awaitAll()

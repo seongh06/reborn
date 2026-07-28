@@ -26,13 +26,19 @@ object PlaceConverter {
         )
     }
 
-    fun toDetailResponse(entity: Place, accessLevel: AccessLevel, deviceCount: Int): PlaceDto.DetailResponse =
+    fun toDetailResponse(
+        entity: Place,
+        accessLevel: AccessLevel,
+        deviceCount: Int,
+        adminCount: Int,
+    ): PlaceDto.DetailResponse =
         PlaceDto.DetailResponse(
             placeId = entity.id,
             name = entity.name,
             type = entity.type.name,
             accessLevel = accessLevel.name,
             deviceCount = deviceCount,
+            adminCount = adminCount,
             qrCode = entity.qrCode,
             createdAt = requireNotNull(entity.createdAt),
         )
