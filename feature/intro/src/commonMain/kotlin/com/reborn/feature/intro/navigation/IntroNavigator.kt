@@ -8,6 +8,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.reborn.core.navigation.Route
 import com.reborn.feature.intro.IntroRoute
+import com.reborn.feature.intro.screen.TermsScreen
+import com.reborn.feature.intro.screen.TermsType
 import com.reborn.feature.intro.screen.admin.IntroAdminCodeScreen
 import com.reborn.feature.intro.screen.admin.IntroDevicePairingCodeScreen
 
@@ -19,6 +21,7 @@ fun NavGraphBuilder.introNavGraph(
     onNavigateToAdmin: () -> Unit,
     onNavigateToAerometer: () -> Unit,
     onBackClick: () -> Unit,
+    onTermsClick: (type: String) -> Unit = {},
     skipToSignup: () -> Boolean = { false }
 ) {
     composable<Route.Intro> {
@@ -26,6 +29,7 @@ fun NavGraphBuilder.introNavGraph(
             onNavigateToAdmin = onNavigateToAdmin,
             onNavigateToAerometer = onNavigateToAerometer,
             onBackClick =onBackClick,
+            onTermsClick = onTermsClick,
             skipToSignup = skipToSignup()
         )
     }
@@ -39,6 +43,20 @@ fun NavGraphBuilder.introAdminCodeNavGraph(
         val route = backStackEntry.toRoute<Route.Admin.InviteCode>()
         IntroAdminCodeScreen(
             placeId = route.placeId.toLong(),
+            onBackClick = onBackClick
+        )
+    }
+}
+
+// 로그인 전 Welcome 화면의 약관 링크, 로그인 후 설정 화면의 "이용약관" 항목 양쪽에서 진입 —
+// 최상위 라우트라 introNavGraph와 별개로 등록
+fun NavGraphBuilder.termsNavGraph(
+    onBackClick: () -> Unit
+) {
+    composable<Route.Terms> { backStackEntry ->
+        val route = backStackEntry.toRoute<Route.Terms>()
+        TermsScreen(
+            initialType = TermsType.fromRouteType(route.type),
             onBackClick = onBackClick
         )
     }

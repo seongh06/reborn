@@ -25,6 +25,7 @@ fun IntroRoute(
     onNavigateToAdmin: () -> Unit,
     onNavigateToAerometer: () -> Unit,
     onBackClick: () -> Unit,
+    onTermsClick: (type: String) -> Unit = {},
     skipToSignup: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -69,7 +70,8 @@ fun IntroRoute(
                         viewModel.onIntent(IntroIntent.NavigateToAdmin)
                     }
                 },
-                onAerometerClick = { viewModel.onIntent(IntroIntent.NavigateToAerometerPairing) }
+                onAerometerClick = { viewModel.onIntent(IntroIntent.NavigateToAerometerPairing) },
+                onTermsClick = onTermsClick
             )
             is IntroUiState.AerometerPairing -> IntroAermeterPairingScreen(
                 onPairingComplete = { viewModel.onIntent(IntroIntent.NavigateToAerometerDeviceName) },
