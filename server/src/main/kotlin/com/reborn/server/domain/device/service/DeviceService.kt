@@ -1,10 +1,12 @@
 package com.reborn.server.domain.device.service
 
+import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.Device
 import com.reborn.server.domain.device.DeviceSerial
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.converter.DeviceConverter
 import com.reborn.server.domain.device.dto.DeviceDto
+import com.reborn.server.domain.device.repository.AutoControlRuleRepository
 import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.device.repository.DeviceSerialRepository
 import com.reborn.server.domain.place.AccessLevel
@@ -30,6 +32,7 @@ class DeviceService(
     private val placeRepository: PlaceRepository,
     private val deviceRepository: DeviceRepository,
     private val deviceSerialRepository: DeviceSerialRepository,
+    private val autoControlRuleRepository: AutoControlRuleRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
     private val redisUtil: RedisUtil,
     @param:Value("\${operator.api-key:}") private val operatorApiKey: String,
@@ -193,6 +196,47 @@ class DeviceService(
             ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
         requireAdmin(userId, device.place.id)
         deviceRepository.delete(device)
+    }
+
+    @Transactional
+    fun saveAutoControlRule(
+        userId: Long,
+        deviceKey: String,
+        request: DeviceDto.AutoControlRuleRequest,
+    ): DeviceDto.AutoControlRuleResponse {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        requireAdmin(userId, device.place.id)
+
+        val rule = autoControlRuleRepository.findByDeviceId(device.id)
+            ?: AutoControlRule(device = device)
+        rule.apply {
+            discomfortThreshold = request.discomfortThreshold
+            discomfortAction = request.discomfortAction
+            humidityHighThreshold = request.humidityHighThreshold
+            humidityHighAction = request.humidityHighAction
+            humidityLowThreshold = request.humidityLowThreshold
+            humidityLowAction = request.humidityLowAction
+            temperatureHighThreshold = request.temperatureHighThreshold
+            temperatureHighAction = request.temperatureHighAction
+            temperatureLowThreshold = request.temperatureLowThreshold
+            temperatureLowAction = request.temperatureLowAction
+            occupancyThreshold = request.occupancyThreshold
+            occupancyAction = request.occupancyAction
+            isAutoOffEnabled = request.isAutoOffEnabled
+            autoOffMinutes = request.autoOffMinutes
+        }
+        val saved = autoControlRuleRepository.save(rule)
+        return DeviceConverter.toAutoControlRuleResponse(saved)
+    }
+
+    fun getAutoControlRule(userId: Long, deviceKey: String): DeviceDto.AutoControlRuleResponse? {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        requireAdmin(userId, device.place.id)
+
+        return autoControlRuleRepository.findByDeviceId(device.id)
+            ?.let { DeviceConverter.toAutoControlRuleResponse(it) }
     }
 
     private fun requireAdmin(userId: Long, placeId: Long) {

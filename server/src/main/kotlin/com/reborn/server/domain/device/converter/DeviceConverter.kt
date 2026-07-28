@@ -1,5 +1,6 @@
 package com.reborn.server.domain.device.converter
 
+import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.Device
 import com.reborn.server.domain.device.dto.DeviceDto
 
@@ -20,5 +21,23 @@ object DeviceConverter {
             deviceType = entity.deviceType.name,
             isOnline = entity.isOnline,
             createdAt = requireNotNull(entity.createdAt),
+        )
+
+    fun toAutoControlRuleResponse(entity: AutoControlRule): DeviceDto.AutoControlRuleResponse =
+        DeviceDto.AutoControlRuleResponse(
+            discomfortThreshold = entity.discomfortThreshold,
+            discomfortAction = entity.discomfortAction,
+            humidityHighThreshold = entity.humidityHighThreshold,
+            humidityHighAction = entity.humidityHighAction,
+            humidityLowThreshold = entity.humidityLowThreshold,
+            humidityLowAction = entity.humidityLowAction,
+            temperatureHighThreshold = entity.temperatureHighThreshold,
+            temperatureHighAction = entity.temperatureHighAction,
+            temperatureLowThreshold = entity.temperatureLowThreshold,
+            temperatureLowAction = entity.temperatureLowAction,
+            occupancyThreshold = entity.occupancyThreshold,
+            occupancyAction = entity.occupancyAction,
+            isAutoOffEnabled = entity.isAutoOffEnabled,
+            autoOffMinutes = entity.autoOffMinutes,
         )
 }

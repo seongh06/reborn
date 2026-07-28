@@ -1,9 +1,11 @@
 package com.reborn.core.data.mapper
 
+import com.reborn.core.model.AutoControlRule
 import com.reborn.core.model.Device
 import com.reborn.core.model.PairedDevice
 import com.reborn.core.model.PairingCode
 import com.reborn.core.model.RegisteredDevice
+import com.reborn.core.network.model.response.device.AutoControlRuleResponse
 import com.reborn.core.network.model.response.device.DeviceItemResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
@@ -30,4 +32,22 @@ fun RegisterDeviceResponse.toRegisteredDevice(): RegisteredDevice =
         deviceName = deviceName,
         deviceType = deviceType,
         createdAt = createdAt,
+    )
+
+fun AutoControlRuleResponse.toAutoControlRule(): AutoControlRule =
+    AutoControlRule(
+        discomfortThreshold = discomfortThreshold,
+        discomfortAction = discomfortAction,
+        humidityHighThreshold = humidityHighThreshold,
+        humidityHighAction = humidityHighAction,
+        humidityLowThreshold = humidityLowThreshold,
+        humidityLowAction = humidityLowAction,
+        temperatureHighThreshold = temperatureHighThreshold,
+        temperatureHighAction = temperatureHighAction,
+        temperatureLowThreshold = temperatureLowThreshold,
+        temperatureLowAction = temperatureLowAction,
+        occupancyThreshold = occupancyThreshold,
+        occupancyAction = occupancyAction,
+        isAutoOffEnabled = isAutoOffEnabled,
+        autoOffMinutes = autoOffMinutes,
     )

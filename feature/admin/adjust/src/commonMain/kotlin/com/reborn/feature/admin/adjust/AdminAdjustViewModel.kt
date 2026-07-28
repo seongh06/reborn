@@ -5,12 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.DeleteDeviceUseCase
+import com.reborn.core.domain.usecase.GetAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
+import com.reborn.core.model.AutoControlRule
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
+import com.reborn.feature.admin.adjust.model.AutoControlUiState
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 sealed class AdminAdjustEvent {
@@ -23,7 +26,9 @@ class AdminAdjustViewModel(
     private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val controlDeviceUseCase: ControlDeviceUseCase,
-    private val deleteDeviceUseCase: DeleteDeviceUseCase
+    private val deleteDeviceUseCase: DeleteDeviceUseCase,
+    private val saveAutoControlRuleUseCase: SaveAutoControlRuleUseCase,
+    private val getAutoControlRuleUseCase: GetAutoControlRuleUseCase
 ) : ViewModel() {
     private val navController = NavigationManager<AdminAdjustUiState, AdminAdjustEvent>(
         initialState = AdminAdjustUiState.Loading,
@@ -121,6 +126,7 @@ class AdminAdjustViewModel(
                 AdminAdjustEvent.ShowErrorSnackbar(IllegalArgumentException("기기를 찾을 수 없습니다."))
             )
         navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.controlMethod, intent.deviceId, device))
+        loadData(intent.controlMethod)
     }
 
     private fun togglePower(deviceId: String) {
@@ -174,10 +180,21 @@ class AdminAdjustViewModel(
         loadData(tab)
     }
 
-    private fun loadData(
-        tab: AdminAdjustUiState.ControlMethod?=null
-    ){
+    private fun loadData(tab: AdminAdjustUiState.ControlMethod? = null) {
+        if (tab != AdminAdjustUiState.ControlMethod.MANUALEdit) return
+        val current = navController.uiState.value as? AdminAdjustUiState.DeviceDetail ?: return
 
+        viewModelScope.launch {
+            getAutoControlRuleUseCase(current.deviceId)
+                .onSuccess { rule ->
+                    navController.updateCurrentState { state ->
+                        (state as? AdminAdjustUiState.DeviceDetail)
+                            ?.copy(autoControlState = rule?.toUiState() ?: AutoControlUiState())
+                            ?: state
+                    }
+                }
+                .onFailure { navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it)) }
+        }
     }
 
     private fun sendRemoteControl(intent: AdminAdjustIntent.SendRemoteControl) {
@@ -196,11 +213,16 @@ class AdminAdjustViewModel(
         }
     }
 
-    // TODO: 서버 자동제어 규칙 API 연동 전까지의 목업. 실제 연동 시 UseCase/Repository로 대체 예정
     private fun sendAutoControl(intent: AdminAdjustIntent.SendAutoControl) {
         viewModelScope.launch {
-            delay(500)
-            navController.emitEvent(AdminAdjustEvent.ShowSnackbar("자동 제어 규칙을 저장했습니다."))
+            saveAutoControlRuleUseCase(intent.deviceId, intent.autoControlState.toDomain())
+                .onSuccess { saved ->
+                    navController.updateCurrentState { state ->
+                        (state as? AdminAdjustUiState.DeviceDetail)?.copy(autoControlState = saved.toUiState()) ?: state
+                    }
+                    navController.emitEvent(AdminAdjustEvent.ShowSnackbar("자동 제어 규칙을 저장했습니다."))
+                }
+                .onFailure { navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it)) }
         }
     }
 
@@ -221,3 +243,43 @@ class AdminAdjustViewModel(
         }
     }
 }
+
+// 서버에 저장되지 않은 필드는 화면의 프리셋 기본값으로 채운다(#190) - 신규 기기는 규칙이 아예 없어
+// 응답 필드 전부가 null일 수 있음.
+private fun AutoControlRule.toUiState(): AutoControlUiState {
+    val default = AutoControlUiState()
+    return AutoControlUiState(
+        discomfortThreshold = discomfortThreshold ?: default.discomfortThreshold,
+        discomfortAction = discomfortAction ?: default.discomfortAction,
+        humidityHighThreshold = humidityHighThreshold ?: default.humidityHighThreshold,
+        humidityHighAction = humidityHighAction ?: default.humidityHighAction,
+        humidityLowThreshold = humidityLowThreshold ?: default.humidityLowThreshold,
+        humidityLowAction = humidityLowAction ?: default.humidityLowAction,
+        temperatureHighThreshold = temperatureHighThreshold ?: default.temperatureHighThreshold,
+        temperatureHighAction = temperatureHighAction ?: default.temperatureHighAction,
+        temperatureLowThreshold = temperatureLowThreshold ?: default.temperatureLowThreshold,
+        temperatureLowAction = temperatureLowAction ?: default.temperatureLowAction,
+        occupancyThreshold = occupancyThreshold ?: default.occupancyThreshold,
+        occupancyAction = occupancyAction ?: default.occupancyAction,
+        isAutoOffEnabled = isAutoOffEnabled,
+        autoOffMinutes = autoOffMinutes ?: default.autoOffMinutes,
+    )
+}
+
+private fun AutoControlUiState.toDomain(): AutoControlRule =
+    AutoControlRule(
+        discomfortThreshold = discomfortThreshold,
+        discomfortAction = discomfortAction,
+        humidityHighThreshold = humidityHighThreshold,
+        humidityHighAction = humidityHighAction,
+        humidityLowThreshold = humidityLowThreshold,
+        humidityLowAction = humidityLowAction,
+        temperatureHighThreshold = temperatureHighThreshold,
+        temperatureHighAction = temperatureHighAction,
+        temperatureLowThreshold = temperatureLowThreshold,
+        temperatureLowAction = temperatureLowAction,
+        occupancyThreshold = occupancyThreshold,
+        occupancyAction = occupancyAction,
+        isAutoOffEnabled = isAutoOffEnabled,
+        autoOffMinutes = autoOffMinutes,
+    )

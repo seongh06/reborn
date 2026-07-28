@@ -1,5 +1,6 @@
 package com.reborn.core.domain.repository
 
+import com.reborn.core.model.AutoControlRule
 import com.reborn.core.model.Device
 import com.reborn.core.model.PairedDevice
 import com.reborn.core.model.PairingCode
@@ -23,4 +24,8 @@ interface DeviceRepository {
     ): Result<Unit>
 
     suspend fun deleteDevice(deviceId: String): Result<Unit>
+
+    suspend fun saveAutoControlRule(deviceId: String, rule: AutoControlRule): Result<AutoControlRule>
+
+    suspend fun getAutoControlRule(deviceId: String): Result<AutoControlRule?>
 }

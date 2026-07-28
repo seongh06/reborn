@@ -10,6 +10,7 @@ import com.reborn.core.domain.usecase.DeleteDeviceUseCase
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
+import com.reborn.core.domain.usecase.GetAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
@@ -27,6 +28,7 @@ import com.reborn.core.domain.usecase.RegisterAiSpeakerDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
+import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
@@ -77,6 +79,8 @@ val appDependenciesModule = module {
     factory { ConfigureDeviceWifiUseCase(get()) }
     factory { ControlDeviceUseCase(get()) }
     factory { DeleteDeviceUseCase(get()) }
+    factory { SaveAutoControlRuleUseCase(get()) }
+    factory { GetAutoControlRuleUseCase(get()) }
     factory { GetFeedbackListUseCase(get()) }
     factory { UpdateFeedbackStatusUseCase(get()) }
     factory { GetCurrentMetricUseCase(get()) }

@@ -83,6 +83,15 @@ class SmartThingsDeviceService(
             throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "SmartThings로 제어할 수 없는 기기입니다.")
         }
         requireAdmin(userId, device.place.id)
+        return controlInternal(device, request)
+    }
+
+    // 사용자 요청(control)과 자동 제어 스케줄러(AutoControlEvaluationService) 양쪽에서 재사용 -
+    // 스케줄러는 userId(요청자)가 없어 ADMIN 권한 검증을 건너뛰어야 하므로 그 부분만 상위에서 분리.
+    fun controlInternal(device: Device, request: DeviceDto.ControlRequest): DeviceDto.ControlResponse {
+        if (device.deviceType != DeviceType.SMART_THINGS) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "SmartThings로 제어할 수 없는 기기입니다.")
+        }
 
         val commands = buildCommands(request)
         if (commands.isEmpty()) {
@@ -90,9 +99,9 @@ class SmartThingsDeviceService(
         }
 
         val accessToken = smartThingsService.getValidAccessToken(device.place.id)
-        smartThingsDeviceClient.sendCommands(accessToken, deviceKey, commands)
+        smartThingsDeviceClient.sendCommands(accessToken, device.deviceKey, commands)
 
-        return DeviceDto.ControlResponse(deviceId = deviceKey, sentAt = LocalDateTime.now())
+        return DeviceDto.ControlResponse(deviceId = device.deviceKey, sentAt = LocalDateTime.now())
     }
 
     // 전원/운전모드/온도/풍량 → SmartThings capability 커맨드 매핑(#132 이슈에 정의된 매핑표 그대로).

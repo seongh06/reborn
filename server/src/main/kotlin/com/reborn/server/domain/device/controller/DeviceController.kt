@@ -199,6 +199,45 @@ class DeviceController(
         return ApiResponse.success(null)
     }
 
+    @Operation(
+        summary = "자동 제어 규칙 저장",
+        description = "기기 하나의 자동 제어 규칙을 저장합니다(#190). 온도 상/하한 조건만 서버 스케줄러가 " +
+            "실제로 평가·실행하고, 나머지(습도/재실인원/불쾌지수/자동 꺼짐)는 저장만 됩니다. " +
+            "해당 장소의 ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "저장 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/{deviceId}/auto-control")
+    fun saveAutoControlRule(
+        @PathVariable deviceId: String,
+        @RequestBody request: DeviceDto.AutoControlRuleRequest,
+        authentication: Authentication,
+    ): ApiResponse<DeviceDto.AutoControlRuleResponse> =
+        ApiResponse.success(deviceService.saveAutoControlRule(extractUserId(authentication), deviceId, request))
+
+    @Operation(
+        summary = "자동 제어 규칙 조회",
+        description = "기기 하나에 저장된 자동 제어 규칙을 조회합니다. 저장된 적 없으면 data가 null입니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공(미저장 시 data=null)"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{deviceId}/auto-control")
+    fun getAutoControlRule(
+        @PathVariable deviceId: String,
+        authentication: Authentication,
+    ): ApiResponse<DeviceDto.AutoControlRuleResponse?> =
+        ApiResponse.success(deviceService.getAutoControlRule(extractUserId(authentication), deviceId))
+
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long
             ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "인증 정보가 유효하지 않습니다.")

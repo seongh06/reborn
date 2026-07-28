@@ -70,8 +70,10 @@ fun AdminDeviceDetailScreen(
         windSpeed != initialWindSpeed ||
         isPowerOn != initialPowerOn
 
-    val initialAutoControlState = remember { AutoControlUiState() }
-    var autoControlState by remember { mutableStateOf(initialAutoControlState) }
+    // 서버에서 규칙을 불러오기 전(null)에는 화면 프리셋 기본값을 보여주다가, 로드/저장 완료 시
+    // state.autoControlState가 갱신되면 편집 기준선도 함께 새로 잡는다(#190).
+    val initialAutoControlState = remember(state.autoControlState) { state.autoControlState ?: AutoControlUiState() }
+    var autoControlState by remember(state.autoControlState) { mutableStateOf(initialAutoControlState) }
 
     val isAutoControlChanged = autoControlState != initialAutoControlState
 
