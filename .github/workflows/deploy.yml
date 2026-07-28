@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, gram]
+    runs-on: [self-hosted, pi5]
 
     steps:
       - name: Checkout code
