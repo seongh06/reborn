@@ -22,6 +22,7 @@ fun NavGraphBuilder.adminSettingNavGraph(
     onNavigateToAddArduino: (Int) -> Unit = {},
     onNavigateToAddAiSpeaker: (Int) -> Unit = {},
     onNavigateToAddPlace: () -> Unit = {},
+    onNavigateToTerms: () -> Unit = {},
     onLoggedOut: () -> Unit = {}
 ) {
     composable<Route.Admin.Setting> {
@@ -32,6 +33,7 @@ fun NavGraphBuilder.adminSettingNavGraph(
             onNavigateToAddArduino = onNavigateToAddArduino,
             onNavigateToAddAiSpeaker = onNavigateToAddAiSpeaker,
             onNavigateToAddPlace = onNavigateToAddPlace,
+            onNavigateToTerms = onNavigateToTerms,
             onLoggedOut = onLoggedOut
         )
     }

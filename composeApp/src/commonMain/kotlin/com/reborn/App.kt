@@ -52,6 +52,7 @@ import com.reborn.feature.aerometer.navigation.aerometerNavGraph
 import com.reborn.feature.intro.navigation.introAdminCodeNavGraph
 import com.reborn.feature.intro.navigation.introDevicePairingNavGraph
 import com.reborn.feature.intro.navigation.introNavGraph
+import com.reborn.feature.intro.navigation.termsNavGraph
 import moe.tlaster.precompose.PreComposeApp
 import org.jetbrains.compose.resources.painterResource
 
@@ -97,10 +98,11 @@ fun App(initialFeedbackId: Int? = null) {
                     val isAdminIotDeviceList = currentDestination?.hasRoute<Route.Admin.IotDeviceList>() == true
                     val isAdminAddSmartThingsDevice = currentDestination?.hasRoute<Route.Admin.AddSmartThingsDevice>() == true
                     val isAdminDeviceWifiSetup = currentDestination?.hasRoute<Route.Admin.DeviceWifiSetup>() == true
+                    val isTerms = currentDestination?.hasRoute<Route.Terms>() == true
                     val isSubScreenWithoutBottomBar = isIntro || isAerometer || isAdminSetting ||
                         isAdminInviteCode || isAdminAddDevice || isAdminAddArduino || isAdminDeviceWifiSetup ||
                         isAdminAddAiSpeaker || isAdminIotDeviceList || isAdminAddSmartThingsDevice ||
-                        isAdminFeedback
+                        isAdminFeedback || isTerms
                     val isHomeLikeTabHidden = (isAdminHome || isAdminAdjust) &&
                         !isAdminHomeBottomBarVisible
                     if (!isSubScreenWithoutBottomBar && !isHomeLikeTabHidden) {
@@ -212,7 +214,15 @@ fun App(initialFeedbackId: Int? = null) {
                             introSkipToSignup = false
                             navController.popBackStack()
                         },
+                        onTermsClick = { type ->
+                            navController.navigate(Route.Terms(type))
+                        },
                         skipToSignup = { introSkipToSignup }
+                    )
+                    termsNavGraph(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
                     )
                     introAdminCodeNavGraph(
                         onBackClick = {
@@ -304,6 +314,9 @@ fun App(initialFeedbackId: Int? = null) {
                         onNavigateToAddPlace = {
                             introSkipToSignup = true
                             navController.navigate(Route.Intro)
+                        },
+                        onNavigateToTerms = {
+                            navController.navigate(Route.Terms())
                         },
                         onLoggedOut = {
                             introSkipToSignup = false
