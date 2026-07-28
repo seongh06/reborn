@@ -3,6 +3,7 @@ package com.reborn.core.network.service
 import com.reborn.core.network.datasource.MetricDataSource
 import com.reborn.core.network.model.ApiResponse
 import com.reborn.core.network.model.SensorHistoryResponse
+import com.reborn.core.network.model.response.metric.MetricAggregateBucket
 import com.reborn.core.network.model.response.metric.MetricHistoryItem
 import kotlinx.datetime.LocalDateTime
 
@@ -41,6 +42,49 @@ class SensorHistoryApiImpl(
         "HUMIDITY" -> { item -> item.humidity }
         "ILLUMINANCE" -> { item -> item.illuminance?.toDouble() }
         "PEOPLE_COUNT" -> { item -> item.peopleCount?.toDouble() }
+        else -> { _ -> null }
+    }
+
+    override suspend fun getSensorAggregate(deviceId: String, sensorType: String, period: String): List<Double?> {
+        val response = metricDataSource.getAggregate(deviceId, period)
+        val buckets = when (response) {
+            is ApiResponse.Success -> response.data.buckets
+            is ApiResponse.Failure.HttpError -> throw IllegalStateException(response.message)
+            is ApiResponse.Failure.NetworkError -> throw IllegalStateException(response.message)
+            is ApiResponse.Failure.UnknownApiError -> throw IllegalStateException(response.message)
+        }
+        val extractor = bucketFieldExtractorFor(sensorType)
+        return buckets.map(extractor)
+    }
+
+    override suspend fun getAnalysisText(deviceId: String, sensorType: String): String {
+        val response = metricDataSource.getAnalysis(deviceId, sensorType)
+        return when (response) {
+            is ApiResponse.Success -> response.data.analysisText
+            is ApiResponse.Failure.HttpError -> throw IllegalStateException(response.message)
+            is ApiResponse.Failure.NetworkError -> throw IllegalStateException(response.message)
+            is ApiResponse.Failure.UnknownApiError -> throw IllegalStateException(response.message)
+        }
+    }
+
+    override suspend fun exportToSheets(deviceId: String): String {
+        val response = metricDataSource.exportToSheets(deviceId)
+        return when (response) {
+            is ApiResponse.Success -> response.data.spreadsheetUrl
+            is ApiResponse.Failure.HttpError -> throw IllegalStateException(response.message)
+            is ApiResponse.Failure.NetworkError -> throw IllegalStateException(response.message)
+            is ApiResponse.Failure.UnknownApiError -> throw IllegalStateException(response.message)
+        }
+    }
+
+    // 장기 집계 버킷은 온도+습도가 함께 있어 불쾌지수도 서버가 계산해 내려준다(HOUR/DAY의
+    // fieldExtractorFor와 달리 DISCOMFORT 지원 - 이쪽은 목업이 아니라 실 계산값).
+    private fun bucketFieldExtractorFor(sensorType: String): (MetricAggregateBucket) -> Double? = when (sensorType) {
+        "TEMPERATURE" -> { bucket -> bucket.temperature }
+        "HUMIDITY" -> { bucket -> bucket.humidity }
+        "ILLUMINANCE" -> { bucket -> bucket.illuminance }
+        "PEOPLE_COUNT" -> { bucket -> bucket.peopleCount }
+        "DISCOMFORT" -> { bucket -> bucket.discomfort }
         else -> { _ -> null }
     }
 

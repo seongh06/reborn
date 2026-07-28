@@ -3,8 +3,14 @@ package com.reborn.feature.admin.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
+import com.reborn.core.domain.usecase.ExportMetricToSheetsUseCase
+import com.reborn.core.domain.usecase.GetAnalysisTextParams
+import com.reborn.core.domain.usecase.GetAnalysisTextUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
+import com.reborn.core.domain.usecase.GetGoogleSheetsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetSensorAggregateParams
+import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryParams
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
 import com.reborn.core.model.SensorPoint
@@ -12,7 +18,6 @@ import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -23,6 +28,8 @@ private val METRIC_CAPABLE_DEVICE_TYPES = setOf("ARDUINO", "SMART_THINGS")
 
 // 목업 시간별 히스토리("어제"/"오늘")의 실제 일수. hourlyDayPatternsFor의 패턴 개수와 항상 같이 맞춰서 사용
 private const val MOCK_HISTORY_DAY_COUNT = 2
+
+private const val ANALYSIS_LOADING_TEXT = "분석 중..."
 
 private val DAYS_IN_MONTH = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
@@ -136,41 +143,21 @@ private fun hourlyDayPatternsFor(category: AdminDataUiState.Category): List<List
     )
 }
 
-// 카테고리별 목업(주/월/년) — 자연스러운 값처럼 보이는 숫자를 그대로 나열 (계산식으로 만들지 않음)
-private fun weeklyMockValues(category: AdminDataUiState.Category): List<Double> = when (category) { // 8개
-    AdminDataUiState.Category.TEMPERATURE -> listOf(23.0, 24.0, 22.0, 25.0, 26.0, 24.0, 23.0, 25.0)
-    AdminDataUiState.Category.HUMIDITY -> listOf(55.0, 58.0, 60.0, 52.0, 50.0, 57.0, 62.0, 54.0)
-    AdminDataUiState.Category.ILLUMINANCE -> listOf(280.0, 300.0, 260.0, 320.0, 310.0, 290.0, 270.0, 305.0)
-    AdminDataUiState.Category.PEOPLE_COUNT -> listOf(2.0, 3.0, 4.0, 3.0, 5.0, 4.0, 3.0, 2.0)
-    AdminDataUiState.Category.DISCOMFORT -> listOf(68.0, 70.0, 72.0, 66.0, 64.0, 71.0, 74.0, 69.0)
-}
-
-private fun monthlyMockValues(category: AdminDataUiState.Category): List<Double> = when (category) { // 12개
-    AdminDataUiState.Category.TEMPERATURE -> listOf(20.0, 21.0, 23.0, 25.0, 27.0, 29.0, 30.0, 29.0, 26.0, 23.0, 21.0, 19.0)
-    AdminDataUiState.Category.HUMIDITY -> listOf(65.0, 60.0, 55.0, 50.0, 48.0, 52.0, 60.0, 68.0, 72.0, 66.0, 60.0, 58.0)
-    AdminDataUiState.Category.ILLUMINANCE -> listOf(200.0, 240.0, 280.0, 320.0, 360.0, 380.0, 370.0, 340.0, 300.0, 260.0, 220.0, 190.0)
-    AdminDataUiState.Category.PEOPLE_COUNT -> listOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0)
-    AdminDataUiState.Category.DISCOMFORT -> listOf(55.0, 58.0, 62.0, 68.0, 74.0, 80.0, 83.0, 81.0, 75.0, 68.0, 60.0, 56.0)
-}
-
-private fun yearlyMockValues(category: AdminDataUiState.Category): List<Double> = when (category) { // 5개
-    AdminDataUiState.Category.TEMPERATURE -> listOf(22.0, 23.0, 24.0, 24.0, 25.0)
-    AdminDataUiState.Category.HUMIDITY -> listOf(58.0, 60.0, 57.0, 59.0, 61.0)
-    AdminDataUiState.Category.ILLUMINANCE -> listOf(290.0, 300.0, 310.0, 295.0, 305.0)
-    AdminDataUiState.Category.PEOPLE_COUNT -> listOf(3.0, 4.0, 3.0, 4.0, 3.0)
-    AdminDataUiState.Category.DISCOMFORT -> listOf(70.0, 72.0, 69.0, 71.0, 73.0)
-}
-
 sealed class AdminDataEvent {
     data object Exit : AdminDataEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminDataEvent()
     data class ShowSnackbar(val message: String) : AdminDataEvent()
+    data class OpenUrl(val url: String) : AdminDataEvent()
 }
 
 class AdminDataViewModel(
     private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val getSensorHistoryUseCase: GetSensorHistoryUseCase,
+    private val getSensorAggregateUseCase: GetSensorAggregateUseCase,
+    private val getAnalysisTextUseCase: GetAnalysisTextUseCase,
+    private val exportMetricToSheetsUseCase: ExportMetricToSheetsUseCase,
+    private val getGoogleSheetsAuthorizeUrlUseCase: GetGoogleSheetsAuthorizeUrlUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminDataUiState, AdminDataEvent>(
         initialState = AdminDataUiState.Loading,
@@ -210,7 +197,6 @@ class AdminDataViewModel(
         navigationManager.clearAndReset(AdminDataUiState.Loading)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            delay(1500)
             val category = AdminDataUiState.Category.TEMPERATURE
             val period = AdminDataUiState.Period.DAY
             try {
@@ -219,9 +205,9 @@ class AdminDataViewModel(
                         selectedCategory = category,
                         selectedPeriod = period,
                         chartLabels = chartLabelsFor(period),
-                        chartValues = mockChartValues(category, period),
+                        chartValues = chartValuesFor(category, period),
                         hasEnoughData = hasEnoughDataFor(period),
-                        analysisText = mockAnalysisText(category)
+                        analysisText = fetchAnalysisText(category)
                     )
                 )
             } catch (e: CancellationException) {
@@ -237,15 +223,20 @@ class AdminDataViewModel(
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             try {
-                val chartValues = mockChartValues(category, current.selectedPeriod)
+                val chartValues = chartValuesFor(category, current.selectedPeriod)
                 navigationManager.updateCurrentState { state ->
                     if (state is AdminDataUiState.Data) {
                         state.copy(
                             selectedCategory = category,
                             chartValues = chartValues,
-                            analysisText = mockAnalysisText(category)
+                            // AI 분석 문구는 Gemini 호출이라 차트보다 느리게 도착 - 그 사이엔 로딩 문구로 표시
+                            analysisText = ANALYSIS_LOADING_TEXT,
                         )
                     } else state
+                }
+                val analysisText = fetchAnalysisText(category)
+                navigationManager.updateCurrentState { state ->
+                    if (state is AdminDataUiState.Data) state.copy(analysisText = analysisText) else state
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -260,7 +251,7 @@ class AdminDataViewModel(
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             try {
-                val chartValues = mockChartValues(current.selectedCategory, period)
+                val chartValues = chartValuesFor(current.selectedCategory, period)
                 navigationManager.updateCurrentState { state ->
                     if (state is AdminDataUiState.Data) {
                         state.copy(
@@ -331,16 +322,15 @@ class AdminDataViewModel(
     // HOUR/DAY는 category==DISCOMFORT일 때만 목업 유지(서버 히스토리 API에 불쾌지수 필드 자체가
     // 없음) - 나머지 4개 카테고리는 실 기기가 있으면 실 데이터를 쓰고, 없으면 빈 그래프를 반환한다
     // (라벨-값 개수가 어긋나지 않도록 빈 값일 땐 라벨도 비워서 호출부에서 함께 처리)
-    private suspend fun mockChartValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
+    // WEEK/MONTH/YEAR는 서버 전용 집계 API(#158)를 사용 - DISCOMFORT도 서버가 실제로 계산해 내려줌.
+    private suspend fun chartValuesFor(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
         if (!hasEnoughDataFor(period)) return emptyList()
         return when (period) {
             AdminDataUiState.Period.HOUR -> hourlyValues(category)
             AdminDataUiState.Period.DAY -> dailyAverageValues(category)
-            // 주/월/년 같은 장기 집계는 시간 단위 "일별 팩" 응답만으로 감당하기 어려워(연 단위면 시간당 값이 수만 개) 별도 목업 유지.
-            // 실제 연동 시에는 전용 집계(주/월/년) API 응답을 받아 동일하게 매핑하면 됨
             AdminDataUiState.Period.WEEK,
             AdminDataUiState.Period.MONTH,
-            AdminDataUiState.Period.YEAR -> longRangeValues(category, period)
+            AdminDataUiState.Period.YEAR -> aggregateValues(category, period)
         }
     }
 
@@ -377,33 +367,54 @@ class AdminDataViewModel(
         }
     }
 
-    // 주/월/년 목업도 계산식이 아니라 리터럴 숫자 배열을 그대로 사용
-    private fun longRangeValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
-        val values = when (period) {
-            AdminDataUiState.Period.WEEK -> weeklyMockValues(category)
-            AdminDataUiState.Period.MONTH -> monthlyMockValues(category)
-            AdminDataUiState.Period.YEAR -> yearlyMockValues(category)
-            else -> emptyList()
-        }
-        return values.map { it.toFloat() }
+    private suspend fun aggregateValues(category: AdminDataUiState.Category, period: AdminDataUiState.Period): List<Float> {
+        val deviceId = resolveDeviceId() ?: return emptyList()
+        val params = GetSensorAggregateParams(deviceId, category.name, period.name)
+        return getSensorAggregateUseCase(params).first()
     }
 
-    // TODO: 서버 Google Sheets 내보내기 API 연동 전까지의 목업. 실제 연동 시 UseCase/Repository로 대체 예정
+    private suspend fun fetchAnalysisText(category: AdminDataUiState.Category): String {
+        val deviceId = resolveDeviceId() ?: return "아직 등록된 기기가 없어 분석할 수 없습니다."
+        return runCatching { getAnalysisTextUseCase(GetAnalysisTextParams(deviceId, category.name)).first() }
+            .getOrElse { "지금은 분석을 불러올 수 없습니다. 잠시 후 다시 시도해주세요." }
+    }
+
     private fun exportToGoogleSheets() {
         viewModelScope.launch {
-            delay(500)
-            navigationManager.emitEvent(AdminDataEvent.ShowSnackbar("Google Sheets로 내보냈습니다."))
+            val deviceId = resolveDeviceId()
+            if (deviceId == null) {
+                navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(IllegalStateException("등록된 기기가 없어 내보낼 데이터가 없습니다.")))
+                return@launch
+            }
+            try {
+                val spreadsheetUrl = exportMetricToSheetsUseCase(deviceId).first()
+                navigationManager.emitEvent(AdminDataEvent.ShowSnackbar("Google Sheets로 내보냈습니다."))
+                navigationManager.emitEvent(AdminDataEvent.OpenUrl(spreadsheetUrl))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // 장소가 Google Sheets와 아직 연동되지 않은 경우(서버 404) - 바로 연동 화면으로
+                // 안내해서 한 번 더 시도할 필요 없이 이어서 연동할 수 있게 한다.
+                if (e.message?.contains("연동되어 있지 않습니다") == true) {
+                    startGoogleSheetsConnection()
+                } else {
+                    navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(e))
+                }
+            }
         }
     }
 
-    // TODO: AI 분석 응답 데이터 연동 전까지의 목업 텍스트. 실제 연동 시 서버 응답으로 대체 예정
-    private fun mockAnalysisText(category: AdminDataUiState.Category): String {
-        return when (category) {
-            AdminDataUiState.Category.TEMPERATURE -> "현재 온도가 희망 온도보다 1도 정도 높습니다. 냉방을 가동하면 에너지 효율이 개선됩니다."
-            AdminDataUiState.Category.HUMIDITY -> "실내 습도가 적정 범위를 벗어났습니다. 제습 모드를 권장합니다."
-            AdminDataUiState.Category.ILLUMINANCE -> "조도가 낮은 시간대가 반복됩니다. 조명 자동 점등 설정을 검토해보세요."
-            AdminDataUiState.Category.PEOPLE_COUNT -> "재실 인원이 몰리는 시간대에 에너지 소비가 집중되고 있습니다."
-            AdminDataUiState.Category.DISCOMFORT -> "불쾌지수가 높은 구간이 감지됐습니다. 냉방 가동을 권장합니다."
+    private suspend fun startGoogleSheetsConnection() {
+        val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        if (placeId == null) {
+            navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
+            return
         }
+        getGoogleSheetsAuthorizeUrlUseCase(placeId)
+            .onSuccess { url ->
+                navigationManager.emitEvent(AdminDataEvent.ShowSnackbar("Google Sheets 연동이 필요해요. 연동 후 다시 내보내기를 눌러주세요."))
+                navigationManager.emitEvent(AdminDataEvent.OpenUrl(url))
+            }
+            .onFailure { navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(it)) }
     }
 }

@@ -9,13 +9,17 @@ import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.DeleteDeviceUseCase
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
+import com.reborn.core.domain.usecase.ExportMetricToSheetsUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
+import com.reborn.core.domain.usecase.GetAnalysisTextUseCase
 import com.reborn.core.domain.usecase.GetAutoControlRuleUseCase
+import com.reborn.core.domain.usecase.GetGoogleSheetsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsDeviceListUseCase
@@ -85,6 +89,10 @@ val appDependenciesModule = module {
     factory { UpdateFeedbackStatusUseCase(get()) }
     factory { GetCurrentMetricUseCase(get()) }
     factory { GetSensorHistoryUseCase(get()) }
+    factory { GetSensorAggregateUseCase(get()) }
+    factory { GetAnalysisTextUseCase(get()) }
+    factory { ExportMetricToSheetsUseCase(get()) }
+    factory { GetGoogleSheetsAuthorizeUrlUseCase(get()) }
 
     viewModelOf(::IntroViewModel)
     viewModelOf(::AdminHomeViewModel)

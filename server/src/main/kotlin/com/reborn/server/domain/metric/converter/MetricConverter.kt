@@ -1,6 +1,7 @@
 package com.reborn.server.domain.metric.converter
 
 import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.metric.MetricAggregateProjection
 import com.reborn.server.domain.metric.MetricLog
 import com.reborn.server.domain.metric.dto.MetricDto
 import org.springframework.data.domain.Page
@@ -46,8 +47,27 @@ object MetricConverter {
             createdAt = requireNotNull(entity.createdAt),
         )
 
+    fun toAggregateResponse(
+        deviceId: String,
+        period: String,
+        projections: List<MetricAggregateProjection>,
+    ): MetricDto.AggregateResponse =
+        MetricDto.AggregateResponse(
+            deviceId = deviceId,
+            period = period,
+            buckets = projections.map { row ->
+                MetricDto.AggregateBucket(
+                    temperature = row.getAvgTemperature(),
+                    humidity = row.getAvgHumidity(),
+                    illuminance = row.getAvgIlluminance(),
+                    peopleCount = row.getAvgPeopleCount(),
+                    discomfort = calculateDiscomfort(row.getAvgTemperature(), row.getAvgHumidity()),
+                )
+            },
+        )
+
     // 기상청 불쾌지수 공식: DI = 1.8*T - 0.55*(1 - RH/100)*(1.8*T - 26) + 32
-    private fun calculateDiscomfort(temperature: Double?, humidity: Double?): Double? {
+    fun calculateDiscomfort(temperature: Double?, humidity: Double?): Double? {
         if (temperature == null || humidity == null) return null
         val discomfort = 1.8 * temperature - 0.55 * (1 - humidity / 100) * (1.8 * temperature - 26) + 32
         return Math.round(discomfort * 100) / 100.0

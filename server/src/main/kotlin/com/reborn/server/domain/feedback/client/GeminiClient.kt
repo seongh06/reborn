@@ -96,6 +96,26 @@ class GeminiClient(
         )
     }
 
+    // 데이터 화면 AI 분석 텍스트(#158) 등 오디오/JSON이 아닌 일반 텍스트 생성에 재사용.
+    fun generateText(prompt: String): String {
+        requireConfigured()
+
+        val body = mapOf("contents" to listOf(mapOf("parts" to listOf(mapOf("text" to prompt)))))
+
+        val response = runCatching { post(model, body) }
+            .onFailure { e -> log.warn("Gemini 텍스트 생성 실패: {}", e.message) }
+            .getOrNull()
+            ?: throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "텍스트 생성에 실패했습니다.")
+
+        val text = response
+            .path("candidates").path(0).path("content").path("parts").path(0).path("text")
+            .asText("")
+        if (text.isBlank()) {
+            throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "텍스트 생성 응답이 비어있습니다.")
+        }
+        return text.trim()
+    }
+
     fun synthesizeSpeech(text: String): GeminiSpeechResult {
         requireConfigured()
 
