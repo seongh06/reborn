@@ -68,10 +68,15 @@ class RebornMessagingService : FirebaseMessagingService() {
             )
         }
 
+        // core:notification은 composeApp의 R 클래스를 컴파일 타임에 참조할 수 없어(위 launchIntent와
+        // 동일한 의존성 역방향 문제) 앱 리소스 이름으로 런타임 조회한다. 못 찾으면 시스템 기본 아이콘으로 대체.
+        val smallIconRes = resources.getIdentifier("ic_notification", "drawable", packageName)
+            .takeIf { it != 0 } ?: android.R.drawable.ic_dialog_info
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(body)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: 앱 아이콘 리소스로 교체
+            .setSmallIcon(smallIconRes)
             .setAutoCancel(true)
             .apply { contentIntent?.let { setContentIntent(it) } }
             .build()
