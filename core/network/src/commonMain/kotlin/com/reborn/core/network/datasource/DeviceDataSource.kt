@@ -24,4 +24,7 @@ interface DeviceDataSource {
     // SmartThings로 등록된 기기(SMART_THINGS 타입)에 제어 명령 전송(#132/#134). deviceId는 device.deviceKey
     // (= SmartThings 기기 ID) 문자열 - DB 내부 id 아님, getList가 내려주는 DeviceItem.deviceId와 동일한 값.
     suspend fun controlDevice(deviceId: String, request: ControlDeviceRequest): ApiResponse<ControlDeviceResponse>
+
+    // 기기 등록 해제(#189) - deviceId는 controlDevice와 동일하게 deviceKey
+    suspend fun deleteDevice(deviceId: String): ApiResponse<Unit?>
 }

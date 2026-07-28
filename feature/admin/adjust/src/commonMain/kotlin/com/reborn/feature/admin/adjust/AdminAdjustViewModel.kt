@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
+import com.reborn.core.domain.usecase.DeleteDeviceUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
@@ -21,7 +22,8 @@ sealed class AdminAdjustEvent {
 class AdminAdjustViewModel(
     private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
-    private val controlDeviceUseCase: ControlDeviceUseCase
+    private val controlDeviceUseCase: ControlDeviceUseCase,
+    private val deleteDeviceUseCase: DeleteDeviceUseCase
 ) : ViewModel() {
     private val navController = NavigationManager<AdminAdjustUiState, AdminAdjustEvent>(
         initialState = AdminAdjustUiState.Loading,
@@ -67,6 +69,7 @@ class AdminAdjustViewModel(
             is AdminAdjustIntent.ClickTab -> handleTabClick(intent.tab)
             is AdminAdjustIntent.SendRemoteControl -> sendRemoteControl(intent)
             is AdminAdjustIntent.SendAutoControl -> sendAutoControl(intent)
+            is AdminAdjustIntent.DeleteDevice -> deleteDevice(intent.deviceId)
         }
     }
 
@@ -198,6 +201,23 @@ class AdminAdjustViewModel(
         viewModelScope.launch {
             delay(500)
             navController.emitEvent(AdminAdjustEvent.ShowSnackbar("자동 제어 규칙을 저장했습니다."))
+        }
+    }
+
+    private fun deleteDevice(deviceId: String) {
+        viewModelScope.launch {
+            deleteDeviceUseCase(deviceId)
+                .onSuccess {
+                    devices = devices.filterNot { it.id == deviceId }
+                    navController.navigateBack()
+                    navController.updateCurrentState { state ->
+                        (state as? AdminAdjustUiState.Adjust)?.copy(devices = devices) ?: state
+                    }
+                    navController.emitEvent(AdminAdjustEvent.ShowSnackbar("기기를 해제했어요."))
+                }
+                .onFailure {
+                    navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it))
+                }
         }
     }
 }

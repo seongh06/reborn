@@ -47,4 +47,7 @@ class DeviceRepositoryImpl(
     ): Result<Unit> =
         remote.controlDevice(deviceId, ControlDeviceRequest(isPowerOn, operationMode, windSpeed, temperature))
             .toResult { }
+
+    override suspend fun deleteDevice(deviceId: String): Result<Unit> =
+        remote.deleteDevice(deviceId).toResult { }
 }

@@ -190,6 +190,14 @@ class DeviceService(
         return DeviceDto.ListResponse(devices = devices)
     }
 
+    @Transactional
+    fun delete(userId: Long, deviceKey: String) {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        requireAdmin(userId, device.place.id)
+        deviceRepository.delete(device)
+    }
+
     private fun requireAdmin(userId: Long, placeId: Long) {
         val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
         if (mapping == null || mapping.accessLevel != AccessLevel.ADMIN) {

@@ -12,6 +12,7 @@ import com.reborn.core.network.model.response.device.PairingResponse
 import com.reborn.core.network.model.response.device.RegisterDeviceResponse
 import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -54,5 +55,9 @@ class DeviceDataSourceImpl(
         httpClient.post("/api/device/$deviceId/control") {
             setBody(request)
         }
+    }.asApiResponse()
+
+    override suspend fun deleteDevice(deviceId: String): ApiResponse<Unit?> = runCatching {
+        httpClient.delete("/api/device/$deviceId")
     }.asApiResponse()
 }

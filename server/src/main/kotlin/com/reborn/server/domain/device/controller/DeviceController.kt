@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -175,6 +176,28 @@ class DeviceController(
         authentication: Authentication,
     ): ApiResponse<DeviceDto.ControlResponse> =
         ApiResponse.success(smartThingsDeviceService.control(extractUserId(authentication), deviceId, request))
+
+    @Operation(
+        summary = "기기 등록 해제",
+        description = "장소에 등록된 기기 하나를 제거합니다. 해당 장소의 ADMIN 권한이 필요합니다. " +
+            "SmartThings 기기라도 계정 연동 자체(smart_things_credential)는 해제되지 않고, 이 장소의 " +
+            "제어 대상 매핑(device row)만 제거됩니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "해제 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/{deviceId}")
+    fun delete(
+        @PathVariable deviceId: String,
+        authentication: Authentication,
+    ): ApiResponse<Nothing> {
+        deviceService.delete(extractUserId(authentication), deviceId)
+        return ApiResponse.success(null)
+    }
 
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long

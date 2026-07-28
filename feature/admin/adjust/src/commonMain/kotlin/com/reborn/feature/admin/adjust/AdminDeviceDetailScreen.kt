@@ -1,5 +1,6 @@
 package com.reborn.feature.admin.adjust
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -16,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
@@ -45,7 +49,9 @@ fun AdminDeviceDetailScreen(
         isPowerOn: Boolean
     ) -> Unit = { _, _, _, _ -> },
     onSendAutoControlClick: (AutoControlUiState) -> Unit = {},
+    onDeleteClick: () -> Unit = {},
 ) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val currentTab = state.selectedTab
 
@@ -69,6 +75,36 @@ fun AdminDeviceDetailScreen(
 
     val isAutoControlChanged = autoControlState != initialAutoControlState
 
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = {
+                Text(
+                    "기기를 해제할까요?",
+                    style = RebornTheme.typography.titleMedium,
+                    color = RebornTheme.color.grayScale900
+                )
+            },
+            text = {
+                Text(
+                    "해제하면 이 장소에서 기기가 제거돼요. 다시 등록하려면 처음부터 다시 연동해야 해요.",
+                    style = RebornTheme.typography.bodyMedium,
+                    color = RebornTheme.color.grayScale700
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showDeleteConfirm = false; onDeleteClick() }) {
+                    Text("해제", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.reject)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("취소", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale700)
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
@@ -82,6 +118,15 @@ fun AdminDeviceDetailScreen(
                 isPowerOn = state.device.isPowerOn,
                 deviceType = state.device.deviceType
             )
+        )
+        Text(
+            "기기 해제",
+            style = RebornTheme.typography.labelLarge,
+            color = RebornTheme.color.reject,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier
+                .padding(12.dp, 4.dp)
+                .clickable { showDeleteConfirm = true }
         )
         Column(
             modifier = Modifier.padding(12.dp, 8.dp),
