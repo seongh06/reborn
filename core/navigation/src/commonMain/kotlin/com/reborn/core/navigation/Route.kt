@@ -6,6 +6,9 @@ import kotlinx.serialization.Serializable
 sealed interface Route {
     @Serializable data object Intro : Route
     @Serializable data object Aerometer : Route
+    // type: "CONSUMER"(소비자 약관) / "POLICY"(이용 정책) / "PRIVACY"(개인정보 처리방침) - 로그인 전(Welcome
+    // 화면)/후(설정 화면) 양쪽에서 진입하므로 core:navigation 최상위에 둔다
+    @Serializable data class Terms(val type: String = "CONSUMER") : Route
 
     @Serializable
     sealed interface Admin : Route {

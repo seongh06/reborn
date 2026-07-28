@@ -10,11 +10,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.reborn.core.common.SocialType
@@ -31,6 +34,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun IntroWelcomeScreen(
     onLoginSuccess: (needsPlaceSetup: Boolean) -> Unit,
     onAerometerClick: () -> Unit,
+    onTermsClick: (type: String) -> Unit = {},
     viewModel: IntroViewModel = koinViewModel()
 ) {
     val socialLoginLauncher = rememberSocialLoginLauncher(
@@ -92,14 +96,21 @@ fun IntroWelcomeScreen(
             )
             val baseStyle = SpanStyle(color = RebornTheme.color.grayScale500)
             val emphasisStyle = SpanStyle(color = RebornTheme.color.grayScale700, fontWeight = FontWeight.SemiBold)
+            val linkStyles = TextLinkStyles(style = emphasisStyle)
             Text(
                 text = buildAnnotatedString {
                     withStyle(baseStyle) { append("계속하면 Reborn의 ") }
-                    withStyle(emphasisStyle) { append("소비자 약관") }
+                    withLink(LinkAnnotation.Clickable("CONSUMER", linkStyles) { onTermsClick("CONSUMER") }) {
+                        append("소비자 약관")
+                    }
                     withStyle(baseStyle) { append(" 및 ") }
-                    withStyle(emphasisStyle) { append("이용 정책") }
+                    withLink(LinkAnnotation.Clickable("POLICY", linkStyles) { onTermsClick("POLICY") }) {
+                        append("이용 정책")
+                    }
                     withStyle(baseStyle) { append("에 동의하고, ") }
-                    withStyle(emphasisStyle) { append("개인정보 처리방침") }
+                    withLink(LinkAnnotation.Clickable("PRIVACY", linkStyles) { onTermsClick("PRIVACY") }) {
+                        append("개인정보 처리방침")
+                    }
                     withStyle(baseStyle) { append("을 확인하는 것으로 간주됩니다.") }
                 },
                 style = RebornTheme.typography.labelLarge,

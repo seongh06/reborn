@@ -60,6 +60,7 @@ fun AdminSettingRoute(
     onNavigateToAddArduino: (Int) -> Unit = {},
     onNavigateToAddAiSpeaker: (Int) -> Unit = {},
     onNavigateToAddPlace: () -> Unit = {},
+    onNavigateToTerms: () -> Unit = {},
     onLoggedOut: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -105,7 +106,8 @@ fun AdminSettingRoute(
                 onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) },
                 onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) },
                 onWithdrawClick = { viewModel.onIntent(AdminSettingIntent.ClickWithdraw) },
-                onProfileNameChange = { name -> viewModel.onIntent(AdminSettingIntent.UpdateProfileName(name)) }
+                onProfileNameChange = { name -> viewModel.onIntent(AdminSettingIntent.UpdateProfileName(name)) },
+                onTermsClick = onNavigateToTerms
             )
         }
     }
@@ -123,7 +125,8 @@ fun AdminSettingScreen(
     onAddPlaceClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onWithdrawClick: () -> Unit = {},
-    onProfileNameChange: (String) -> Unit = {}
+    onProfileNameChange: (String) -> Unit = {},
+    onTermsClick: () -> Unit = {}
 
 ) {
     var showWithdrawConfirm by remember { mutableStateOf(false) }
@@ -236,7 +239,7 @@ fun AdminSettingScreen(
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
                 SettingItem(label = "서비스 소개", onClick = {})
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
-                SettingItem(label = "이용약관", onClick = {})
+                SettingItem(label = "이용약관", onClick = onTermsClick)
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
                 SettingItem(label = "로그아웃", onClick = onLogoutClick)
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
