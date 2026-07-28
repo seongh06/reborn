@@ -21,4 +21,6 @@ interface DeviceRepository {
         windSpeed: String?,
         temperature: Int?,
     ): Result<Unit>
+
+    suspend fun deleteDevice(deviceId: String): Result<Unit>
 }

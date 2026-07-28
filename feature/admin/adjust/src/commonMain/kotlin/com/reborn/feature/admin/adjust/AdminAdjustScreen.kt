@@ -108,7 +108,8 @@ fun AdminAdjustRoute(
                             autoControlState = autoControlState
                         )
                     )
-                }
+                },
+                onDeleteClick = { viewModel.onIntent(AdminAdjustIntent.DeleteDevice(state.deviceId)) }
             )
         }
     }

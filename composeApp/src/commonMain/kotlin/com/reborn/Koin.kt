@@ -6,6 +6,7 @@ import com.reborn.core.datastore.di.dataStoreModule
 import com.reborn.core.datastore.di.platformDataStoreModule
 import com.reborn.core.domain.usecase.ConfigureDeviceWifiUseCase
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
+import com.reborn.core.domain.usecase.DeleteDeviceUseCase
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
@@ -75,6 +76,7 @@ val appDependenciesModule = module {
     factory { RegisterSmartThingsDeviceUseCase(get()) }
     factory { ConfigureDeviceWifiUseCase(get()) }
     factory { ControlDeviceUseCase(get()) }
+    factory { DeleteDeviceUseCase(get()) }
     factory { GetFeedbackListUseCase(get()) }
     factory { UpdateFeedbackStatusUseCase(get()) }
     factory { GetCurrentMetricUseCase(get()) }
