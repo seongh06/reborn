@@ -47,5 +47,11 @@ object FeedbackConverter {
             source = entity.source.name,
             status = entity.status.name,
             createdAt = requireNotNull(entity.createdAt),
+            snapshotTemperature = entity.snapshotTemperature,
+            snapshotHumidity = entity.snapshotHumidity,
+            snapshotIlluminance = entity.snapshotIlluminance,
+            snapshotPeopleCount = entity.snapshotPeopleCount,
+            recommendedTemperatureBefore = entity.recommendedTemperatureBefore,
+            recommendedTemperatureAfter = entity.recommendedTemperatureAfter,
         )
 }

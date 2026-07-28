@@ -22,6 +22,8 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 
 data class VoiceFeedbackResult(
     val recognized: Boolean,
@@ -40,6 +42,7 @@ class FeedbackService(
     private val geminiClient: GeminiClient,
     private val voiceTtsCache: VoiceTtsCache,
     private val voiceFeedbackPersister: VoiceFeedbackPersister,
+    private val feedbackAiRecommendationService: FeedbackAiRecommendationService,
 ) {
 
     companion object {
@@ -82,8 +85,22 @@ class FeedbackService(
         )
 
         notifyAdmins(place, feedback)
+        scheduleAiRecommendation(feedback.id)
 
         return FeedbackConverter.toSubmitResponse(feedback)
+    }
+
+    // AI 맞춤 피드백 추천은 이 트랜잭션이 커밋된 뒤에만 시작돼야 한다 - 그 전에 비동기로 넘기면
+    // FeedbackAiRecommendationService가 findById로 아직 커밋 안 된 row를 못 찾는 레이스가 생김.
+    // isSynchronizationActive() 가드는 트랜잭션 매니저가 없는 순수 단위 테스트(Mockito)에서도
+    // 이 메서드가 예외 없이 동작하게 하기 위함 - 실제 서비스 환경에선 항상 true.
+    private fun scheduleAiRecommendation(feedbackId: Long) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) return
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                feedbackAiRecommendationService.generateAndSave(feedbackId)
+            }
+        })
     }
 
     // ⚠️ 인증 범위 관련(CodeRabbit 리뷰, PR #144): X-Device-Id 외에 별도 비밀값 검증이 없다는

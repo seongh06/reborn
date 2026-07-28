@@ -139,8 +139,9 @@ fun FeedbackList(
             .clip(RoundedCornerShape(10.dp))
             .background(RebornTheme.color.grayScale100)
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        // 아이템이 min height(120dp)보다 짧을 때(특히 1개일 때) Arrangement.Center를 쓰면
+        // 목록이 박스 가운데로 밀려 보임 - 항상 위에서부터 쌓이도록 Top으로 고정
+        verticalArrangement = Arrangement.Top
     ) {
         items.forEachIndexed { index, item ->
             Column {
