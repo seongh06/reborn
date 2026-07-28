@@ -52,6 +52,13 @@ class S3Uploader(
         return S3UploadResponse(key = key, url = url)
     }
 
+    // 이전 이미지가 이 버킷에서 업로드된 게 맞는지 확인 후에만 key를 돌려준다 - 소셜 로그인 프로바이더가
+    // 내려준 외부 URL(카카오/구글 프로필 이미지)을 실수로 삭제 시도하지 않기 위한 안전장치.
+    fun extractKeyIfOwned(url: String): String? {
+        val prefix = "https://$bucket.s3.$region.amazonaws.com/"
+        return url.takeIf { it.startsWith(prefix) }?.removePrefix(prefix)
+    }
+
     fun delete(key: String) {
         try {
             s3Client.deleteObject(

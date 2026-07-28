@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.reborn.core.common.PickedImage
+import com.reborn.core.common.rememberImagePicker
 import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
@@ -48,6 +51,7 @@ import com.reborn.feature.admin.setting.Res
 import com.reborn.feature.admin.setting.component.RoomListItem
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -65,6 +69,7 @@ fun AdminSettingRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(AdminSettingIntent.LoadInitial)
@@ -107,6 +112,14 @@ fun AdminSettingRoute(
                 onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) },
                 onWithdrawClick = { viewModel.onIntent(AdminSettingIntent.ClickWithdraw) },
                 onProfileNameChange = { name -> viewModel.onIntent(AdminSettingIntent.UpdateProfileName(name)) },
+                onProfileImagePicked = { image ->
+                    viewModel.onIntent(
+                        AdminSettingIntent.UpdateProfileImage(image.bytes, image.fileName, image.mimeType)
+                    )
+                },
+                onProfileImagePickError = { throwable ->
+                    scope.launch { snackbarHostState.showSnackbar(throwable.message ?: "이미지를 선택할 수 없습니다.") }
+                },
                 onTermsClick = onNavigateToTerms
             )
         }
@@ -126,6 +139,8 @@ fun AdminSettingScreen(
     onLogoutClick: () -> Unit,
     onWithdrawClick: () -> Unit = {},
     onProfileNameChange: (String) -> Unit = {},
+    onProfileImagePicked: (PickedImage) -> Unit = {},
+    onProfileImagePickError: (Throwable) -> Unit = {},
     onTermsClick: () -> Unit = {}
 
 ) {
@@ -182,7 +197,9 @@ fun AdminSettingScreen(
                 name = state.profileName,
                 imageUrl = state.profileImageUrl,
                 placeTags = state.rooms.map { it.roomName },
-                onNameChange = onProfileNameChange
+                onNameChange = onProfileNameChange,
+                onImagePicked = onProfileImagePicked,
+                onImagePickError = onProfileImagePickError
             )
         }
         Column(
@@ -249,16 +266,21 @@ fun AdminSettingScreen(
     }
 }
 
-// Figma 595:5356 기준 - 아바타(+편집 뱃지)/이름/소속 place 태그. 아바타 업로드 자체는 서버 API가 없어
-// 편집 뱃지는 자리만 잡아두고 아직 동작하지 않는다(#155 범위 밖, 후속 이슈).
+// Figma 595:5356 기준 - 아바타(+편집 뱃지)/이름/소속 place 태그.
 @Composable
 private fun ProfileSection(
     name: String?,
     imageUrl: String?,
     placeTags: List<String>,
-    onNameChange: (String) -> Unit = {}
+    onNameChange: (String) -> Unit = {},
+    onImagePicked: (PickedImage) -> Unit = {},
+    onImagePickError: (Throwable) -> Unit = {}
 ) {
     var isEditingName by remember { mutableStateOf(false) }
+    val launchImagePicker = rememberImagePicker(
+        onImagePicked = onImagePicked,
+        onError = onImagePickError
+    )
 
     if (isEditingName) {
         EditNameDialog(
@@ -305,13 +327,12 @@ private fun ProfileSection(
                     .align(Alignment.BottomEnd)
                     .clip(CircleShape)
                     .background(Color.White)
+                    .clickable { launchImagePicker() }
                     .padding(8.dp)
             ) {
-                // 실제 업로드 동작이 아직 없어(#155 범위 밖) 클릭 불가능한 장식용 뱃지 -
-                // contentDescription을 주면 스크린리더가 조작 가능한 컨트롤처럼 안내해 misleading함(CodeRabbit 리뷰)
                 Icon(
                     painter = painterResource(Res.drawable.ic_edit),
-                    contentDescription = null,
+                    contentDescription = "프로필 이미지 변경",
                     tint = RebornTheme.color.grayScale900,
                     modifier = Modifier.size(16.dp)
                 )

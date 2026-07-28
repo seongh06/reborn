@@ -8,6 +8,7 @@ import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
+import com.reborn.core.domain.usecase.UpdateUserProfileImageUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.core.domain.usecase.WithdrawUseCase
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
@@ -38,6 +39,7 @@ class AdminSettingViewModel(
     private val deletePlaceUseCase: DeletePlaceUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateUserProfileUseCase: UpdateUserProfileUseCase,
+    private val updateUserProfileImageUseCase: UpdateUserProfileImageUseCase,
     private val withdrawUseCase: WithdrawUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminSettingUiState, AdminSettingEvent>(
@@ -54,6 +56,9 @@ class AdminSettingViewModel(
     // checkInitialState()의 병렬 프로필 조회가 늦게 끝나면 그 사이 사용자가 편집해 성공한 이름을
     // 덮어쓸 수 있어(CodeRabbit #179), 편집 성공 시점 이후로는 이 값을 조회 결과보다 우선한다.
     private var editedProfileName: String? = null
+
+    // 이미지도 이름과 동일한 레이스가 있어(#179와 같은 클래스의 문제) 같은 방식으로 우선순위를 둔다.
+    private var editedProfileImageUrl: String? = null
 
     fun onIntent(intent: AdminSettingIntent) {
         when (intent) {
@@ -72,6 +77,8 @@ class AdminSettingViewModel(
             is AdminSettingIntent.ClickLogout -> logout()
             is AdminSettingIntent.ClickWithdraw -> withdraw()
             is AdminSettingIntent.UpdateProfileName -> updateProfileName(intent.name)
+            is AdminSettingIntent.UpdateProfileImage ->
+                updateProfileImage(intent.bytes, intent.fileName, intent.mimeType)
         }
     }
 
@@ -82,6 +89,19 @@ class AdminSettingViewModel(
                     editedProfileName = profile.name
                     navigationManager.updateCurrentState { state ->
                         (state as? AdminSettingUiState.Setting)?.copy(profileName = profile.name) ?: state
+                    }
+                }
+                .onFailure { navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it)) }
+        }
+    }
+
+    private fun updateProfileImage(bytes: ByteArray, fileName: String, mimeType: String) {
+        viewModelScope.launch {
+            updateUserProfileImageUseCase(bytes, fileName, mimeType)
+                .onSuccess { profile ->
+                    editedProfileImageUrl = profile.profileImage
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminSettingUiState.Setting)?.copy(profileImageUrl = profile.profileImage) ?: state
                     }
                 }
                 .onFailure { navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it)) }
@@ -102,7 +122,7 @@ class AdminSettingViewModel(
                         (state as? AdminSettingUiState.Setting)
                             ?.copy(
                                 profileName = editedProfileName ?: userProfile.name,
-                                profileImageUrl = userProfile.profileImage
+                                profileImageUrl = editedProfileImageUrl ?: userProfile.profileImage
                             )
                             ?: state
                     }

@@ -25,7 +25,7 @@ class User(
     var name: String,
 
     @Column
-    val profileImage: String? = null,
+    var profileImage: String? = null,
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -49,5 +49,9 @@ class User(
 
     fun updateName(newName: String) {
         name = newName
+    }
+
+    fun updateProfileImage(url: String) {
+        profileImage = url
     }
 }

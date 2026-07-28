@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -18,7 +19,9 @@ import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 
 @Tag(name = "인증 API", description = "소셜 로그인 (통합)")
 @RestController
@@ -122,6 +125,26 @@ class AuthController(
         authentication: Authentication,
     ): ApiResponse<AuthDto.MeResponse> =
         ApiResponse.success(authService.updateProfile(extractUserId(authentication), request))
+
+    @Operation(
+        summary = "내 프로필 이미지 변경",
+        description = "인증된 사용자의 프로필 이미지를 업로드하여 교체합니다(S3). JPEG/PNG/WEBP, 최대 5MB. " +
+            "S3 자격증명이 설정되지 않은 환경에서는 500으로 실패합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "변경 성공"),
+        SwaggerApiResponse(responseCode = "400", description = "이미지 파일 누락/형식 오류/용량 초과"),
+        SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 AccessToken"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
+        SwaggerApiResponse(responseCode = "500", description = "S3 업로드 미설정 환경"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/me/profile-image", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun updateProfileImage(
+        @RequestPart("image") image: MultipartFile,
+        authentication: Authentication,
+    ): ApiResponse<AuthDto.MeResponse> =
+        ApiResponse.success(authService.updateProfileImage(extractUserId(authentication), image))
 
     @Operation(
         summary = "회원 탈퇴",
