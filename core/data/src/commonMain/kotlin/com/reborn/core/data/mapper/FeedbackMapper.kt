@@ -10,4 +10,10 @@ fun FeedbackItemResponse.toFeedback(): Feedback =
         content = content,
         status = status,
         createdAt = createdAt,
+        snapshotTemperature = snapshotTemperature,
+        snapshotHumidity = snapshotHumidity,
+        snapshotIlluminance = snapshotIlluminance,
+        snapshotPeopleCount = snapshotPeopleCount,
+        recommendedTemperatureBefore = recommendedTemperatureBefore,
+        recommendedTemperatureAfter = recommendedTemperatureAfter,
     )

@@ -32,8 +32,9 @@ sealed interface AdminFeedbackUiState {
         val time: String, // 목록용 상대 시각(ex. "5분전")
         val submittedAt: String, // 상세용 절대 시각(ex. "2026.06.11 10:24") - Figma 596:3555
         val content: String,
-        // 서버 GET /api/feedback 응답에는 접수 시점 센서 스냅샷/AI 추천 조절값이 없음(별도 분석
-        // 기능이 아직 없음) - 실 데이터는 항상 null, 상세 화면에서 null이면 해당 섹션을 숨긴다.
+        // 피드백 제출 시점에 서버가 비동기로 Gemini 호출 후 채움 - 접수 직후 잠깐은 null일 수 있고,
+        // 그 기기의 최신 메트릭이 아예 없거나 Gemini 호출이 실패하면 계속 null로 남는다.
+        // 상세 화면에서 null이면 해당 섹션을 숨긴다.
         val sensorSnapshot: SensorSnapshot? = null,
         val temperatureAdjustment: TemperatureAdjustment? = null
     )

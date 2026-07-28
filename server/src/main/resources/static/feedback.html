@@ -270,7 +270,7 @@
       </div>
       <div class="content">
         <div id="deviceSection" class="hidden">
-          <p class="section-label">어느 위치인가요?</p>
+          <p class="section-label">어떤 기기에 대한 의견인가요?</p>
           <div class="device-group" id="deviceGroup"></div>
         </div>
         <div>
@@ -319,6 +319,10 @@
 
   var selectedDeviceId = null;
   var selectedTypeIndex = -1;
+  // 빠른 선택으로 자동 채운 텍스트를 기억해뒀다가, 사용자가 그 뒤로 직접 고치지 않았으면
+  // 다른 빠른 선택을 눌렀을 때도 계속 자동으로 교체되게 한다 - 첫 선택 이후엔 !value.trim()이
+  // 항상 false가 돼서 두 번째 선택부터 안 바뀌던 문제 수정
+  var lastAutoFillText = '';
 
   function showOnly(el) {
     [loadingState, errorState, doneState, formState].forEach(function (s) {
@@ -382,8 +386,9 @@
         selectedTypeIndex = index;
         Array.prototype.forEach.call(typeGrid.children, function (c) { c.classList.remove('selected'); });
         chip.classList.add('selected');
-        if (!contentEl.value.trim()) {
+        if (!contentEl.value.trim() || contentEl.value === lastAutoFillText) {
           contentEl.value = type.text;
+          lastAutoFillText = type.text;
         }
         updateSubmitState();
       });

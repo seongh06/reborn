@@ -62,6 +62,9 @@ class FeedbackServiceTest {
     @Mock
     private lateinit var voiceFeedbackPersister: VoiceFeedbackPersister
 
+    @Mock
+    private lateinit var feedbackAiRecommendationService: FeedbackAiRecommendationService
+
     @InjectMocks
     private lateinit var feedbackService: FeedbackService
 

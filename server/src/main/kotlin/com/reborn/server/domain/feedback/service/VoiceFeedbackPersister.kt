@@ -11,6 +11,8 @@ import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 
 // FeedbackService.submitVoice()에서 분리된 짧은 트랜잭션 전용 빈(CodeRabbit 리뷰, PR #144).
 // Gemini 오디오 분석/TTS 호출(수십 초까지 걸릴 수 있음)이 DB 트랜잭션 안에서 커넥션을 붙잡고
@@ -25,6 +27,7 @@ class VoiceFeedbackPersister(
     private val feedbackRepository: FeedbackRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
     private val fcmClient: FcmClient,
+    private val feedbackAiRecommendationService: FeedbackAiRecommendationService,
 ) {
 
     @Transactional
@@ -48,6 +51,15 @@ class VoiceFeedbackPersister(
                     data = mapOf("feedbackId" to feedback.id.toString()),
                 )
             }
+
+        val feedbackId = feedback.id
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+                override fun afterCommit() {
+                    feedbackAiRecommendationService.generateAndSave(feedbackId)
+                }
+            })
+        }
 
         return feedback
     }

@@ -39,6 +39,26 @@ class Feedback(
     @Enumerated(EnumType.STRING)
     var status: FeedbackStatus = FeedbackStatus.PENDING,
 
+    // AI 맞춤 피드백(제출 시점 센서 스냅샷 + 추천 희망 온도) - 제출 직후 비동기로 채워지므로
+    // 전부 nullable. Gemini 미설정/실패/최신 메트릭 없음 등으로 영영 null로 남을 수 있음.
+    @Column
+    var snapshotTemperature: Double? = null,
+
+    @Column
+    var snapshotHumidity: Double? = null,
+
+    @Column
+    var snapshotIlluminance: Int? = null,
+
+    @Column
+    var snapshotPeopleCount: Int? = null,
+
+    @Column
+    var recommendedTemperatureBefore: Double? = null,
+
+    @Column
+    var recommendedTemperatureAfter: Double? = null,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
@@ -47,5 +67,21 @@ class Feedback(
 
     fun updateStatus(newStatus: FeedbackStatus) {
         status = newStatus
+    }
+
+    fun applyAiRecommendation(
+        snapshotTemperature: Double?,
+        snapshotHumidity: Double?,
+        snapshotIlluminance: Int?,
+        snapshotPeopleCount: Int?,
+        recommendedTemperatureBefore: Double,
+        recommendedTemperatureAfter: Double,
+    ) {
+        this.snapshotTemperature = snapshotTemperature
+        this.snapshotHumidity = snapshotHumidity
+        this.snapshotIlluminance = snapshotIlluminance
+        this.snapshotPeopleCount = snapshotPeopleCount
+        this.recommendedTemperatureBefore = recommendedTemperatureBefore
+        this.recommendedTemperatureAfter = recommendedTemperatureAfter
     }
 }

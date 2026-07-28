@@ -96,6 +96,38 @@ class GeminiClient(
         )
     }
 
+    // 피드백 "AI 맞춤 피드백" 추천 희망 온도(FeedbackAiRecommendationService) - 실패 시 null 반환,
+    // 호출부가 그대로 스킵하도록(추천 없이 피드백 자체는 이미 저장된 상태라 실패해도 무해).
+    fun recommendTemperatureAdjustment(feedbackContent: String, currentTemperature: Double, currentHumidity: Double?): Double? {
+        if (apiKey.isBlank()) return null
+
+        val humidityText = currentHumidity?.let { ", 습도는 ${it}%" } ?: ""
+        val prompt = """
+            실내 환경 관리 서비스(ReBorn)에 방문자가 다음과 같은 피드백을 남겼습니다: "$feedbackContent"
+            현재 온도는 ${currentTemperature}°C$humidityText 입니다.
+            이 피드백을 해결하기 위한 적정 희망 온도(섭씨, 소수점 첫째 자리까지)를 숫자로 추천하세요.
+            다른 설명 없이 반드시 다음 JSON 형식으로만 답하세요: {"recommendedTemperature": number}
+        """.trimIndent()
+
+        val body = mapOf(
+            "contents" to listOf(mapOf("parts" to listOf(mapOf("text" to prompt)))),
+            "generationConfig" to mapOf("responseMimeType" to "application/json"),
+        )
+
+        val response = runCatching { post(model, body) }
+            .onFailure { e -> log.warn("Gemini 온도 추천 실패: {}", e.message) }
+            .getOrNull() ?: return null
+
+        val text = response
+            .path("candidates").path(0).path("content").path("parts").path(0).path("text")
+            .asText("")
+        if (text.isBlank()) return null
+
+        val parsed = runCatching { objectMapper.readTree(text) }.getOrNull() ?: return null
+        val node = parsed.path("recommendedTemperature")
+        return if (node.isNumber) node.asDouble() else null
+    }
+
     fun synthesizeSpeech(text: String): GeminiSpeechResult {
         requireConfigured()
 

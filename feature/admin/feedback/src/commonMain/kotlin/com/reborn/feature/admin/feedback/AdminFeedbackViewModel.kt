@@ -183,7 +183,30 @@ class AdminFeedbackViewModel(
             time = formatFeedbackRelativeTime(createdAt),
             submittedAt = formatAbsoluteTime(createdAt),
             content = content,
+            sensorSnapshot = toSensorSnapshot(),
+            temperatureAdjustment = toTemperatureAdjustment(),
         )
+
+    // 네 값이 전부 있어야 Figma 596:3594의 4개 칩(온도/습도/조도/재실 인원)을 온전히 채울 수 있음 -
+    // 하나라도 없으면(제출 직후 아직 비동기 처리 전 등) 섹션 자체를 숨긴다.
+    private fun Feedback.toSensorSnapshot(): AdminFeedbackUiState.SensorSnapshot? {
+        val temperature = snapshotTemperature ?: return null
+        val humidity = snapshotHumidity ?: return null
+        val illuminance = snapshotIlluminance ?: return null
+        val peopleCount = snapshotPeopleCount ?: return null
+        return AdminFeedbackUiState.SensorSnapshot(
+            temperature = temperature,
+            humidity = humidity,
+            illuminance = illuminance,
+            peopleCount = peopleCount,
+        )
+    }
+
+    private fun Feedback.toTemperatureAdjustment(): AdminFeedbackUiState.TemperatureAdjustment? {
+        val before = recommendedTemperatureBefore ?: return null
+        val after = recommendedTemperatureAfter ?: return null
+        return AdminFeedbackUiState.TemperatureAdjustment(before = before, after = after)
+    }
 
     private fun formatAbsoluteTime(iso: String): String {
         val dt = LocalDateTime.parse(iso)
