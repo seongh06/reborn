@@ -50,9 +50,10 @@ sealed interface AdminAdjustIntent {
     data class ClickTab(val tab: AdminAdjustUiState.ControlMethod) : AdminAdjustIntent
     data class SendRemoteControl(
         val deviceId: String,
-        val temperature: Float,
-        val operationMode: OperationMode,
-        val windSpeed: WindSpeed,
+        // 에어컨 외 기기는 전원 on/off만 보내고 나머지는 null(서버 ControlRequest가 전부 optional)
+        val temperature: Float? = null,
+        val operationMode: OperationMode? = null,
+        val windSpeed: WindSpeed? = null,
         val isPowerOn: Boolean
     ) : AdminAdjustIntent
     data class SendAutoControl(

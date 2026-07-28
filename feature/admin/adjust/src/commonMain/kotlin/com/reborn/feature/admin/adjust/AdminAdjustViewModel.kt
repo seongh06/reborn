@@ -210,9 +210,9 @@ class AdminAdjustViewModel(
             controlDeviceUseCase(
                 deviceId = target.id,
                 isPowerOn = intent.isPowerOn,
-                operationMode = intent.operationMode.name,
-                windSpeed = intent.windSpeed.name,
-                temperature = intent.temperature.toInt(),
+                operationMode = intent.operationMode?.name,
+                windSpeed = intent.windSpeed?.name,
+                temperature = intent.temperature?.toInt(),
             )
                 .onSuccess { navController.emitEvent(AdminAdjustEvent.ShowSnackbar("제어 명령을 전송했습니다.")) }
                 .onFailure { navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it)) }

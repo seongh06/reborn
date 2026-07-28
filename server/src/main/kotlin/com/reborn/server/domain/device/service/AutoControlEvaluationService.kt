@@ -64,6 +64,9 @@ class AutoControlEvaluationService(
         "송풍 시작" -> DeviceDto.ControlRequest(isPowerOn = true, operationMode = OperationMode.FAN)
         "전원 끄기" -> DeviceDto.ControlRequest(isPowerOn = false)
         // "가습 시작"은 SmartThings 에어컨 커맨드 매핑 범위(#132)에 가습 capability가 없어 미실행
+        // 에어컨 외 기기(조명/플러그/TV/커튼/기타)용 축소 자동 제어 액션 - switch capability만 사용
+        "켜기" -> DeviceDto.ControlRequest(isPowerOn = true)
+        "끄기" -> DeviceDto.ControlRequest(isPowerOn = false)
         else -> null
     }
 }

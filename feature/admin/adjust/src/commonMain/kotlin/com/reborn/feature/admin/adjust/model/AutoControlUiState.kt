@@ -1,5 +1,7 @@
 package com.reborn.feature.admin.adjust.model
 
+import com.reborn.core.ui.component.DeviceType
+
 data class AutoControlUiState(
     val discomfortThreshold: String = "default",
     val discomfortAction: String = "희망 온도 2°C 낮추기",
@@ -54,4 +56,28 @@ fun AutoControlUiState.applyAction(field: AutoControlField, action: String): Aut
         AutoControlField.TemperatureHigh -> copy(temperatureHighAction = action)
         AutoControlField.TemperatureLow -> copy(temperatureLowAction = action)
         AutoControlField.Occupancy -> copy(occupancyAction = action)
+    }
+
+// 에어컨 외 기기(조명/플러그/TV/커튼/기타)용 축소 자동 제어 - 실내 온도 규칙만, 액션은
+// 전원 켜기/끄기(SmartThings switch capability, 모든 기기 공통)뿐이라 운전모드 문구가 필요 없다.
+enum class SimpleAutoControlField {
+    TemperatureHigh,
+    TemperatureLow
+}
+
+val SimpleAutoControlActions = listOf("켜기", "끄기")
+
+fun AutoControlUiState.applySimpleAction(field: SimpleAutoControlField, action: String): AutoControlUiState =
+    when (field) {
+        SimpleAutoControlField.TemperatureHigh -> copy(temperatureHighAction = action)
+        SimpleAutoControlField.TemperatureLow -> copy(temperatureLowAction = action)
+    }
+
+// 처음 진입 시(서버에 저장된 규칙이 없을 때) 보여줄 기본 액션 문구 - 에어컨은 기존 프리셋 그대로,
+// 그 외 기기는 "냉방 시작" 같은 에어컨 전용 문구 대신 켜기/끄기로 초기화한다.
+fun defaultAutoControlState(deviceType: DeviceType): AutoControlUiState =
+    if (deviceType == DeviceType.AIR_CONDITIONER) {
+        AutoControlUiState()
+    } else {
+        AutoControlUiState(temperatureHighAction = "끄기", temperatureLowAction = "켜기")
     }
