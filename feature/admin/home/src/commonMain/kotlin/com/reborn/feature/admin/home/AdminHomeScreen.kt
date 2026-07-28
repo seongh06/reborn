@@ -42,6 +42,7 @@ fun AdminHomeRoute(
     onNavigateToFeedbackList: () -> Unit = {},
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
+    onNavigateToDeviceDetail: (Int) -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -66,6 +67,7 @@ fun AdminHomeRoute(
                 is AdminHomeEvent.NavigateToFeedbackList -> onNavigateToFeedbackList()
                 is AdminHomeEvent.NavigateToSetting -> onNavigateToSetting()
                 is AdminHomeEvent.NavigateToDeviceList -> onNavigateToDeviceList()
+                is AdminHomeEvent.NavigateToDeviceDetail -> onNavigateToDeviceDetail(event.deviceId)
             }
         }
     }
@@ -76,11 +78,13 @@ fun AdminHomeRoute(
         when(val state = uiState) {
             is AdminHomeUiState.Loading -> RebornLoadingScreen()
             is AdminHomeUiState.Home -> AdminHomeScreen(
+                state = state,
                 onAlarmClick = {viewModel.onIntent(AdminHomeIntent.NavigateToAlarm)},
                 onSettingClick = {viewModel.onIntent(AdminHomeIntent.NavigateToSetting)},
                 onFeedbackClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(id)) },
                 onMoreFeedbackClick = { viewModel.onIntent(AdminHomeIntent.NavigateToFeedbackList) },
-                onDeviceListClick = { viewModel.onIntent(AdminHomeIntent.NavigateToDeviceList) }
+                onDeviceListClick = { viewModel.onIntent(AdminHomeIntent.NavigateToDeviceList) },
+                onDeviceDetailClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToDeviceDetail(id)) }
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
                 state = state,
@@ -94,15 +98,15 @@ fun AdminHomeRoute(
 
 @Composable
 fun AdminHomeScreen(
+    state: AdminHomeUiState.Home,
     onAlarmClick: () -> Unit,
     onSettingClick: () -> Unit,
     onFeedbackClick: (Int) -> Unit,
     onMoreFeedbackClick: () -> Unit = {},
     onDeviceListClick: () -> Unit = {},
-    // TODO: 서버 device API 연동 전까지의 임시 플래그. 실제로는 device 목록 상태(null/empty)로 대체 예정
-    hasDevices: Boolean = true
+    onDeviceDetailClick: (Int) -> Unit = {}
 ) {
-    if (!hasDevices) {
+    if (!state.hasDevices) {
          Column(
              modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
          ) {
@@ -150,28 +154,29 @@ fun AdminHomeScreen(
             ) {
                 item {
                     Dashboard(
-                        temperature = /*state.metric?.temperature*/ 24.5f,
-                        humidity = /*state.metric?.humidity*/ 48.5f,
-                        illuminance = /*state.metric?.illuminance*/ 350f,
-                        peopleCount = /*state.metric?.peopleCount*/ 3f
+                        temperature = state.metric?.temperature?.toFloat(),
+                        humidity = state.metric?.humidity?.toFloat(),
+                        illuminance = state.metric?.illuminance?.toFloat(),
+                        peopleCount = state.metric?.peopleCount?.toFloat()
                     )
                 }
                 item {
                     FeedbackStatusSection(
                         modifier = Modifier.padding(16.dp, 8.dp),
-                        totalCount = /*state.feedbacks.size*/15,
-                        waitingCount = /*state.feedbacks.count { it.state == State.WAITING }*/ 3
+                        totalCount = state.feedbackTotalCount,
+                        waitingCount = state.feedbackWaitingCount
                     )
                 }
                 item {
                     FeedbackListSection(
+                        recentFeedbacks = state.recentFeedbacks,
                         onFeedbackClick = onFeedbackClick,
                         onMoreClick = onMoreFeedbackClick
                     )
                 }
                 item {
                     IoTListSection(
-                        onDeviceClick = { onDeviceListClick() },
+                        onDeviceClick = onDeviceDetailClick,
                         onMoreClick = onDeviceListClick
                     )
                 }

@@ -34,7 +34,7 @@ sealed interface AdminAdjustUiState {
 }
 
 sealed interface AdminAdjustIntent {
-    data object LoadInitial : AdminAdjustIntent
+    data class LoadInitial(val deviceId: Int? = null) : AdminAdjustIntent
     data object NavigateBack : AdminAdjustIntent
     data object NavigateToAddDevice : AdminAdjustIntent
     data class NavigateToDeviceDetail(

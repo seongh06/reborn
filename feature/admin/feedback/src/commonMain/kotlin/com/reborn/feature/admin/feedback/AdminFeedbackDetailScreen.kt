@@ -56,7 +56,7 @@ fun AdminFeedbackDetailScreen(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
         ) {
-            SensorSnapshotRow(feedbackDetail.sensorSnapshot)
+            feedbackDetail.sensorSnapshot?.let { SensorSnapshotRow(it) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,13 +83,15 @@ fun AdminFeedbackDetailScreen(
                     color = RebornTheme.color.grayScale900
                 )
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .background(RebornTheme.color.grayScale300)
-            )
-            AiRecommendationSection(feedbackDetail.temperatureAdjustment)
+            if (feedbackDetail.temperatureAdjustment != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .background(RebornTheme.color.grayScale300)
+                )
+                AiRecommendationSection(feedbackDetail.temperatureAdjustment)
+            }
         }
 
         Row(

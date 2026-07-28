@@ -13,4 +13,5 @@ interface AuthDataSource {
     suspend fun updateFcmToken(request: FcmTokenUpdateRequest): ApiResponse<Unit?>
     suspend fun getMe(): ApiResponse<MeResponse>
     suspend fun updateProfile(request: UpdateProfileRequest): ApiResponse<MeResponse>
+    suspend fun withdraw(): ApiResponse<Unit?>
 }

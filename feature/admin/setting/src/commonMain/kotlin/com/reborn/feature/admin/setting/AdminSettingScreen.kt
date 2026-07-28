@@ -104,6 +104,7 @@ fun AdminSettingRoute(
                 onAddAiSpeakerClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAiSpeaker(placeId)) },
                 onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) },
                 onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) },
+                onWithdrawClick = { viewModel.onIntent(AdminSettingIntent.ClickWithdraw) },
                 onProfileNameChange = { name -> viewModel.onIntent(AdminSettingIntent.UpdateProfileName(name)) }
             )
         }
@@ -121,9 +122,42 @@ fun AdminSettingScreen(
     onAddAiSpeakerClick: (Int) -> Unit,
     onAddPlaceClick: () -> Unit,
     onLogoutClick: () -> Unit,
+    onWithdrawClick: () -> Unit = {},
     onProfileNameChange: (String) -> Unit = {}
 
 ) {
+    var showWithdrawConfirm by remember { mutableStateOf(false) }
+
+    if (showWithdrawConfirm) {
+        AlertDialog(
+            onDismissRequest = { showWithdrawConfirm = false },
+            title = {
+                Text(
+                    "탈퇴할까요?",
+                    style = RebornTheme.typography.titleMedium,
+                    color = RebornTheme.color.grayScale900
+                )
+            },
+            text = {
+                Text(
+                    "탈퇴하면 계정 정보가 삭제되고 되돌릴 수 없어요. 유일한 관리자로 등록된 장소가 있으면 탈퇴가 제한돼요.",
+                    style = RebornTheme.typography.bodyMedium,
+                    color = RebornTheme.color.grayScale700
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showWithdrawConfirm = false; onWithdrawClick() }) {
+                    Text("탈퇴", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.reject)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWithdrawConfirm = false }) {
+                    Text("취소", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale700)
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .rebornDefault(Color.White)
@@ -206,7 +240,7 @@ fun AdminSettingScreen(
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
                 SettingItem(label = "로그아웃", onClick = onLogoutClick)
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
-                SettingItem(label = "탈퇴", onClick = {})
+                SettingItem(label = "탈퇴", onClick = { showWithdrawConfirm = true })
             }
         }
     }

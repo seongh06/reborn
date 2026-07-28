@@ -8,6 +8,6 @@ import com.reborn.core.network.service.SensorHistoryApi
 class SensorHistoryRepositoryImpl(
     private val api: SensorHistoryApi
 ) : SensorHistoryRepository {
-    override suspend fun getSensorHistory(deviceId: Int, sensorType: String): List<SensorPoint> =
+    override suspend fun getSensorHistory(deviceId: String, sensorType: String): List<SensorPoint> =
         api.getSensorHistory(deviceId, sensorType).toSensorPoints()
 }
