@@ -7,6 +7,7 @@ import com.reborn.server.domain.auth.client.GoogleAuthClient
 import com.reborn.server.domain.auth.client.KakaoAuthClient
 import com.reborn.server.domain.auth.client.SocialUserInfo
 import com.reborn.server.domain.auth.dto.AuthDto
+import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.redis.RedisUtil
@@ -47,6 +48,9 @@ class AuthServiceTest {
 
     @Mock
     private lateinit var claims: Claims
+
+    @Mock
+    private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
 
     @InjectMocks
     private lateinit var authService: AuthService
