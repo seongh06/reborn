@@ -9,5 +9,6 @@ interface AuthRepository {
     suspend fun updateFcmToken(fcmToken: String): Result<Unit>
     suspend fun getMe(): Result<UserProfile>
     suspend fun updateProfile(name: String): Result<UserProfile>
+    suspend fun updateProfileImage(bytes: ByteArray, fileName: String, mimeType: String): Result<UserProfile>
     suspend fun withdraw(): Result<Unit>
 }

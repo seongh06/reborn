@@ -13,12 +13,15 @@ import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.redis.RedisUtil
+import com.reborn.server.global.s3.S3Uploader
 import com.reborn.server.global.token.JwtProvider
+import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
+import org.springframework.web.multipart.MultipartFile
 import java.time.Duration
 
 @Service
@@ -30,7 +33,15 @@ class AuthService(
     private val jwtProvider: JwtProvider,
     private val redisUtil: RedisUtil,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
+    // S3 자격증명(cloud.aws.credentials.*)이 없는 환경(S3Config가 @ConditionalOnExpression으로
+    // 빈을 안 만듦)에서도 앱이 뜰 수 있도록 nullable로 주입받는다 - SmartThings/Google Sheets OAuth와
+    // 동일하게 "코드는 있지만 운영 설정이 아직 없을 수 있는" 기능으로 취급.
+    // 주의: 기본값(= null)을 주면 Kotlin이 합성 디폴트 생성자를 추가로 만들어 Mockito
+    // @InjectMocks의 생성자 선택이 깨진다(AuthServiceTest 전체 실패로 처음 발견) - nullable이면
+    // 충분히 optional이라 Spring 생성자 주입에는 기본값이 필요 없다.
+    private val s3Uploader: S3Uploader?,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun login(request: AuthDto.LoginRequest): AuthDto.LoginResponse {
@@ -92,6 +103,41 @@ class AuthService(
         }
         user.updateName(name)
         return AuthConverter.toMeResponse(user)
+    }
+
+    @Transactional
+    fun updateProfileImage(userId: Long, file: MultipartFile): AuthDto.MeResponse {
+        validateImageFile(file)
+        val uploader = s3Uploader
+            ?: throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "이미지 업로드가 아직 설정되지 않았습니다.")
+        val user = userRepository.findById(userId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 회원 정보입니다.")
+        }
+
+        val previousImage = user.profileImage
+        val uploaded = uploader.upload(file, directory = "profile")
+        user.updateProfileImage(uploaded.url)
+
+        // 이전 이미지가 우리 S3 버킷 소유일 때만(카카오/구글 프로필 URL이 아닐 때만) 정리 -
+        // 실패해도 새 이미지 저장 자체는 이미 끝났으니 업로드 응답에는 영향 주지 않는다.
+        previousImage?.let(uploader::extractKeyIfOwned)?.let { key ->
+            runCatching { uploader.delete(key) }
+                .onFailure { log.warn("이전 프로필 이미지 삭제 실패: key={}", key, it) }
+        }
+
+        return AuthConverter.toMeResponse(user)
+    }
+
+    private fun validateImageFile(file: MultipartFile) {
+        if (file.isEmpty) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "이미지 파일이 비어있습니다.")
+        }
+        if (file.contentType !in ALLOWED_IMAGE_CONTENT_TYPES) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "지원하지 않는 이미지 형식입니다. (JPEG/PNG/WEBP만 허용)")
+        }
+        if (file.size > MAX_PROFILE_IMAGE_SIZE_BYTES) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "이미지 파일이 너무 큽니다. (최대 5MB)")
+        }
     }
 
     @Transactional
@@ -184,5 +230,10 @@ class AuthService(
         } else {
             write()
         }
+    }
+
+    companion object {
+        private val ALLOWED_IMAGE_CONTENT_TYPES = setOf("image/jpeg", "image/png", "image/webp")
+        private const val MAX_PROFILE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024L
     }
 }

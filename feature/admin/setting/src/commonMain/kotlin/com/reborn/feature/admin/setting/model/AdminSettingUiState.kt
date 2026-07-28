@@ -33,4 +33,5 @@ sealed interface AdminSettingIntent {
     data object ClickLogout : AdminSettingIntent
     data object ClickWithdraw : AdminSettingIntent
     data class UpdateProfileName(val name: String) : AdminSettingIntent
+    data class UpdateProfileImage(val bytes: ByteArray, val fileName: String, val mimeType: String) : AdminSettingIntent
 }

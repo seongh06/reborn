@@ -35,6 +35,7 @@ import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
+import com.reborn.core.domain.usecase.UpdateUserProfileImageUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.core.domain.usecase.WithdrawUseCase
 import com.reborn.core.network.di.dataSourceModule
@@ -69,6 +70,7 @@ val appDependenciesModule = module {
     factory { GetPlaceListUseCase(get()) }
     factory { GetUserProfileUseCase(get()) }
     factory { UpdateUserProfileUseCase(get()) }
+    factory { UpdateUserProfileImageUseCase(get()) }
     factory { WithdrawUseCase(get()) }
     factory { GetPlaceDetailUseCase(get()) }
     factory { DeletePlaceUseCase(get()) }
