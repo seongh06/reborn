@@ -5,4 +5,5 @@ import org.koin.dsl.module
 
 actual val platformSensorModule: Module = module {
     single { SensorAnalyzer() }
+    single { GalleryImageSaver() }
 }

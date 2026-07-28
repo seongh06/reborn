@@ -56,7 +56,7 @@ fun AdminFeedbackQRScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     AsyncImage(
-                        model = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$qrUrl",
+                        model = state.qrImageUrl(),
                         contentDescription = "피드백 웹페이지 QR 코드",
                         modifier = Modifier.size(240.dp)
                     )

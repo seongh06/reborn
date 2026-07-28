@@ -2,6 +2,7 @@ package com.reborn.feature.admin.feedback
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reborn.core.common.GalleryImageSaver
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
@@ -21,6 +22,7 @@ import kotlinx.datetime.LocalDateTime
 sealed class AdminFeedbackEvent {
     data object Exit : AdminFeedbackEvent()
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminFeedbackEvent()
+    data class ShowSnackbar(val message: String) : AdminFeedbackEvent()
 }
 
 class AdminFeedbackViewModel(
@@ -28,6 +30,7 @@ class AdminFeedbackViewModel(
     private val getPlaceDetailUseCase: GetPlaceDetailUseCase,
     private val getFeedbackListUseCase: GetFeedbackListUseCase,
     private val updateFeedbackStatusUseCase: UpdateFeedbackStatusUseCase,
+    private val galleryImageSaver: GalleryImageSaver,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminFeedbackUiState, AdminFeedbackEvent>(
         initialState = AdminFeedbackUiState.Loading,
@@ -58,6 +61,23 @@ class AdminFeedbackViewModel(
             is AdminFeedbackIntent.NavigateToQR -> navigateToQR()
             is AdminFeedbackIntent.ClickTab -> handleTabClick(intent.tab)
             is AdminFeedbackIntent.UpdateStatus -> updateStatus(intent.feedbackId, intent.approve)
+            is AdminFeedbackIntent.DownloadQr -> downloadQr()
+        }
+    }
+
+    private fun downloadQr() {
+        val state = navigationManager.uiState.value as? AdminFeedbackUiState.FeedbackQR ?: return
+        val qrImageUrl = state.qrImageUrl() ?: return
+
+        viewModelScope.launch {
+            val saved = galleryImageSaver.saveFromUrl(qrImageUrl, "reborn_qr_${state.placeId}")
+            if (saved) {
+                navigationManager.emitEvent(AdminFeedbackEvent.ShowSnackbar("갤러리에 저장했어요."))
+            } else {
+                navigationManager.emitEvent(
+                    AdminFeedbackEvent.ShowErrorSnackbar(IllegalStateException("이미지 저장에 실패했어요."))
+                )
+            }
         }
     }
 

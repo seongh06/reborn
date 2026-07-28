@@ -54,6 +54,9 @@ fun AdminFeedbackRoute(
                         message = event.throwable.message ?: "에러가 발생했습니다."
                     )
                 }
+                is AdminFeedbackEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(message = event.message)
+                }
                 is AdminFeedbackEvent.Exit -> onBackClick()
             }
         }
@@ -74,7 +77,7 @@ fun AdminFeedbackRoute(
             is AdminFeedbackUiState.FeedbackQR -> AdminFeedbackQRScreen(
                 state = state,
                 onBackClick = onBackClick,
-                onDownloadClick = {}
+                onDownloadClick = { viewModel.onIntent(AdminFeedbackIntent.DownloadQr) }
             )
             is AdminFeedbackUiState.FeedbackDetail -> AdminFeedbackDetailScreen(
                 state = state,
