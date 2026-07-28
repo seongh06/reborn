@@ -15,6 +15,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 
 private val METRIC_CAPABLE_DEVICE_TYPES = setOf("ARDUINO", "SMART_THINGS")
 
@@ -25,8 +28,8 @@ private val DAYS_IN_MONTH = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 3
 
 private data class MockDate(val year: Int, val month: Int, val day: Int)
 
-// TODO: 실제 날짜/시간대 연동 전까지 "오늘"을 고정값으로 사용하는 목업. 실제 연동 시 kotlinx-datetime의 현재 시각으로 대체 예정
-private val today = MockDate(2026, 7, 4)
+private val today: MockDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    .let { MockDate(it.year, it.monthNumber, it.dayOfMonth) }
 
 // TODO: 실제 기기 등록/센서 수집 시작일 연동 전까지의 목업 (Phase 1 MVP 시작 시점인 06.01 기준)
 private val dataCollectionStartDate = MockDate(2026, 6, 1)
