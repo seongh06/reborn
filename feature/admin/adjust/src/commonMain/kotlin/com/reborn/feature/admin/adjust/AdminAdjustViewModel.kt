@@ -14,6 +14,7 @@ import com.reborn.core.ui.component.DeviceType
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
 import com.reborn.feature.admin.adjust.model.AutoControlUiState
+import com.reborn.feature.admin.adjust.model.defaultAutoControlState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -195,7 +196,10 @@ class AdminAdjustViewModel(
                 .onSuccess { rule ->
                     navController.updateCurrentState { state ->
                         (state as? AdminAdjustUiState.DeviceDetail)
-                            ?.copy(autoControlState = rule?.toUiState() ?: AutoControlUiState())
+                            ?.copy(
+                                autoControlState = rule?.toUiState()
+                                    ?: defaultAutoControlState(current.device.deviceType)
+                            )
                             ?: state
                     }
                 }

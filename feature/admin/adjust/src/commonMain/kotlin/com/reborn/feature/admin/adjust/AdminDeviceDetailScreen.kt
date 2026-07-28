@@ -62,12 +62,14 @@ fun AdminDeviceDetailScreen(
     val initialTemperature = remember { 24f }
     val initialOperationMode = remember { OperationMode.COOL }
     val initialWindSpeed = remember { WindSpeed.AUTO }
-    val initialPowerOn = remember { true }
+    // 목록 조회 API가 실시간 파워 상태를 안 내려줘서(model/AdminAdjustUiState.kt 주석 참고) 이 값도
+    // 정확하다는 보장은 없지만, 최소한 하드코딩된 true보다는 실제 상태에 가깝다.
+    val initialPowerOn = remember(state.deviceId) { state.device.isPowerOn }
 
     var temperature by remember { mutableFloatStateOf(initialTemperature) }
     var operationMode by remember { mutableStateOf(initialOperationMode) }
     var windSpeed by remember { mutableStateOf(initialWindSpeed) }
-    var isPowerOn by remember { mutableStateOf(initialPowerOn) }
+    var isPowerOn by remember(state.deviceId) { mutableStateOf(initialPowerOn) }
 
     val isChanged = if (isAirConditioner) {
         temperature != initialTemperature ||
