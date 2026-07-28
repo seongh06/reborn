@@ -197,3 +197,39 @@ CREATE TABLE IF NOT EXISTS `device_serial`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '판매용 기기 사전 발급 시리얼 재고';
+
+-- ------------------------------------------------
+-- 9. auto_control_rule (2026-07-28, #190)
+-- 기기당 자동 제어 규칙 1건. 클라이언트가 자유 텍스트("28°C" 등)로 편집하는 값 그대로 저장하고,
+-- 조건 평가 시점(스케줄러)에만 숫자를 파싱한다. 현재는 온도 상/하한 조건만 실제로 평가·실행되고
+-- 나머지(습도/재실인원/불쾌지수/자동 꺼짐)는 저장만 되고 실행은 미구현(#190 범위 밖, 후속 이슈 필요).
+-- ------------------------------------------------
+CREATE TABLE IF NOT EXISTS `auto_control_rule`
+(
+    `id`                        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '규칙 PK',
+    `device_id`                 BIGINT       NOT NULL COMMENT '기기 FK (기기당 1개)',
+    `discomfort_threshold`      VARCHAR(20)  NULL COMMENT '불쾌지수 기준값(자유 텍스트)',
+    `discomfort_action`         VARCHAR(50)  NULL COMMENT '불쾌지수 초과 시 동작(자유 텍스트)',
+    `humidity_high_threshold`   VARCHAR(20)  NULL COMMENT '습도 상한 기준값(자유 텍스트, 예: "70%")',
+    `humidity_high_action`      VARCHAR(50)  NULL COMMENT '습도 상한 초과 시 동작',
+    `humidity_low_threshold`    VARCHAR(20)  NULL COMMENT '습도 하한 기준값',
+    `humidity_low_action`       VARCHAR(50)  NULL COMMENT '습도 하한 미만 시 동작',
+    `temperature_high_threshold` VARCHAR(20) NULL COMMENT '온도 상한 기준값(자유 텍스트, 예: "28°C") - 실행됨',
+    `temperature_high_action`   VARCHAR(50)  NULL COMMENT '온도 상한 초과 시 동작 - 실행됨',
+    `temperature_low_threshold` VARCHAR(20)  NULL COMMENT '온도 하한 기준값 - 실행됨',
+    `temperature_low_action`    VARCHAR(50)  NULL COMMENT '온도 하한 미만 시 동작 - 실행됨',
+    `occupancy_threshold`       VARCHAR(20)  NULL COMMENT '재실 인원 기준값(자유 텍스트, 예: "5명")',
+    `occupancy_action`          VARCHAR(50)  NULL COMMENT '재실 인원 초과 시 동작',
+    `is_auto_off_enabled`       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '자동 꺼짐 사용 여부',
+    `auto_off_minutes`          VARCHAR(10)  NULL COMMENT '자동 꺼짐까지 대기 분(자유 텍스트)',
+    `last_triggered_at`         DATETIME(6)  NULL COMMENT '마지막으로 조건이 실행된 시각(쿨다운 기준, 온도 조건 전용)',
+    `created_at`                DATETIME(6)  NOT NULL COMMENT '등록일시',
+    `updated_at`                DATETIME(6)  NOT NULL COMMENT '수정일시',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_auto_control_rule_device` (`device_id`),
+    CONSTRAINT `fk_auto_control_rule_device`
+        FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT = '기기별 자동 제어 규칙';

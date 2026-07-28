@@ -1,10 +1,12 @@
 package com.reborn.server.domain.device.service
 
+import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.Device
 import com.reborn.server.domain.device.DeviceSerial
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.converter.DeviceConverter
 import com.reborn.server.domain.device.dto.DeviceDto
+import com.reborn.server.domain.device.repository.AutoControlRuleRepository
 import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.device.repository.DeviceSerialRepository
 import com.reborn.server.domain.place.AccessLevel
@@ -30,6 +32,7 @@ class DeviceService(
     private val placeRepository: PlaceRepository,
     private val deviceRepository: DeviceRepository,
     private val deviceSerialRepository: DeviceSerialRepository,
+    private val autoControlRuleRepository: AutoControlRuleRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
     private val redisUtil: RedisUtil,
     @param:Value("\${operator.api-key:}") private val operatorApiKey: String,
