@@ -18,7 +18,7 @@ class FcmClient(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Async(AsyncConfig.ASYNC_EXECUTOR)
-    fun send(fcmToken: String, title: String, body: String) {
+    fun send(fcmToken: String, title: String, body: String, data: Map<String, String> = emptyMap()) {
         val app = firebaseApp
         if (app == null) {
             log.warn("FCM이 설정되지 않아 알림 발송을 건너뜁니다 (token={})", fcmToken.mask())
@@ -28,6 +28,7 @@ class FcmClient(
         val message = Message.builder()
             .setToken(fcmToken)
             .setNotification(Notification.builder().setTitle(title).setBody(body).build())
+            .putAllData(data)
             .build()
 
         runCatching {

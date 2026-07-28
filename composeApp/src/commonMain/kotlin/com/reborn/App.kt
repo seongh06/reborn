@@ -56,7 +56,7 @@ import moe.tlaster.precompose.PreComposeApp
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun App() {
+fun App(initialFeedbackId: Int? = null) {
     // 프로필 이미지(Kakao/Google CDN) 로딩용 - core:network의 인증된 HttpClient는 우리 API 서버
     // 전용이라 재사용하지 않고, 별도의 플레인 HttpClient로 외부 이미지 호스트에 접근한다(#155).
     setSingletonImageLoaderFactory { context ->
@@ -194,7 +194,11 @@ fun App() {
                     introNavGraph(
                         onNavigateToAdmin = {
                             introSkipToSignup = false
-                            navController.navigate(Route.Admin.Home) {
+                            // FCM 알림 탭으로 콜드/웜 스타트된 경우, 로그인 확인 직후 Home 대신
+                            // 바로 해당 피드백 상세로 딥링크(#177 Feedback 딥링크와 동일 패턴)
+                            val destination = initialFeedbackId?.let { Route.Admin.Feedback(it) }
+                                ?: Route.Admin.Home
+                            navController.navigate(destination) {
                                 popUpTo(navController.graph.id) { inclusive = true }
                             }
                         },
