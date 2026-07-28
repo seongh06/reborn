@@ -114,7 +114,12 @@ class FeedbackServiceTest {
 
         feedbackService.submit(request, null)
 
-        verify(fcmClient).send("fcm-token-1", "새로운 피드백이 도착했습니다.", "거실 - 덥다")
+        verify(fcmClient).send(
+            "fcm-token-1",
+            "새로운 피드백이 도착했습니다.",
+            "거실 - 덥다",
+            mapOf("feedbackId" to "100"),
+        )
     }
 
     @Test
