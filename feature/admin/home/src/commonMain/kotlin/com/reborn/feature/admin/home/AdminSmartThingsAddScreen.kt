@@ -1,8 +1,10 @@
 package com.reborn.feature.admin.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -30,6 +34,7 @@ import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
+import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.ext.rebornDefault
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -79,7 +84,9 @@ fun AdminSmartThingsAddRoute(
                     is AdminSmartThingsAddUiState.DeviceNaming -> DeviceNamingContent(
                         device = state.device,
                         name = state.name,
+                        category = state.category,
                         onNameChange = viewModel::updateDeviceName,
+                        onCategoryChange = viewModel::updateDeviceCategory,
                         onBackClick = viewModel::backToDeviceList,
                         onRegisterClick = viewModel::registerDevice
                     )
@@ -166,11 +173,23 @@ private fun DeviceListContent(
     }
 }
 
+private val categoryOptions = listOf(
+    DeviceType.LAMP to "조명",
+    DeviceType.PLUG to "플러그",
+    DeviceType.TV to "TV",
+    DeviceType.AIR_CONDITIONER to "에어컨",
+    DeviceType.CURTAIN to "커튼",
+    DeviceType.OTHER to "기타",
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DeviceNamingContent(
     device: SmartThingsDeviceItem,
     name: String,
+    category: String?,
     onNameChange: (String) -> Unit,
+    onCategoryChange: (String) -> Unit,
     onBackClick: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
@@ -189,6 +208,23 @@ private fun DeviceNamingContent(
             hint = "예: 거실 에어컨",
             maxLength = 30
         )
+        Text(
+            "기기 종류",
+            style = RebornTheme.typography.titleSmall,
+            color = RebornTheme.color.grayScale900
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            categoryOptions.forEach { (type, label) ->
+                CategoryChip(
+                    label = label,
+                    selected = category == type.name,
+                    onClick = { onCategoryChange(type.name) }
+                )
+            }
+        }
         Spacer(modifier = Modifier.fillMaxWidth())
         RebornButton(
             text = "등록",
@@ -199,6 +235,33 @@ private fun DeviceNamingContent(
             text = "다른 기기 선택",
             backgroundColor = RebornTheme.color.grayScale300,
             onClick = onBackClick
+        )
+    }
+}
+
+@Composable
+private fun CategoryChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .then(
+                if (selected) {
+                    Modifier.background(RebornTheme.color.grayScale300)
+                } else {
+                    Modifier.border(1.dp, RebornTheme.color.grayScale400, RoundedCornerShape(8.dp))
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = label,
+            style = RebornTheme.typography.labelLarge,
+            color = RebornTheme.color.grayScale900
         )
     }
 }

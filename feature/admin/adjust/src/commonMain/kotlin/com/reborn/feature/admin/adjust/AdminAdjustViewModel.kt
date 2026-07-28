@@ -10,6 +10,7 @@ import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.model.AutoControlRule
+import com.reborn.core.ui.component.DeviceType
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
 import com.reborn.feature.admin.adjust.model.AutoControlUiState
@@ -97,7 +98,8 @@ class AdminAdjustViewModel(
                             id = device.deviceId,
                             place = deviceTypeLabel(device.deviceType),
                             name = device.deviceName ?: device.deviceId,
-                            isOnline = device.isOnline
+                            isOnline = device.isOnline,
+                            deviceType = categoryToDeviceType(device.category)
                         )
                     }
                     navController.clearAndReset(AdminAdjustUiState.Adjust(devices))
@@ -119,6 +121,10 @@ class AdminAdjustViewModel(
         "AI_SPEAKER" -> "AI 스피커"
         else -> serverDeviceType
     }
+
+    // SmartThings 기기만 category(아이콘 구분용)가 있을 수 있고, 나머지는 null이라 항상 OTHER
+    private fun categoryToDeviceType(category: String?): DeviceType =
+        category?.let { runCatching { DeviceType.valueOf(it) }.getOrNull() } ?: DeviceType.OTHER
 
     private fun navigateToDeviceDetail(intent: AdminAdjustIntent.NavigateToDeviceDetail) {
         val device = devices.find { it.id == intent.deviceId }

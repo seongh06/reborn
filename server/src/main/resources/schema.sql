@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS `device`
     `device_type` VARCHAR(20)  NOT NULL COMMENT '기기 유형 (ARDUINO / AEROMETER / SMART_THINGS / AI_SPEAKER)',
     `device_key`  VARCHAR(255) NOT NULL COMMENT '인증용 고유 키',
     `name`        VARCHAR(100) NULL COMMENT '기기 이름',
+    `category`    VARCHAR(20)  NULL COMMENT '아이콘 구분용 카테고리 (LAMP/PLUG/TV/AIR_CONDITIONER/CURTAIN/OTHER) - SmartThings 등록 시 관리자가 직접 선택, Arduino/AI스피커는 항상 NULL',
     `app_token`   VARCHAR(512) NULL COMMENT 'FCM 앱 토큰 (AEROMETER 전용)',
     `is_online`   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '온라인 여부',
     `created_at`  DATETIME(6)  NOT NULL COMMENT '등록일시',

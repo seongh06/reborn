@@ -1,6 +1,7 @@
 package com.reborn.server.domain.smartthings.service
 
 import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.device.DeviceCategory
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.OperationMode
 import com.reborn.server.domain.device.WindSpeed
@@ -57,6 +58,7 @@ class SmartThingsDeviceService(
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
         }
         requireAdmin(userId, placeId)
+        val category = parseCategory(request.category)
 
         val device = try {
             deviceRepository.save(
@@ -65,6 +67,7 @@ class SmartThingsDeviceService(
                     deviceType = DeviceType.SMART_THINGS,
                     deviceKey = deviceKey,
                     name = deviceName,
+                    category = category,
                     isOnline = true,
                 ),
             )
@@ -73,6 +76,13 @@ class SmartThingsDeviceService(
         }
 
         return DeviceConverter.toRegisterResponse(device)
+    }
+
+    private fun parseCategory(category: String?): String? {
+        if (category.isNullOrBlank()) return null
+        return runCatching { DeviceCategory.valueOf(category) }
+            .getOrElse { throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "잘못된 기기 카테고리입니다.") }
+            .name
     }
 
     @Transactional

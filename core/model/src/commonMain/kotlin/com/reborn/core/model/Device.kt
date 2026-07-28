@@ -17,6 +17,9 @@ data class Device(
     val deviceType: String,
     val isOnline: Boolean,
     val createdAt: String,
+    // 아이콘 구분용(LAMP/PLUG/TV/AIR_CONDITIONER/CURTAIN/OTHER) - SmartThings만 값이 있을 수 있고,
+    // Arduino/AI스피커/공기계는 항상 null(UI에서 OTHER로 처리)
+    val category: String? = null,
 )
 
 data class RegisteredDevice(
@@ -24,6 +27,7 @@ data class RegisteredDevice(
     val deviceName: String?,
     val deviceType: String,
     val createdAt: String,
+    val category: String? = null,
 )
 
 data class AutoControlRule(

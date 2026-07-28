@@ -19,7 +19,11 @@ sealed interface AdminSmartThingsAddUiState {
     data object Loading : AdminSmartThingsAddUiState
     data object AwaitingConsent : AdminSmartThingsAddUiState
     data class DeviceList(val devices: List<SmartThingsDeviceItem>) : AdminSmartThingsAddUiState
-    data class DeviceNaming(val device: SmartThingsDeviceItem, val name: String) : AdminSmartThingsAddUiState
+    data class DeviceNaming(
+        val device: SmartThingsDeviceItem,
+        val name: String,
+        val category: String? = null,
+    ) : AdminSmartThingsAddUiState
 }
 
 sealed class AdminSmartThingsAddEvent {
@@ -111,6 +115,13 @@ class AdminSmartThingsAddViewModel(
         }
     }
 
+    fun updateDeviceCategory(category: String) {
+        val current = _uiState.value
+        if (current is AdminSmartThingsAddUiState.DeviceNaming) {
+            _uiState.value = current.copy(category = category)
+        }
+    }
+
     fun registerDevice() {
         val current = _uiState.value
         if (current !is AdminSmartThingsAddUiState.DeviceNaming) return
@@ -124,7 +135,7 @@ class AdminSmartThingsAddViewModel(
 
         _uiState.value = AdminSmartThingsAddUiState.Loading
         viewModelScope.launch {
-            registerSmartThingsDeviceUseCase(pid, current.device.deviceId, current.name)
+            registerSmartThingsDeviceUseCase(pid, current.device.deviceId, current.name, current.category)
                 .onSuccess { _event.emit(AdminSmartThingsAddEvent.RegisterSuccess) }
                 .onFailure {
                     _event.emit(AdminSmartThingsAddEvent.ShowErrorSnackbar(it))

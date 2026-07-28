@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.ui.component.DeviceType
 import com.reborn.feature.admin.home.component.IoTDeviceItem
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,6 +64,7 @@ class AdminIotDeviceListViewModel(
                             place = deviceTypeLabel(device.deviceType),
                             name = device.deviceName ?: device.deviceId,
                             isOnline = device.isOnline,
+                            deviceType = categoryToDeviceType(device.category),
                             isPowerOn = false
                         )
                     }
@@ -82,6 +84,10 @@ class AdminIotDeviceListViewModel(
         "AI_SPEAKER" -> "AI 스피커"
         else -> serverDeviceType
     }
+
+    // SmartThings 기기만 category(아이콘 구분용)가 있을 수 있고, 나머지는 null이라 항상 OTHER
+    private fun categoryToDeviceType(category: String?): DeviceType =
+        category?.let { runCatching { DeviceType.valueOf(it) }.getOrNull() } ?: DeviceType.OTHER
 
     fun togglePower(deviceId: String) {
         val target = devices.find { it.id == deviceId } ?: return
