@@ -25,6 +25,7 @@ import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.component.DataType
+import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.SensorChip
 import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
@@ -34,6 +35,7 @@ import com.reborn.feature.admin.adjust.model.AutoControlUiState
 import com.reborn.feature.admin.adjust.model.Device
 import com.reborn.feature.admin.adjust.model.OperationMode
 import com.reborn.feature.admin.adjust.model.WindSpeed
+import com.reborn.feature.admin.adjust.model.defaultAutoControlState
 import com.reborn.feature.admin.adjust.screen.AutoControlScreen
 import com.reborn.feature.admin.adjust.screen.RemoteControlScreen
 
@@ -43,14 +45,16 @@ fun AdminDeviceDetailScreen(
     onBackClick: () -> Unit,
     onTabClick: (AdminAdjustUiState.ControlMethod) -> Unit = {},
     onSendControlClick: (
-        temperature: Float,
-        operationMode: OperationMode,
-        windSpeed: WindSpeed,
+        temperature: Float?,
+        operationMode: OperationMode?,
+        windSpeed: WindSpeed?,
         isPowerOn: Boolean
     ) -> Unit = { _, _, _, _ -> },
     onSendAutoControlClick: (AutoControlUiState) -> Unit = {},
     onDeleteClick: () -> Unit = {},
 ) {
+    val deviceType = state.device.deviceType
+    val isAirConditioner = deviceType == DeviceType.AIR_CONDITIONER
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val currentTab = state.selectedTab
@@ -58,21 +62,29 @@ fun AdminDeviceDetailScreen(
     val initialTemperature = remember { 24f }
     val initialOperationMode = remember { OperationMode.COOL }
     val initialWindSpeed = remember { WindSpeed.AUTO }
-    val initialPowerOn = remember { true }
+    // 목록 조회 API가 실시간 파워 상태를 안 내려줘서(model/AdminAdjustUiState.kt 주석 참고) 이 값도
+    // 정확하다는 보장은 없지만, 최소한 하드코딩된 true보다는 실제 상태에 가깝다.
+    val initialPowerOn = remember(state.deviceId) { state.device.isPowerOn }
 
     var temperature by remember { mutableFloatStateOf(initialTemperature) }
     var operationMode by remember { mutableStateOf(initialOperationMode) }
     var windSpeed by remember { mutableStateOf(initialWindSpeed) }
-    var isPowerOn by remember { mutableStateOf(initialPowerOn) }
+    var isPowerOn by remember(state.deviceId) { mutableStateOf(initialPowerOn) }
 
-    val isChanged = temperature != initialTemperature ||
-        operationMode != initialOperationMode ||
-        windSpeed != initialWindSpeed ||
+    val isChanged = if (isAirConditioner) {
+        temperature != initialTemperature ||
+            operationMode != initialOperationMode ||
+            windSpeed != initialWindSpeed ||
+            isPowerOn != initialPowerOn
+    } else {
         isPowerOn != initialPowerOn
+    }
 
     // 서버에서 규칙을 불러오기 전(null)에는 화면 프리셋 기본값을 보여주다가, 로드/저장 완료 시
     // state.autoControlState가 갱신되면 편집 기준선도 함께 새로 잡는다(#190).
-    val initialAutoControlState = remember(state.autoControlState) { state.autoControlState ?: AutoControlUiState() }
+    val initialAutoControlState = remember(state.autoControlState) {
+        state.autoControlState ?: defaultAutoControlState(deviceType)
+    }
     var autoControlState by remember(state.autoControlState) { mutableStateOf(initialAutoControlState) }
 
     val isAutoControlChanged = autoControlState != initialAutoControlState
@@ -163,6 +175,7 @@ fun AdminDeviceDetailScreen(
         ) {
             when (currentTab) {
                 AdminAdjustUiState.ControlMethod.Remote -> RemoteControlScreen(
+                    deviceType = deviceType,
                     temperature = temperature,
                     onTemperatureChange = { temperature = it },
                     operationMode = operationMode,
@@ -173,6 +186,7 @@ fun AdminDeviceDetailScreen(
                     onPowerChange = { isPowerOn = it }
                 )
                 AdminAdjustUiState.ControlMethod.MANUALEdit -> AutoControlScreen(
+                    deviceType = deviceType,
                     state = autoControlState,
                     onStateChange = { autoControlState = it }
                 )
@@ -183,7 +197,13 @@ fun AdminDeviceDetailScreen(
             RebornButton(
                 text = "제어 명령 전송",
                 enabled = isChanged,
-                onClick = { onSendControlClick(temperature, operationMode, windSpeed, isPowerOn) }
+                onClick = {
+                    if (isAirConditioner) {
+                        onSendControlClick(temperature, operationMode, windSpeed, isPowerOn)
+                    } else {
+                        onSendControlClick(null, null, null, isPowerOn)
+                    }
+                }
             )
         }
         if (currentTab == AdminAdjustUiState.ControlMethod.MANUALEdit) {

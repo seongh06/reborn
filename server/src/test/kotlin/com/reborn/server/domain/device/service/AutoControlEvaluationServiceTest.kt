@@ -112,6 +112,21 @@ class AutoControlEvaluationServiceTest {
     }
 
     @Test
+    fun `evaluateAndApply - 비-에어컨용 켜기 끄기 액션도 switch 커맨드로 제어한다`() {
+        val highRule = AutoControlRule(
+            device = device,
+            temperatureHighThreshold = "28",
+            temperatureHighAction = "끄기",
+        )
+        given(metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(10L))
+            .willReturn(MetricLog(device = device, temperature = 29.0))
+
+        evaluationService.evaluateAndApply(highRule)
+
+        verify(smartThingsDeviceService).controlInternal(device, DeviceDto.ControlRequest(isPowerOn = false))
+    }
+
+    @Test
     fun `evaluateAndApply - 임계값을 넘지 않으면 제어하지 않는다`() {
         val rule = AutoControlRule(device = device, temperatureHighThreshold = "28", temperatureHighAction = "냉방 시작")
         given(metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(10L))
