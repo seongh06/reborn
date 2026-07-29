@@ -312,7 +312,12 @@ class AuthServiceTest {
         val file = MockMultipartFile("image", "profile.jpg", "image/jpeg", ByteArray(100))
         given(userRepository.findById(1L)).willReturn(Optional.of(user))
         given(localFileStorage.upload(file, directory = "profile"))
-            .willReturn(LocalUploadResponse(key = "profile/new-key.jpg", url = "https://www.reborn-energy.com/uploads/profile/new-key.jpg"))
+            .willReturn(
+                LocalUploadResponse(
+                    key = "profile/new-key.jpg",
+                    url = "https://www.reborn-energy.com/uploads/profile/new-key.jpg",
+                ),
+            )
         given(localFileStorage.extractKeyIfOwned("https://www.reborn-energy.com/uploads/profile/old-key.jpg"))
             .willReturn("profile/old-key.jpg")
 
@@ -335,7 +340,12 @@ class AuthServiceTest {
         val file = MockMultipartFile("image", "profile.jpg", "image/jpeg", ByteArray(100))
         given(userRepository.findById(1L)).willReturn(Optional.of(user))
         given(localFileStorage.upload(file, directory = "profile"))
-            .willReturn(LocalUploadResponse(key = "profile/new-key.jpg", url = "https://www.reborn-energy.com/uploads/profile/new-key.jpg"))
+            .willReturn(
+                LocalUploadResponse(
+                    key = "profile/new-key.jpg",
+                    url = "https://www.reborn-energy.com/uploads/profile/new-key.jpg",
+                ),
+            )
         given(localFileStorage.extractKeyIfOwned("https://k.kakaocdn.net/profile.jpg")).willReturn(null)
 
         authService.updateProfileImage(1L, file)

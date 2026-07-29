@@ -1,5 +1,6 @@
 package com.reborn.server.domain.place
 
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -19,6 +20,9 @@ interface UserPlaceMappingRepository : JpaRepository<UserPlaceMapping, Long> {
 
     fun findAllByPlaceId(placeId: Long): List<UserPlaceMapping>
 
+    // user는 LAZY라 관리자 여러 명을 순회하며 각자의 user를 참조하면 N+1이 발생한다(getAdmins,
+    // withdraw의 sole-admin 체크 등 - CodeRabbit #218) - user를 같은 쿼리에서 함께 로드한다.
+    @EntityGraph(attributePaths = ["user"])
     fun findAllByPlaceIdAndAccessLevel(placeId: Long, accessLevel: AccessLevel): List<UserPlaceMapping>
 
     fun findAllByUserIdAndAccessLevel(userId: Long, accessLevel: AccessLevel): List<UserPlaceMapping>

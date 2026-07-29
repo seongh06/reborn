@@ -67,6 +67,10 @@ class IntroViewModel(
     var registeredPlaceId: Long? = null
         private set
 
+    // registeredPlaceId는 성공 콜백에서만 채워져서, 요청이 끝나기 전에 버튼을 빠르게 연타하면
+    // 두 요청이 모두 실행돼 장소가 중복 생성될 수 있었음(CodeRabbit #218) - 요청 시작 시점부터 막는다.
+    private var isRegisteringPlace = false
+
     fun onIntent(intent: IntroIntent){
         when(intent){
             is IntroIntent.LoadInitial -> checkInitialState(intent.skipToSignup)
@@ -177,7 +181,8 @@ class IntroViewModel(
     fun registerPlace(name: String, type: String) {
         // Signup 화면에서 DevicePairing으로 넘어간 뒤 뒤로가기로 복귀해 재등록하면, 이전에 등록된
         // 장소가 페어링 코드 한 번 못 받고 orphan으로 남는다 - 최초 등록 이후 재호출은 무시(#160 CodeRabbit 리뷰)
-        if (registeredPlaceId != null) return
+        if (registeredPlaceId != null || isRegisteringPlace) return
+        isRegisteringPlace = true
 
         viewModelScope.launch {
             registerPlaceUseCase(name, type)
@@ -189,6 +194,7 @@ class IntroViewModel(
                     println("IntroViewModel: 장소 등록 실패 - ${it.message}")
                     _event.emit(IntroEvent.ShowErrorSnackbar(it))
                 }
+            isRegisteringPlace = false
         }
     }
 

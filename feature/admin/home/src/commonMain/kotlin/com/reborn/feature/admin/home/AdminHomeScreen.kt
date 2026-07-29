@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -19,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -149,7 +151,12 @@ fun AdminHomeScreen(
                      color = RebornTheme.color.grayScale700,
                      textDecoration = TextDecoration.Underline,
                      modifier = Modifier
-                         .clickable(onClick = onAddSmartThingsClick)
+                         .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                         .clickable(
+                             role = Role.Button,
+                             onClickLabel = "SmartThings 연결",
+                             onClick = onAddSmartThingsClick
+                         )
                          .padding(8.dp)
                  )
              }

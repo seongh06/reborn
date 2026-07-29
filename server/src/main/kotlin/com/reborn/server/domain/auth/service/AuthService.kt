@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
+import java.io.IOException
 import java.time.Duration
 
 @Service
@@ -107,17 +108,45 @@ class AuthService(
         }
 
         val previousImage = user.profileImage
-        val uploaded = localFileStorage.upload(file, directory = "profile")
+        val uploaded = try {
+            localFileStorage.upload(file, directory = "profile")
+        } catch (e: IOException) {
+            log.error("프로필 이미지 업로드 실패: userId={}", userId, e)
+            throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다.")
+        } catch (e: IllegalArgumentException) {
+            log.warn("프로필 이미지 업로드 거부: userId={}, reason={}", userId, e.message)
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, e.message ?: "올바르지 않은 이미지 파일입니다.")
+        }
         user.updateProfileImage(uploaded.url)
 
-        // 이전 이미지가 우리 서버가 직접 서빙하는 파일일 때만(카카오/구글 프로필 URL이 아닐 때만) 정리 -
-        // 실패해도 새 이미지 저장 자체는 이미 끝났으니 업로드 응답에는 영향 주지 않는다.
-        previousImage?.let(localFileStorage::extractKeyIfOwned)?.let { key ->
-            runCatching { localFileStorage.delete(key) }
-                .onFailure { log.warn("이전 프로필 이미지 삭제 실패: key={}", key, it) }
-        }
+        // 커밋 전에 이전 파일을 지우면, 이후 트랜잭션이 롤백돼도 파일은 이미 사라져 DB(이전 URL 유지)와
+        // 어긋난다 - 이전 파일 삭제는 커밋 이후로 미루고, 반대로 롤백되면 방금 올린 새 파일이 고아로
+        // 남으니 그 경우엔 새로 올린 파일(uploaded.key)을 정리한다.
+        registerProfileImageCleanupAfterCompletion(previousImage, uploaded.key)
 
         return AuthConverter.toMeResponse(user)
+    }
+
+    private fun registerProfileImageCleanupAfterCompletion(previousImage: String?, uploadedKey: String) {
+        val cleanup = object : TransactionSynchronization {
+            override fun afterCompletion(status: Int) {
+                if (status == TransactionSynchronization.STATUS_COMMITTED) {
+                    // 이전 이미지가 우리 서버가 직접 서빙하는 파일일 때만(카카오/구글 프로필 URL이 아닐 때만) 정리
+                    previousImage?.let(localFileStorage::extractKeyIfOwned)?.let { key ->
+                        runCatching { localFileStorage.delete(key) }
+                            .onFailure { log.warn("이전 프로필 이미지 삭제 실패: key={}", key, it) }
+                    }
+                } else {
+                    runCatching { localFileStorage.delete(uploadedKey) }
+                        .onFailure { log.warn("롤백된 프로필 이미지 정리 실패: key={}", uploadedKey, it) }
+                }
+            }
+        }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(cleanup)
+        } else {
+            cleanup.afterCompletion(TransactionSynchronization.STATUS_COMMITTED)
+        }
     }
 
     private fun validateImageFile(file: MultipartFile) {

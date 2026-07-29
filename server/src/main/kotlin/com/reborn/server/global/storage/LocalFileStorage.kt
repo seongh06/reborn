@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.util.UUID
+import javax.imageio.ImageIO
 
 data class LocalUploadResponse(
     val key: String,
@@ -24,14 +25,18 @@ class LocalFileStorage(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    // originalFilename과 Content-Type 헤더는 둘 다 클라이언트가 마음대로 지정 가능한 값이라, 그걸로
+    // 저장 확장자를 정하면 image/jpeg라고 우기면서 payload.html을 올려 공개 /uploads 아래에 .html로
+    // 저장시키는 공격이 가능했음 - 확장자는 서버가 정한 허용 목록에서만 고르고, 실제 바이트도 디코딩
+    // 가능한 이미지인지 검증한다.
     fun upload(file: MultipartFile, directory: String = "uploads"): LocalUploadResponse {
-        val extension = file.originalFilename
-            ?.substringAfterLast('.', "")
-            ?.takeIf { it.matches(SAFE_EXTENSION_PATTERN) }
-            ?.let { ".$it" }
-            ?: ""
+        val extension = file.contentType?.let { IMAGE_EXTENSION_BY_CONTENT_TYPE[it] }
+            ?: throw IllegalArgumentException("지원하지 않는 이미지 형식입니다: ${file.contentType}")
+        if (!isDecodableImage(file)) {
+            throw IllegalArgumentException("올바른 이미지 파일이 아닙니다.")
+        }
 
-        val key = "$directory/${UUID.randomUUID()}$extension"
+        val key = "$directory/${UUID.randomUUID()}.$extension"
         val target = File(uploadDir, key)
         target.parentFile?.mkdirs()
         file.inputStream.use { input -> target.outputStream().use { output -> input.copyTo(output) } }
@@ -58,7 +63,14 @@ class LocalFileStorage(
         }
     }
 
+    private fun isDecodableImage(file: MultipartFile): Boolean =
+        runCatching { file.inputStream.use { ImageIO.read(it) != null } }.getOrDefault(false)
+
     companion object {
-        private val SAFE_EXTENSION_PATTERN = Regex("^[a-zA-Z0-9]{1,10}$")
+        private val IMAGE_EXTENSION_BY_CONTENT_TYPE = mapOf(
+            "image/jpeg" to "jpg",
+            "image/png" to "png",
+            "image/webp" to "webp",
+        )
     }
 }

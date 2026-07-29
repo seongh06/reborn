@@ -139,7 +139,14 @@ class AdminSettingViewModel(
                         places.map { place ->
                             async {
                                 val admins = adminsSemaphore.withPermit {
-                                    getPlaceAdminsUseCase(place.placeId).getOrNull()
+                                    getPlaceAdminsUseCase(place.placeId)
+                                        .onFailure {
+                                            println(
+                                                "AdminSettingViewModel: 관리자 목록 조회 실패 - " +
+                                                    "placeId=${place.placeId}, error=${it.message}"
+                                            )
+                                        }
+                                        .getOrNull()
                                 }
                                 AdminSettingUiState.RoomItem(
                                     // Route 인자(Route.Admin.InviteCode/AddDevice)가 Int라 기존 관례를 따라 Int로 보관

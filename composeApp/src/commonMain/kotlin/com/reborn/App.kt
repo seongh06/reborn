@@ -304,7 +304,9 @@ fun App(initialFeedbackId: Int? = null) {
                             navController.navigate(Route.Admin.Adjust(deviceId))
                         },
                         onNavigateToAddSmartThingsDevice = {
-                            navController.navigate(Route.Admin.AddSmartThingsDevice)
+                            navController.navigate(Route.Admin.AddSmartThingsDevice) {
+                                launchSingleTop = true
+                            }
                         },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
@@ -315,7 +317,9 @@ fun App(initialFeedbackId: Int? = null) {
                             navController.popBackStack()
                         },
                         onNavigateToAddSmartThingsDevice = {
-                            navController.navigate(Route.Admin.AddSmartThingsDevice)
+                            navController.navigate(Route.Admin.AddSmartThingsDevice) {
+                                launchSingleTop = true
+                            }
                         },
                         onNavigateToDeviceDetail = { deviceId ->
                             navController.navigate(Route.Admin.Adjust(deviceId))
