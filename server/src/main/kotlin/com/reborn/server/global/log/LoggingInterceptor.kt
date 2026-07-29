@@ -1,13 +1,17 @@
 package com.reborn.server.global.log
 
+import com.reborn.server.domain.analytics.service.ApiRequestLogService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
 
 @Component
-class LoggingInterceptor : HandlerInterceptor {
+class LoggingInterceptor(
+    private val apiRequestLogService: ApiRequestLogService,
+) : HandlerInterceptor {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -35,6 +39,9 @@ class LoggingInterceptor : HandlerInterceptor {
         } else {
             log.info("<<< {} {} {} ({}ms)", request.method, request.requestURI, response.status, elapsed)
         }
+
+        val userId = SecurityContextHolder.getContext().authentication?.principal as? Long
+        apiRequestLogService.record(request.method, request.requestURI, response.status, userId, elapsed)
     }
 
     companion object {

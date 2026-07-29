@@ -1,5 +1,7 @@
 package com.reborn.server.domain.device.service
 
+import com.reborn.server.domain.analytics.AutoControlExecutionLog
+import com.reborn.server.domain.analytics.repository.AutoControlExecutionLogRepository
 import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.OperationMode
 import com.reborn.server.domain.device.dto.DeviceDto
@@ -19,6 +21,7 @@ class AutoControlEvaluationService(
     private val metricLogRepository: MetricLogRepository,
     private val autoControlRuleRepository: AutoControlRuleRepository,
     private val smartThingsDeviceService: SmartThingsDeviceService,
+    private val autoControlExecutionLogRepository: AutoControlExecutionLogRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -40,15 +43,19 @@ class AutoControlEvaluationService(
         val highThreshold = rule.temperatureHighThreshold?.let(::parseLeadingNumber)
         val lowThreshold = rule.temperatureLowThreshold?.let(::parseLeadingNumber)
 
-        val request = when {
-            highThreshold != null && temperature >= highThreshold -> actionToRequest(rule.temperatureHighAction)
-            lowThreshold != null && temperature <= lowThreshold -> actionToRequest(rule.temperatureLowAction)
+        val action = when {
+            highThreshold != null && temperature >= highThreshold -> rule.temperatureHighAction
+            lowThreshold != null && temperature <= lowThreshold -> rule.temperatureLowAction
             else -> null
         } ?: return
+        val request = actionToRequest(action) ?: return
 
         smartThingsDeviceService.controlInternal(device, request)
         rule.lastTriggeredAt = now
         autoControlRuleRepository.save(rule)
+        autoControlExecutionLogRepository.save(
+            AutoControlExecutionLog(device = device, triggeredTemperature = temperature, action = action),
+        )
         log.info("자동 제어 실행: deviceId={}, temperature={}, action={}", device.deviceKey, temperature, request)
     }
 

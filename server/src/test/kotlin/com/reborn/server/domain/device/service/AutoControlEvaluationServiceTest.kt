@@ -1,5 +1,7 @@
 package com.reborn.server.domain.device.service
 
+import com.reborn.server.domain.analytics.AutoControlExecutionLog
+import com.reborn.server.domain.analytics.repository.AutoControlExecutionLogRepository
 import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.Device
 import com.reborn.server.domain.device.DeviceType
@@ -49,6 +51,18 @@ private fun anyDevice(): Device {
     return dummyDevice()
 }
 
+// ArgumentCaptor.capture()도 동일한 이유로 NPE를 유발한다(SmartThingsDeviceServiceTest와 동일 이슈) -
+// 매처는 등록하되 non-null 더미를 반환.
+private fun captureExecutionLog(captor: org.mockito.ArgumentCaptor<AutoControlExecutionLog>): AutoControlExecutionLog {
+    captor.capture()
+    return AutoControlExecutionLog(device = dummyDevice(), triggeredTemperature = 0.0, action = "")
+}
+
+private fun anyExecutionLog(): AutoControlExecutionLog {
+    Mockito.any(AutoControlExecutionLog::class.java)
+    return AutoControlExecutionLog(device = dummyDevice(), triggeredTemperature = 0.0, action = "")
+}
+
 @ExtendWith(MockitoExtension::class)
 class AutoControlEvaluationServiceTest {
 
@@ -60,6 +74,9 @@ class AutoControlEvaluationServiceTest {
 
     @Mock
     private lateinit var smartThingsDeviceService: SmartThingsDeviceService
+
+    @Mock
+    private lateinit var autoControlExecutionLogRepository: AutoControlExecutionLogRepository
 
     private lateinit var evaluationService: AutoControlEvaluationService
 
@@ -74,6 +91,7 @@ class AutoControlEvaluationServiceTest {
             metricLogRepository = metricLogRepository,
             autoControlRuleRepository = autoControlRuleRepository,
             smartThingsDeviceService = smartThingsDeviceService,
+            autoControlExecutionLogRepository = autoControlExecutionLogRepository,
         )
     }
 
@@ -93,6 +111,12 @@ class AutoControlEvaluationServiceTest {
         verify(smartThingsDeviceService).controlInternal(device, expected)
         assertThat(rule.lastTriggeredAt).isNotNull()
         verify(autoControlRuleRepository).save(rule)
+
+        val logCaptor = org.mockito.ArgumentCaptor.forClass(AutoControlExecutionLog::class.java)
+        verify(autoControlExecutionLogRepository).save(captureExecutionLog(logCaptor))
+        assertThat(logCaptor.value.device).isEqualTo(device)
+        assertThat(logCaptor.value.triggeredTemperature).isEqualTo(29.5)
+        assertThat(logCaptor.value.action).isEqualTo("냉방 시작")
     }
 
     @Test
@@ -136,6 +160,7 @@ class AutoControlEvaluationServiceTest {
 
         verify(smartThingsDeviceService, never()).controlInternal(anyDevice(), anyControlRequest())
         verify(autoControlRuleRepository, never()).save(anyAutoControlRule())
+        verify(autoControlExecutionLogRepository, never()).save(anyExecutionLog())
     }
 
     @Test
