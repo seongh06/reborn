@@ -33,6 +33,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build debug APK
+        env:
+          KAKAO_APP_KEY: ${{ secrets.KAKAO_APP_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          BASE_URL: https://www.reborn-energy.com
         run: |
           chmod +x ./gradlew
           ./gradlew :composeApp:assembleDebug
