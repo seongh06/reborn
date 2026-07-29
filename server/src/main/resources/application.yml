@@ -45,6 +45,14 @@ operator:
   api-key: ${OPERATOR_API_KEY:}
 
 spring:
+  # Spring Boot 기본값(파일당 1MB)이라 프로필 이미지 업로드(AuthService가 5MB까지 허용)가 여기서
+  # 먼저 막혀 계속 실패했음(#217) - 앱 레벨 제한(MAX_PROFILE_IMAGE_SIZE_BYTES)보다 여유 있게 설정.
+  # nginx의 client_max_body_size(server/deployment/nginx/reborn.conf)도 같이 올려둬야 함 - 앞단에서
+  # 먼저 막히면 이 설정까지 요청이 도달하지도 않는다.
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/reborn?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true}
     username: ${DB_USERNAME}
