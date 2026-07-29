@@ -33,6 +33,7 @@ server/deployment/env/.env
 docker-compose.override.yml
 google-services.json
 GoogleService-Info.plist
+composeApp/debug.keystore
 
 # ── IDE ───────────────────────────────
 .idea/
