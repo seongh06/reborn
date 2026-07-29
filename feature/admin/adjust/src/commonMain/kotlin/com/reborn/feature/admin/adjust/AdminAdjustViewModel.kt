@@ -6,7 +6,9 @@ import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.DeleteDeviceUseCase
 import com.reborn.core.domain.usecase.GetAutoControlRuleUseCase
+import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
+import com.reborn.core.domain.usecase.GetDeviceStatusUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.model.AutoControlRule
@@ -14,6 +16,9 @@ import com.reborn.core.ui.component.DeviceType
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
 import com.reborn.feature.admin.adjust.model.AutoControlUiState
+import com.reborn.feature.admin.adjust.model.DeviceCurrentStatus
+import com.reborn.feature.admin.adjust.model.OperationMode
+import com.reborn.feature.admin.adjust.model.WindSpeed
 import com.reborn.feature.admin.adjust.model.defaultAutoControlState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -30,7 +35,9 @@ class AdminAdjustViewModel(
     private val controlDeviceUseCase: ControlDeviceUseCase,
     private val deleteDeviceUseCase: DeleteDeviceUseCase,
     private val saveAutoControlRuleUseCase: SaveAutoControlRuleUseCase,
-    private val getAutoControlRuleUseCase: GetAutoControlRuleUseCase
+    private val getAutoControlRuleUseCase: GetAutoControlRuleUseCase,
+    private val getCurrentMetricUseCase: GetCurrentMetricUseCase,
+    private val getDeviceStatusUseCase: GetDeviceStatusUseCase,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminAdjustUiState, AdminAdjustEvent>(
         initialState = AdminAdjustUiState.Loading,
@@ -100,7 +107,8 @@ class AdminAdjustViewModel(
                             place = deviceTypeLabel(device.deviceType),
                             name = device.deviceName ?: device.deviceId,
                             isOnline = device.isOnline,
-                            deviceType = categoryToDeviceType(device.category)
+                            deviceType = categoryToDeviceType(device.category),
+                            serverDeviceType = device.deviceType,
                         )
                     }
                     navController.clearAndReset(AdminAdjustUiState.Adjust(devices))
@@ -134,6 +142,51 @@ class AdminAdjustViewModel(
             )
         navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.controlMethod, intent.deviceId, device))
         loadData(intent.controlMethod)
+        loadMetric(intent.deviceId)
+        if (device.serverDeviceType == "SMART_THINGS") {
+            loadDeviceStatus(intent.deviceId)
+        }
+    }
+
+    // 현재 센서 상태(#221) - 실패해도 조용히 무시하고 하드코딩 기본값(0으로 채워지던 예전 동작)
+    // 대신 그냥 칩을 안 보여주는 쪽을 택한다(화면 자체를 막지 않기 위함).
+    private fun loadMetric(deviceId: String) {
+        viewModelScope.launch {
+            getCurrentMetricUseCase(deviceId)
+                .onSuccess { metric ->
+                    navController.updateCurrentState { state ->
+                        (state as? AdminAdjustUiState.DeviceDetail)
+                            ?.takeIf { it.deviceId == deviceId }
+                            ?.copy(metric = metric)
+                            ?: state
+                    }
+                }
+        }
+    }
+
+    // 원격 제어 패널의 현재 전원/운전모드/바람세기/희망온도(#221) - SMART_THINGS 기기에서만 호출.
+    private fun loadDeviceStatus(deviceId: String) {
+        viewModelScope.launch {
+            getDeviceStatusUseCase(deviceId)
+                .onSuccess { status ->
+                    val current = DeviceCurrentStatus(
+                        isPowerOn = status.isPowerOn,
+                        operationMode = status.operationMode?.let { raw ->
+                            runCatching { OperationMode.valueOf(raw) }.getOrNull()
+                        },
+                        windSpeed = status.windSpeed?.let { raw ->
+                            runCatching { WindSpeed.valueOf(raw) }.getOrNull()
+                        },
+                        temperature = status.temperature?.toFloat(),
+                    )
+                    navController.updateCurrentState { state ->
+                        (state as? AdminAdjustUiState.DeviceDetail)
+                            ?.takeIf { it.deviceId == deviceId }
+                            ?.copy(deviceStatus = current)
+                            ?: state
+                    }
+                }
+        }
     }
 
     private fun togglePower(deviceId: String) {

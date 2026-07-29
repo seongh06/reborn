@@ -22,6 +22,14 @@ data class Device(
     val category: String? = null,
 )
 
+// 필드가 null이면 이 기기가 그 컨트롤을 지원하지 않는다는 뜻(#221) - SMART_THINGS 기기에만 의미 있음.
+data class DeviceStatus(
+    val isPowerOn: Boolean?,
+    val operationMode: String?,
+    val windSpeed: String?,
+    val temperature: Double?,
+)
+
 data class RegisteredDevice(
     val deviceId: String,
     val deviceName: String?,

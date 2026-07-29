@@ -62,11 +62,15 @@ class SmartThingsDeviceClient(
 
         val main = response.components["main"]
         val temperature = main?.temperatureMeasurement?.temperature
-        val humidity = main?.relativeHumidityMeasurement?.humidity
+        val coolingSetpoint = main?.thermostatCoolingSetpoint?.coolingSetpoint
 
         return SmartThingsDeviceStatus(
             temperature = toCelsius(temperature?.value, temperature?.unit),
-            humidity = humidity?.value,
+            humidity = main?.relativeHumidityMeasurement?.humidity?.value,
+            isPowerOn = main?.switch?.switch?.value?.let { it == "on" },
+            operationMode = main?.airConditionerMode?.airConditionerMode?.value,
+            windSpeed = main?.airConditionerFanMode?.fanMode?.value,
+            targetTemperature = toCelsius(coolingSetpoint?.value, coolingSetpoint?.unit),
         )
     }
 
@@ -107,16 +111,32 @@ class SmartThingsDeviceClient(
 
     private data class SmartThingsStatusApiResponse(val components: Map<String, SmartThingsComponentStatus> = emptyMap())
 
+    // capability 키 자체가 응답에 없으면(=null) 이 기기가 그 capability를 지원하지 않는다는 뜻 - #221에서
+    // 원격 제어 패널의 전원/운전모드/바람세기/희망온도를 이 null 여부로 개별 노출 여부를 판단한다.
     private data class SmartThingsComponentStatus(
         val temperatureMeasurement: SmartThingsTemperatureMeasurement? = null,
         val relativeHumidityMeasurement: SmartThingsHumidityMeasurement? = null,
+        val switch: SmartThingsSwitchStatus? = null,
+        val airConditionerMode: SmartThingsAirConditionerModeStatus? = null,
+        val airConditionerFanMode: SmartThingsFanModeStatus? = null,
+        val thermostatCoolingSetpoint: SmartThingsCoolingSetpointStatus? = null,
     )
 
     private data class SmartThingsTemperatureMeasurement(val temperature: SmartThingsValueHolder? = null)
 
     private data class SmartThingsHumidityMeasurement(val humidity: SmartThingsValueHolder? = null)
 
+    private data class SmartThingsSwitchStatus(val switch: SmartThingsStringValueHolder? = null)
+
+    private data class SmartThingsAirConditionerModeStatus(val airConditionerMode: SmartThingsStringValueHolder? = null)
+
+    private data class SmartThingsFanModeStatus(val fanMode: SmartThingsStringValueHolder? = null)
+
+    private data class SmartThingsCoolingSetpointStatus(val coolingSetpoint: SmartThingsValueHolder? = null)
+
     private data class SmartThingsValueHolder(val value: Double? = null, val unit: String? = null)
+
+    private data class SmartThingsStringValueHolder(val value: String? = null)
 }
 
 data class SmartThingsDeviceSummary(
@@ -124,10 +144,16 @@ data class SmartThingsDeviceSummary(
     val label: String?,
 )
 
-// temperature/humidity 둘 다 null이면 이 기기는 온습도 capability를 지원하지 않는다는 뜻(#133) — 에러 아님.
+// 각 필드가 null이면 이 기기가 그 capability를 지원하지 않는다는 뜻(#133/#221) — 에러 아님.
+// operationMode/windSpeed는 SmartThings 원문 문자열("cool"/"auto" 등) 그대로 - 우리 enum 매핑은
+// 호출부(SmartThingsDeviceService)가 담당.
 data class SmartThingsDeviceStatus(
     val temperature: Double?,
     val humidity: Double?,
+    val isPowerOn: Boolean? = null,
+    val operationMode: String? = null,
+    val windSpeed: String? = null,
+    val targetTemperature: Double? = null,
 )
 
 data class SmartThingsCommand(

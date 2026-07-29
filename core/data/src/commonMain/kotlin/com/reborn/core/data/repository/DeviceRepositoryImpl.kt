@@ -3,6 +3,7 @@ package com.reborn.core.data.repository
 import com.reborn.core.data.datasource.DeviceLocalDataSource
 import com.reborn.core.data.mapper.toAutoControlRule
 import com.reborn.core.data.mapper.toDevice
+import com.reborn.core.data.mapper.toDeviceStatus
 import com.reborn.core.data.mapper.toPairedDevice
 import com.reborn.core.data.mapper.toPairingCode
 import com.reborn.core.data.mapper.toRegisteredDevice
@@ -10,6 +11,7 @@ import com.reborn.core.data.mapper.toResult
 import com.reborn.core.domain.repository.DeviceRepository
 import com.reborn.core.model.AutoControlRule
 import com.reborn.core.model.Device
+import com.reborn.core.model.DeviceStatus
 import com.reborn.core.model.PairedDevice
 import com.reborn.core.model.PairingCode
 import com.reborn.core.model.RegisteredDevice
@@ -40,6 +42,10 @@ class DeviceRepositoryImpl(
     override suspend fun registerDevice(placeId: Long, deviceId: String, deviceName: String): Result<RegisteredDevice> =
         remote.registerDevice(RegisterDeviceRequest(placeId, deviceId, deviceName))
             .toResult { it.toRegisteredDevice() }
+
+    override suspend fun getStatus(deviceId: String): Result<DeviceStatus> =
+        remote.getStatus(deviceId)
+            .toResult { it.toDeviceStatus() }
 
     override suspend fun controlDevice(
         deviceId: String,

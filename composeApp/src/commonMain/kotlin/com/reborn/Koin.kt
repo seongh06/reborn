@@ -16,6 +16,7 @@ import com.reborn.core.domain.usecase.GetAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.GetGoogleSheetsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
+import com.reborn.core.domain.usecase.GetDeviceStatusUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceAdminsUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
@@ -83,6 +84,7 @@ val appDependenciesModule = module {
     factory { GeneratePairingCodeUseCase(get()) }
     factory { PairDeviceUseCase(get()) }
     factory { GetDeviceListUseCase(get()) }
+    factory { GetDeviceStatusUseCase(get()) }
     factory { RegisterArduinoDeviceUseCase(get()) }
     factory { RegisterAiSpeakerDeviceUseCase(get()) }
     factory { GetSmartThingsAuthorizeUrlUseCase(get()) }

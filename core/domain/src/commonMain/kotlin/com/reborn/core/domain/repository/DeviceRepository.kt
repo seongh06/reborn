@@ -2,6 +2,7 @@ package com.reborn.core.domain.repository
 
 import com.reborn.core.model.AutoControlRule
 import com.reborn.core.model.Device
+import com.reborn.core.model.DeviceStatus
 import com.reborn.core.model.PairedDevice
 import com.reborn.core.model.PairingCode
 import com.reborn.core.model.RegisteredDevice
@@ -14,6 +15,8 @@ interface DeviceRepository {
     suspend fun getList(placeId: Long): Result<List<Device>>
 
     suspend fun registerDevice(placeId: Long, deviceId: String, deviceName: String): Result<RegisteredDevice>
+
+    suspend fun getStatus(deviceId: String): Result<DeviceStatus>
 
     suspend fun controlDevice(
         deviceId: String,

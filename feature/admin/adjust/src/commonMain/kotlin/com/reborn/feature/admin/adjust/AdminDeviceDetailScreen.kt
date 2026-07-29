@@ -38,6 +38,7 @@ import com.reborn.feature.admin.adjust.model.WindSpeed
 import com.reborn.feature.admin.adjust.model.defaultAutoControlState
 import com.reborn.feature.admin.adjust.screen.AutoControlScreen
 import com.reborn.feature.admin.adjust.screen.RemoteControlScreen
+import kotlin.math.roundToInt
 
 @Composable
 fun AdminDeviceDetailScreen(
@@ -54,27 +55,35 @@ fun AdminDeviceDetailScreen(
     onDeleteClick: () -> Unit = {},
 ) {
     val deviceType = state.device.deviceType
-    val isAirConditioner = deviceType == DeviceType.AIR_CONDITIONER
+    val isSmartThings = state.device.serverDeviceType == "SMART_THINGS"
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val currentTab = state.selectedTab
 
-    val initialTemperature = remember { 24f }
-    val initialOperationMode = remember { OperationMode.COOL }
-    val initialWindSpeed = remember { WindSpeed.AUTO }
-    // 목록 조회 API가 실시간 파워 상태를 안 내려줘서(model/AdminAdjustUiState.kt 주석 참고) 이 값도
-    // 정확하다는 보장은 없지만, 최소한 하드코딩된 true보다는 실제 상태에 가깝다.
-    val initialPowerOn = remember(state.deviceId) { state.device.isPowerOn }
+    // SmartThings 기기는 실제 조회 결과(#221)를, 조회 전(deviceStatus == null)이거나 SmartThings가
+    // 아닌 기기는 기존 프리셋 기본값을 초기값으로 쓴다 - deviceStatus가 로드되면 그 시점 값으로 편집
+    // 기준선(initial*)도 함께 다시 잡혀야 하므로 remember 키에 deviceStatus를 포함한다.
+    val status = state.deviceStatus
+    val initialTemperature = remember(state.deviceId, status) { status?.temperature ?: 24f }
+    val initialOperationMode = remember(state.deviceId, status) { status?.operationMode ?: OperationMode.COOL }
+    val initialWindSpeed = remember(state.deviceId, status) { status?.windSpeed ?: WindSpeed.AUTO }
+    val initialPowerOn = remember(state.deviceId, status) { status?.isPowerOn ?: state.device.isPowerOn }
 
-    var temperature by remember { mutableFloatStateOf(initialTemperature) }
-    var operationMode by remember { mutableStateOf(initialOperationMode) }
-    var windSpeed by remember { mutableStateOf(initialWindSpeed) }
-    var isPowerOn by remember(state.deviceId) { mutableStateOf(initialPowerOn) }
+    var temperature by remember(state.deviceId, status) { mutableFloatStateOf(initialTemperature) }
+    var operationMode by remember(state.deviceId, status) { mutableStateOf(initialOperationMode) }
+    var windSpeed by remember(state.deviceId, status) { mutableStateOf(initialWindSpeed) }
+    var isPowerOn by remember(state.deviceId, status) { mutableStateOf(initialPowerOn) }
 
-    val isChanged = if (isAirConditioner) {
-        temperature != initialTemperature ||
-            operationMode != initialOperationMode ||
-            windSpeed != initialWindSpeed ||
+    // 이 기기가 실제로 지원하는 컨트롤만 보여준다(#221) - SmartThings 조회 결과가 아직 없으면(로딩 중)
+    // 우선 다 보여주고, 로드 완료 후 null인 필드는 화면에서 숨긴다. SmartThings가 아니면 전원만 노출.
+    val supportsOperationMode = isSmartThings && (status == null || status.operationMode != null)
+    val supportsWindSpeed = isSmartThings && (status == null || status.windSpeed != null)
+    val supportsTemperature = isSmartThings && (status == null || status.temperature != null)
+
+    val isChanged = if (isSmartThings) {
+        (supportsTemperature && temperature != initialTemperature) ||
+            (supportsOperationMode && operationMode != initialOperationMode) ||
+            (supportsWindSpeed && windSpeed != initialWindSpeed) ||
             isPowerOn != initialPowerOn
     } else {
         isPowerOn != initialPowerOn
@@ -154,10 +163,11 @@ fun AdminDeviceDetailScreen(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ){
-                SensorChip(type = DataType.Temperature, value = 12)
-                SensorChip(type = DataType.Humidity, value = 12)
-                SensorChip(type = DataType.Illuminance, value = 12)
-                SensorChip(type = DataType.PeopleCount, value = 12)
+                // 값이 없는 항목(이 기기가 그 센서를 지원하지 않거나 아직 로딩 전)은 칩 자체를 숨긴다.
+                state.metric?.temperature?.let { SensorChip(type = DataType.Temperature, value = it.roundToInt()) }
+                state.metric?.humidity?.let { SensorChip(type = DataType.Humidity, value = it.roundToInt()) }
+                state.metric?.illuminance?.let { SensorChip(type = DataType.Illuminance, value = it) }
+                state.metric?.peopleCount?.let { SensorChip(type = DataType.PeopleCount, value = it) }
             }
         }
         TabBar(
@@ -175,7 +185,9 @@ fun AdminDeviceDetailScreen(
         ) {
             when (currentTab) {
                 AdminAdjustUiState.ControlMethod.Remote -> RemoteControlScreen(
-                    deviceType = deviceType,
+                    supportsTemperature = supportsTemperature,
+                    supportsOperationMode = supportsOperationMode,
+                    supportsWindSpeed = supportsWindSpeed,
                     temperature = temperature,
                     onTemperatureChange = { temperature = it },
                     operationMode = operationMode,
@@ -198,11 +210,12 @@ fun AdminDeviceDetailScreen(
                 text = "제어 명령 전송",
                 enabled = isChanged,
                 onClick = {
-                    if (isAirConditioner) {
-                        onSendControlClick(temperature, operationMode, windSpeed, isPowerOn)
-                    } else {
-                        onSendControlClick(null, null, null, isPowerOn)
-                    }
+                    onSendControlClick(
+                        if (supportsTemperature) temperature else null,
+                        if (supportsOperationMode) operationMode else null,
+                        if (supportsWindSpeed) windSpeed else null,
+                        isPowerOn
+                    )
                 }
             )
         }
