@@ -9,6 +9,7 @@ import com.reborn.core.network.model.request.device.RegisterDeviceRequest
 import com.reborn.core.network.model.response.device.AutoControlRuleResponse
 import com.reborn.core.network.model.response.device.ControlDeviceResponse
 import com.reborn.core.network.model.response.device.DeviceListResponse
+import com.reborn.core.network.model.response.device.DeviceStatusResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
 import com.reborn.core.network.model.response.device.RegisterDeviceResponse
@@ -48,6 +49,10 @@ class DeviceDataSourceImpl(
         httpClient.post("/api/device") {
             setBody(request)
         }
+    }.asApiResponse()
+
+    override suspend fun getStatus(deviceId: String): ApiResponse<DeviceStatusResponse> = runCatching {
+        httpClient.get("/api/device/$deviceId/status")
     }.asApiResponse()
 
     override suspend fun controlDevice(

@@ -85,6 +85,27 @@ class SmartThingsDeviceService(
             .name
     }
 
+    // 기기 상세 화면 진입 시 현재 전원/운전모드/바람세기/희망온도를 실제로 조회해 초기값으로
+    // 반영하고, 지원하지 않는 컨트롤은 화면에서 숨길 수 있게 한다(#221).
+    fun getStatus(userId: Long, deviceKey: String): DeviceDto.StatusResponse {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        if (device.deviceType != DeviceType.SMART_THINGS) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "SmartThings 기기가 아닙니다.")
+        }
+        requireAdmin(userId, device.place.id)
+
+        val accessToken = smartThingsService.getValidAccessToken(device.place.id)
+        val status = smartThingsDeviceClient.getDeviceStatus(accessToken, device.deviceKey)
+
+        return DeviceDto.StatusResponse(
+            isPowerOn = status.isPowerOn,
+            operationMode = smartThingsToOperationMode(status.operationMode),
+            windSpeed = smartThingsToWindSpeed(status.windSpeed),
+            temperature = status.targetTemperature,
+        )
+    }
+
     @Transactional
     fun control(userId: Long, deviceKey: String, request: DeviceDto.ControlRequest): DeviceDto.ControlResponse {
         val device = deviceRepository.findByDeviceKey(deviceKey)
@@ -158,6 +179,24 @@ class SmartThingsDeviceService(
         WindSpeed.MEDIUM -> "medium"
         WindSpeed.HIGH -> "high"
         WindSpeed.AUTO -> "auto"
+    }
+
+    // operationModeToSmartThings/windSpeedToSmartThings의 역방향 - SmartThings가 우리가 모르는 값을
+    // 내려주거나(예: 기기 자체 확장 모드) capability 자체가 없으면(null) 그대로 null 반환, 예외 아님.
+    private fun smartThingsToOperationMode(raw: String?): OperationMode? = when (raw) {
+        "cool" -> OperationMode.COOL
+        "heat" -> OperationMode.HEAT
+        "dry" -> OperationMode.DEHUMIDIFY
+        "wind" -> OperationMode.FAN
+        else -> null
+    }
+
+    private fun smartThingsToWindSpeed(raw: String?): WindSpeed? = when (raw) {
+        "low" -> WindSpeed.LOW
+        "medium" -> WindSpeed.MEDIUM
+        "high" -> WindSpeed.HIGH
+        "auto" -> WindSpeed.AUTO
+        else -> null
     }
 
     private fun requireAdmin(userId: Long, placeId: Long) {

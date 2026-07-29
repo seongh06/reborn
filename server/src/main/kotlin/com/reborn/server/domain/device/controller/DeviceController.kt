@@ -156,6 +156,27 @@ class DeviceController(
         ApiResponse.success(deviceService.getList(extractUserId(authentication), placeId))
 
     @Operation(
+        summary = "IoT 기기 현재 상태 조회",
+        description = "SmartThings로 등록된 기기(SMART_THINGS 타입)의 현재 전원/운전모드/바람세기/희망온도를 " +
+            "실제로 조회합니다(#221). 필드가 null이면 이 기기가 그 컨트롤을 지원하지 않는다는 뜻입니다. " +
+            "해당 장소의 ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공 — 미지원 컨트롤은 null"),
+        SwaggerApiResponse(responseCode = "400", description = "SmartThings 기기가 아님"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{deviceId}/status")
+    fun getStatus(
+        @PathVariable deviceId: String,
+        authentication: Authentication,
+    ): ApiResponse<DeviceDto.StatusResponse> =
+        ApiResponse.success(smartThingsDeviceService.getStatus(extractUserId(authentication), deviceId))
+
+    @Operation(
         summary = "IoT 기기 제어",
         description = "SmartThings로 등록된 기기(SMART_THINGS 타입)에 제어 명령을 보냅니다. 서버가 해당 " +
             "장소의 SmartThings 토큰으로 SmartThings API를 직접 호출합니다(#132). 전원/운전모드/온도/풍량 중 " +

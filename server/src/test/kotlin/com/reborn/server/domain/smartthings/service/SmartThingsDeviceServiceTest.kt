@@ -13,6 +13,7 @@ import com.reborn.server.domain.place.PlaceType
 import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.domain.smartthings.client.SmartThingsCommand
 import com.reborn.server.domain.smartthings.client.SmartThingsDeviceClient
+import com.reborn.server.domain.smartthings.client.SmartThingsDeviceStatus
 import com.reborn.server.domain.smartthings.client.SmartThingsDeviceSummary
 import com.reborn.server.domain.smartthings.dto.SmartThingsDto
 import com.reborn.server.global.handler.BusinessAlertException
@@ -261,6 +262,89 @@ class SmartThingsDeviceServiceTest {
         given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L)).willReturn(AccessLevel.USER)
 
         assertThatThrownBy { smartThingsDeviceService.control(1L, "st-device-1", DeviceDto.ControlRequest(isPowerOn = true)) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `getStatus - 전체 지원 기기면 모든 필드를 반환한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-device-1", name = "거실 에어컨")
+        given(deviceRepository.findByDeviceKey("st-device-1")).willReturn(device)
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L)).willReturn(AccessLevel.ADMIN)
+        given(smartThingsService.getValidAccessToken(501L)).willReturn("access-token")
+        given(smartThingsDeviceClient.getDeviceStatus("access-token", "st-device-1")).willReturn(
+            SmartThingsDeviceStatus(
+                temperature = 24.0,
+                humidity = 50.0,
+                isPowerOn = true,
+                operationMode = "cool",
+                windSpeed = "high",
+                targetTemperature = 22.0,
+            ),
+        )
+
+        val response = smartThingsDeviceService.getStatus(1L, "st-device-1")
+
+        assertThat(response.isPowerOn).isTrue()
+        assertThat(response.operationMode).isEqualTo(OperationMode.COOL)
+        assertThat(response.windSpeed).isEqualTo(WindSpeed.HIGH)
+        assertThat(response.temperature).isEqualTo(22.0)
+    }
+
+    @Test
+    fun `getStatus - 바람세기를 지원하지 않는 기기면 windSpeed가 null이다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-device-1", name = "거실 플러그")
+        given(deviceRepository.findByDeviceKey("st-device-1")).willReturn(device)
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L)).willReturn(AccessLevel.ADMIN)
+        given(smartThingsService.getValidAccessToken(501L)).willReturn("access-token")
+        given(smartThingsDeviceClient.getDeviceStatus("access-token", "st-device-1")).willReturn(
+            SmartThingsDeviceStatus(
+                temperature = null,
+                humidity = null,
+                isPowerOn = true,
+                operationMode = null,
+                windSpeed = null,
+                targetTemperature = null,
+            ),
+        )
+
+        val response = smartThingsDeviceService.getStatus(1L, "st-device-1")
+
+        assertThat(response.isPowerOn).isTrue()
+        assertThat(response.operationMode).isNull()
+        assertThat(response.windSpeed).isNull()
+        assertThat(response.temperature).isNull()
+    }
+
+    @Test
+    fun `getStatus - SmartThings 기기가 아니면 예외가 발생한다`() {
+        val device = Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = "arduino-1", name = "거실 센서")
+        given(deviceRepository.findByDeviceKey("arduino-1")).willReturn(device)
+
+        assertThatThrownBy { smartThingsDeviceService.getStatus(1L, "arduino-1") }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `getStatus - 존재하지 않는 기기면 예외가 발생한다`() {
+        given(deviceRepository.findByDeviceKey("unknown")).willReturn(null)
+
+        assertThatThrownBy { smartThingsDeviceService.getStatus(1L, "unknown") }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `getStatus - ADMIN 권한이 없으면 예외가 발생한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-device-1", name = "거실 에어컨")
+        given(deviceRepository.findByDeviceKey("st-device-1")).willReturn(device)
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L)).willReturn(AccessLevel.USER)
+
+        assertThatThrownBy { smartThingsDeviceService.getStatus(1L, "st-device-1") }
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.FORBIDDEN)
