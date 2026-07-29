@@ -67,6 +67,7 @@ googleid = "1.1.1"
 reorderable = "3.0.0"
 camerax = "1.4.1"
 mlkit-face-detection = "16.1.7"
+compressor = "3.0.1"
 media3Exoplayer = "1.10.0"
 media3Ui = "1.10.0"
 
@@ -174,6 +175,9 @@ camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", vers
 
 # MLKit
 mlkit-face-detection = { group = "com.google.mlkit", name = "face-detection", version.ref = "mlkit-face-detection" }
+
+# 프로필 이미지 업로드 전 압축(#217) - 서버/nginx 업로드 용량 제한에 걸리지 않도록 미리 줄임
+compressor = { group = "id.zelory", name = "compressor", version.ref = "compressor" }
 
 # Spring Boot (server module)
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
