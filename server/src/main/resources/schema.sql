@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS `place`
     `qr_code`     VARCHAR(255) NOT NULL COMMENT 'QR 코드 식별자',
     `type`        VARCHAR(20)  NOT NULL COMMENT '공간 유형 (HOME / STORE / COMPANY)',
     `description` VARCHAR(255) NULL COMMENT '장소 설명',
+    `wifi_ssid`   VARCHAR(64)  NULL COMMENT '이 장소 기기들이 사용할 홈 WiFi SSID',
+    `wifi_password` VARCHAR(64) NULL COMMENT '이 장소 기기들이 사용할 홈 WiFi 비밀번호(평문)',
     `created_at`  DATETIME(6)  NOT NULL COMMENT '등록일시',
     `updated_at`  DATETIME(6)  NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),

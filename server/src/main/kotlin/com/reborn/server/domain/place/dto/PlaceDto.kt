@@ -67,4 +67,15 @@ class PlaceDto {
     data class AdminListResponse(
         val admins: List<AdminItem>,
     )
+
+    data class WifiRequest(
+        @field:NotBlank val ssid: String? = null,
+        // 비밀번호 없는(오픈) WiFi도 있을 수 있어 password만 blank 허용 - ssid는 필수
+        val password: String? = null,
+    )
+
+    data class WifiResponse(
+        val ssid: String?,
+        val password: String?,
+    )
 }

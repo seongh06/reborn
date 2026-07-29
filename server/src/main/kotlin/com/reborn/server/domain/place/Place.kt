@@ -27,8 +27,22 @@ class Place(
     @Column
     val description: String? = null,
 
+    // 아두이노/AI스피커가 SoftAP 프로비저닝으로 붙을 홈 WiFi(#219) - 장소에 한 번 저장해두면
+    // 이후 이 장소에 연결되는 모든 기기가 관리자의 재입력 없이 이 값을 그대로 사용한다.
+    @Column
+    var wifiSsid: String? = null,
+
+    @Column
+    var wifiPassword: String? = null,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-) : BaseEntity()
+) : BaseEntity() {
+
+    fun updateWifi(ssid: String, password: String) {
+        wifiSsid = ssid
+        wifiPassword = password
+    }
+}

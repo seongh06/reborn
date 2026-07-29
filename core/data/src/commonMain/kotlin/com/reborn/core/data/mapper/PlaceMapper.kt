@@ -5,6 +5,7 @@ import com.reborn.core.model.Place
 import com.reborn.core.model.PlaceAdmin
 import com.reborn.core.model.PlaceDetail
 import com.reborn.core.model.PlaceMembership
+import com.reborn.core.model.PlaceWifi
 import com.reborn.core.network.AppConfig
 import com.reborn.core.network.model.response.place.AdminCodeResponse
 import com.reborn.core.network.model.response.place.AdminInviteResponse
@@ -12,6 +13,7 @@ import com.reborn.core.network.model.response.place.PlaceAdminItemResponse
 import com.reborn.core.network.model.response.place.PlaceDetailResponse
 import com.reborn.core.network.model.response.place.PlaceItemResponse
 import com.reborn.core.network.model.response.place.PlaceResponse
+import com.reborn.core.network.model.response.place.PlaceWifiResponse
 
 fun PlaceResponse.toPlace(accessLevel: String = "ADMIN"): Place =
     Place(placeId = placeId, name = name, type = type, accessLevel = accessLevel, createdAt = createdAt)
@@ -40,3 +42,6 @@ fun AdminInviteResponse.toPlaceMembership(): PlaceMembership =
 
 fun PlaceAdminItemResponse.toPlaceAdmin(): PlaceAdmin =
     PlaceAdmin(userId = userId, name = name, profileImage = profileImage)
+
+fun PlaceWifiResponse.toPlaceWifi(): PlaceWifi =
+    PlaceWifi(ssid = ssid, password = password)

@@ -279,6 +279,80 @@ class PlaceServiceTest {
     }
 
     @Test
+    fun `getWifi - ADMIN이면 저장된 WiFi를 반환한다`() {
+        place.updateWifi("MyHomeWiFi", "password1234")
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.ADMIN)
+
+        val response = placeService.getWifi(1L, 501L)
+
+        assertThat(response.ssid).isEqualTo("MyHomeWiFi")
+        assertThat(response.password).isEqualTo("password1234")
+    }
+
+    @Test
+    fun `getWifi - 저장된 적 없으면 ssid, password 모두 null이다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.ADMIN)
+
+        val response = placeService.getWifi(1L, 501L)
+
+        assertThat(response.ssid).isNull()
+        assertThat(response.password).isNull()
+    }
+
+    @Test
+    fun `getWifi - ADMIN 권한이 없으면 예외가 발생한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.USER)
+
+        assertThatThrownBy { placeService.getWifi(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `updateWifi - ADMIN이면 장소 WiFi를 저장한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.ADMIN)
+
+        val response = placeService.updateWifi(1L, 501L, PlaceDto.WifiRequest(ssid = "MyHomeWiFi", password = "newpass"))
+
+        assertThat(response.ssid).isEqualTo("MyHomeWiFi")
+        assertThat(response.password).isEqualTo("newpass")
+        assertThat(place.wifiSsid).isEqualTo("MyHomeWiFi")
+    }
+
+    @Test
+    fun `updateWifi - ssid가 없으면 예외가 발생한다`() {
+        assertThatThrownBy {
+            placeService.updateWifi(1L, 501L, PlaceDto.WifiRequest(ssid = null, password = "pass"))
+        }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `updateWifi - ADMIN 권한이 없으면 예외가 발생한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.USER)
+
+        assertThatThrownBy {
+            placeService.updateWifi(1L, 501L, PlaceDto.WifiRequest(ssid = "MyHomeWiFi", password = "pass"))
+        }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
     fun `deletePlace - ADMIN이면 장소를 삭제한다`() {
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
         given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))

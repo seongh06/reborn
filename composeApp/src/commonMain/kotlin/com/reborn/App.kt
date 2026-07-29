@@ -381,16 +381,16 @@ fun App(initialFeedbackId: Int? = null) {
                         onBackClick = {
                             navController.popBackStack()
                         },
-                        onNavigateToWifiSetup = { deviceId ->
-                            navController.navigate(Route.Admin.DeviceWifiSetup(deviceId))
+                        onNavigateToWifiSetup = { deviceId, placeId ->
+                            navController.navigate(Route.Admin.DeviceWifiSetup(deviceId, placeId))
                         }
                     )
                     adminAddAiSpeakerNavGraph(
                         onBackClick = {
                             navController.popBackStack()
                         },
-                        onNavigateToWifiSetup = { deviceId ->
-                            navController.navigate(Route.Admin.DeviceWifiSetup(deviceId))
+                        onNavigateToWifiSetup = { deviceId, placeId ->
+                            navController.navigate(Route.Admin.DeviceWifiSetup(deviceId, placeId))
                         }
                     )
                     adminDeviceWifiSetupNavGraph(

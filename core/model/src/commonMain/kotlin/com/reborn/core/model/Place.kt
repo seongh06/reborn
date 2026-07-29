@@ -38,3 +38,8 @@ data class PlaceAdmin(
     val name: String,
     val profileImage: String?,
 )
+
+data class PlaceWifi(
+    val ssid: String?,
+    val password: String?,
+)

@@ -94,7 +94,7 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 | 테이블 | 설명 | 주요 변경 |
 |--------|------|----------|
 | `user` | 사용자 | refreshToken 없음 → Redis 관리, email nullable(카카오 이메일 동의 미사용) |
-| `place` | 장소 | qrCode UNIQUE 추가 |
+| `place` | 장소 | qrCode UNIQUE 추가. wifiSsid/wifiPassword 추가(2026-07-29, #219) — 이 장소에 연결되는 아두이노/AI스피커 SoftAP 프로비저닝용 WiFi, 평문 저장(SmartThings 자격증명과 동일 수준) |
 | `user_place_mapping` | 사용자-장소 권한 (ADMIN/USER) | - |
 | `device` | 기기 (ARDUINO/AEROMETER/SMART_THINGS/AI_SPEAKER) | deviceType, appToken, isOnline 추가. SMART_THINGS는 2026-07-19 추가 — deviceKey에 SmartThings deviceId 저장, appToken 불필요. ARDUINO/AI_SPEAKER는 2026-07-22(#147)부터 deviceKey가 사전 발급 시리얼(device_serial)에서 옴 — 관리자가 임의로 정하지 않음 |
 | `metric_logs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (device_id, created_at DESC) 인덱스. SMART_THINGS 기기는 Arduino의 push(POST /api/metric/collect) 대신 서버가 주기적으로 pull(SmartThings API 폴링)해서 동일 테이블에 적재 |
@@ -137,6 +137,8 @@ device_serial ──(assignedDeviceId, 등록 시 1회 연결)──> device
 | PATCH | `/api/feedback/{id}` | 피드백 상태 변경 | ✅ ADMIN |
 | GET | `/api/place` | 장소 목록 조회 | ✅ |
 | POST | `/api/place` | 장소 등록 | ✅ ADMIN |
+| GET | `/api/place/{placeId}/wifi` | 장소에 저장된 기기 프로비저닝용 WiFi 조회 (2026-07-29 신설, #219) | ✅ ADMIN |
+| PUT | `/api/place/{placeId}/wifi` | 장소의 기기 프로비저닝용 WiFi 저장/수정 (2026-07-29 신설, #219) | ✅ ADMIN |
 | GET | `/api/device` | 기기 목록 조회 | ✅ |
 | POST | `/api/device` | Arduino/AI 스피커 기기 등록 (deviceId=사전 발급 시리얼) | ✅ ADMIN |
 | POST | `/api/device/serials` | 판매용 기기 시리얼 배치 발급(재고, 장소 무관) (2026-07-22 신설, #147) | X-Operator-Key 헤더 |
