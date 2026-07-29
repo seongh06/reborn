@@ -335,8 +335,11 @@
     showOnly(errorState);
   }
 
+  // deviceId는 서버 DTO/스키마에서 nullable(기기 미등록 장소도 피드백 제출 가능) - 기기가
+  // 하나도 없는 장소는 renderDevices()에서 selectedDeviceId가 계속 null로 남아, 여기서 기기
+  // 선택을 요구하면 빠른 선택을 눌러도 버튼이 영원히 비활성 상태로 남는 문제가 있었음
   function updateSubmitState() {
-    submitButton.disabled = !selectedDeviceId || contentEl.value.trim().length === 0;
+    submitButton.disabled = contentEl.value.trim().length === 0;
   }
 
   function renderDevices(devices) {
