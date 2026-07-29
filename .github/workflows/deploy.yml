@@ -1,3 +1,4 @@
+# 파이5 self-hosted runner(pi5-server) 전환 후 자동배포 파이프라인 실증 테스트(2026-07-29)
 name: Deploy to Home Server
 
 on:
