@@ -62,8 +62,8 @@ class IntroViewModel(
     // 코드를 들고 있어야 함 - 별도 코드 검증 API가 없어 코드+이름을 한 번에 보내야 하기 때문(#113)
     private var pendingPairingCode: String = ""
 
-    // Setting의 "관리자 초대"(기존 장소)는 route로 placeId를 직접 받으므로 이 값을 쓰지 않고,
-    // 온보딩 흐름(방금 등록한 장소)에서 AdminCode 화면에 placeId를 넘겨주기 위한 용도로만 쓰인다.
+    // registerPlace()의 중복 호출 방지 가드로만 쓰인다 - 뒤로가기 후 재등록 시 이전 장소가
+    // orphan으로 남는 걸 막기 위함(아래 registerPlace 주석 참고).
     var registeredPlaceId: Long? = null
         private set
 
@@ -73,7 +73,6 @@ class IntroViewModel(
             is IntroIntent.NavigateToSignup -> navigateTo(IntroUiState.Signup)
             is IntroIntent.NavigateToAerometerPairing -> navigateTo(IntroUiState.AerometerPairing)
             is IntroIntent.NavigateToInviteCode -> navigateTo(IntroUiState.InviteCode)
-            is IntroIntent.NavigateToDevicePairing -> navigateTo(IntroUiState.DevicePairing)
             is IntroIntent.NavigateToAerometerDeviceName -> navigateTo(IntroUiState.AerometerDeviceName)
             is IntroIntent.NavigateBack -> navigateBack()
             is IntroIntent.NavigateToAdmin -> navigateToAdmin()

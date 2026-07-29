@@ -1,8 +1,10 @@
 package com.reborn.server.global.web
 
 import com.reborn.server.global.log.LoggingInterceptor
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 // CORS는 global/token/SecurityConfig의 corsConfigurationSource()가 전담한다.
@@ -12,11 +14,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @Configuration
 class WebMvcConfig(
     private val loggingInterceptor: LoggingInterceptor,
+    @param:Value("\${app.upload-dir:/app/uploads}") private val uploadDir: String,
 ) : WebMvcConfigurer {
 
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(loggingInterceptor)
             .addPathPatterns("/**")
             .excludePathPatterns("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html")
+    }
+
+    // LocalFileStorage(프로필 이미지 등)가 저장한 파일을 정적으로 서빙 - SecurityConfig에서
+    // GET /uploads/**는 permitAll 처리돼 있어야 한다.
+    override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
+        val location = if (uploadDir.endsWith("/")) uploadDir else "$uploadDir/"
+        registry.addResourceHandler("/uploads/**")
+            .addResourceLocations("file:$location")
     }
 }

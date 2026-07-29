@@ -2,12 +2,14 @@ package com.reborn.core.data.repository
 
 import com.reborn.core.data.mapper.toAdminInviteCode
 import com.reborn.core.data.mapper.toPlace
+import com.reborn.core.data.mapper.toPlaceAdmin
 import com.reborn.core.data.mapper.toPlaceDetail
 import com.reborn.core.data.mapper.toPlaceMembership
 import com.reborn.core.data.mapper.toResult
 import com.reborn.core.domain.repository.PlaceRepository
 import com.reborn.core.model.AdminInviteCode
 import com.reborn.core.model.Place
+import com.reborn.core.model.PlaceAdmin
 import com.reborn.core.model.PlaceDetail
 import com.reborn.core.model.PlaceMembership
 import com.reborn.core.network.datasource.PlaceDataSource
@@ -37,6 +39,10 @@ class PlaceRepositoryImpl(
     override suspend fun getDetail(placeId: Long): Result<PlaceDetail> =
         remote.getDetail(placeId)
             .toResult { it.toPlaceDetail() }
+
+    override suspend fun getAdmins(placeId: Long): Result<List<PlaceAdmin>> =
+        remote.getAdmins(placeId)
+            .toResult { response -> response.admins.map { it.toPlaceAdmin() } }
 
     override suspend fun delete(placeId: Long): Result<Unit> =
         remote.delete(placeId)

@@ -12,7 +12,6 @@ import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
 import com.reborn.feature.intro.screen.IntroWelcomeScreen
-import com.reborn.feature.intro.screen.admin.IntroDevicePairingCodeScreen
 import com.reborn.feature.intro.screen.admin.IntroInviteCodeScreen
 import com.reborn.feature.intro.screen.admin.IntroSignupScreen
 import com.reborn.feature.intro.screen.aerometer.IntroAermeterPairingScreen
@@ -82,18 +81,15 @@ fun IntroRoute(
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
             )
             is IntroUiState.Signup -> IntroSignupScreen(
-                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToDevicePairing) },
+                // 공기계 페어링은 더 이상 온보딩 필수 단계가 아님 - 설정 화면의 "공기계 추가"에서
+                // 나중에 언제든 할 수 있어 장소 등록 직후 바로 메인 화면으로 이동한다(#217).
+                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) },
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) },
                 onInviteCodeClick = { viewModel.onIntent(IntroIntent.NavigateToInviteCode) }
             )
             is IntroUiState.InviteCode -> IntroInviteCodeScreen(
                 onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) },
                 onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) }
-            )
-            is IntroUiState.DevicePairing -> IntroDevicePairingCodeScreen(
-                placeId = viewModel.registeredPlaceId,
-                onBackClick = { viewModel.onIntent(IntroIntent.NavigateBack) },
-                onNextClick = { viewModel.onIntent(IntroIntent.NavigateToAdmin) }
             )
         }
     }

@@ -11,8 +11,8 @@ import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
 import com.reborn.server.global.redis.RedisUtil
-import com.reborn.server.global.s3.S3UploadResponse
-import com.reborn.server.global.s3.S3Uploader
+import com.reborn.server.global.storage.LocalFileStorage
+import com.reborn.server.global.storage.LocalUploadResponse
 import com.reborn.server.global.token.JwtProvider
 import io.jsonwebtoken.Claims
 import org.assertj.core.api.Assertions.assertThat
@@ -56,7 +56,7 @@ class AuthServiceTest {
     private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
 
     @Mock
-    private lateinit var s3Uploader: S3Uploader
+    private lateinit var localFileStorage: LocalFileStorage
 
     @InjectMocks
     private lateinit var authService: AuthService
@@ -300,26 +300,26 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `updateProfileImage - 정상 업로드면 프로필 이미지를 교체하고 이전 S3 이미지를 삭제한다`() {
+    fun `updateProfileImage - 정상 업로드면 프로필 이미지를 교체하고 이전 로컬 이미지를 삭제한다`() {
         val user = User(
             email = "test@reborn.com",
             name = "테스트",
-            profileImage = "https://reborn-bucket.s3.ap-northeast-2.amazonaws.com/profile/old-key.jpg",
+            profileImage = "https://www.reborn-energy.com/uploads/profile/old-key.jpg",
             provider = OAuthProvider.GOOGLE,
             providerId = "google-1",
             id = 1,
         )
         val file = MockMultipartFile("image", "profile.jpg", "image/jpeg", ByteArray(100))
         given(userRepository.findById(1L)).willReturn(Optional.of(user))
-        given(s3Uploader.upload(file, directory = "profile"))
-            .willReturn(S3UploadResponse(key = "profile/new-key.jpg", url = "https://reborn-bucket.s3.ap-northeast-2.amazonaws.com/profile/new-key.jpg"))
-        given(s3Uploader.extractKeyIfOwned("https://reborn-bucket.s3.ap-northeast-2.amazonaws.com/profile/old-key.jpg"))
+        given(localFileStorage.upload(file, directory = "profile"))
+            .willReturn(LocalUploadResponse(key = "profile/new-key.jpg", url = "https://www.reborn-energy.com/uploads/profile/new-key.jpg"))
+        given(localFileStorage.extractKeyIfOwned("https://www.reborn-energy.com/uploads/profile/old-key.jpg"))
             .willReturn("profile/old-key.jpg")
 
         authService.updateProfileImage(1L, file)
 
-        assertThat(user.profileImage).isEqualTo("https://reborn-bucket.s3.ap-northeast-2.amazonaws.com/profile/new-key.jpg")
-        verify(s3Uploader).delete("profile/old-key.jpg")
+        assertThat(user.profileImage).isEqualTo("https://www.reborn-energy.com/uploads/profile/new-key.jpg")
+        verify(localFileStorage).delete("profile/old-key.jpg")
     }
 
     @Test
@@ -334,13 +334,13 @@ class AuthServiceTest {
         )
         val file = MockMultipartFile("image", "profile.jpg", "image/jpeg", ByteArray(100))
         given(userRepository.findById(1L)).willReturn(Optional.of(user))
-        given(s3Uploader.upload(file, directory = "profile"))
-            .willReturn(S3UploadResponse(key = "profile/new-key.jpg", url = "https://reborn-bucket.s3.ap-northeast-2.amazonaws.com/profile/new-key.jpg"))
-        given(s3Uploader.extractKeyIfOwned("https://k.kakaocdn.net/profile.jpg")).willReturn(null)
+        given(localFileStorage.upload(file, directory = "profile"))
+            .willReturn(LocalUploadResponse(key = "profile/new-key.jpg", url = "https://www.reborn-energy.com/uploads/profile/new-key.jpg"))
+        given(localFileStorage.extractKeyIfOwned("https://k.kakaocdn.net/profile.jpg")).willReturn(null)
 
         authService.updateProfileImage(1L, file)
 
-        verify(s3Uploader, never()).delete(anyString())
+        verify(localFileStorage, never()).delete(anyString())
     }
 
     @Test
@@ -361,25 +361,6 @@ class AuthServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)
-    }
-
-    @Test
-    fun `updateProfileImage - S3가 설정되지 않은 환경이면 예외가 발생한다`() {
-        val serviceWithoutS3 = AuthService(
-            userRepository = userRepository,
-            googleAuthClient = googleAuthClient,
-            kakaoAuthClient = kakaoAuthClient,
-            jwtProvider = jwtProvider,
-            redisUtil = redisUtil,
-            userPlaceMappingRepository = userPlaceMappingRepository,
-            s3Uploader = null,
-        )
-        val file = MockMultipartFile("image", "profile.jpg", "image/jpeg", ByteArray(100))
-
-        assertThatThrownBy { serviceWithoutS3.updateProfileImage(1L, file) }
-            .isInstanceOf(BusinessAlertException::class.java)
-            .extracting("errorCode")
-            .isEqualTo(CommonErrorCode.INTERNAL_SERVER_ERROR)
     }
 
     companion object {

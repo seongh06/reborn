@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
-import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
+import com.reborn.core.domain.usecase.GetPlaceAdminsUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
@@ -35,7 +35,7 @@ sealed class AdminSettingEvent {
 class AdminSettingViewModel(
     private val logoutUseCase: LogoutUseCase,
     private val getPlaceListUseCase: GetPlaceListUseCase,
-    private val getPlaceDetailUseCase: GetPlaceDetailUseCase,
+    private val getPlaceAdminsUseCase: GetPlaceAdminsUseCase,
     private val deletePlaceUseCase: DeletePlaceUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateUserProfileUseCase: UpdateUserProfileUseCase,
@@ -131,22 +131,23 @@ class AdminSettingViewModel(
 
             getPlaceListUseCase()
                 .onSuccess { places ->
-                    // 장소 목록(#27)에는 deviceCount가 없어 장소별로 상세(#28)를 추가 조회해 채운다.
-                    // 장소 수만큼 한 번에 요청이 나가지 않도록 동시 조회 수를 제한한다.
-                    val detailSemaphore = Semaphore(MAX_CONCURRENT_DETAIL_REQUESTS)
+                    // 장소 목록(#27)에는 관리자 프로필이 없어 place 카드에 아바타를 보여주려면(#217)
+                    // 장소별로 관리자 목록을 추가 조회해야 한다. 장소 수만큼 한 번에 요청이 나가지
+                    // 않도록 동시 조회 수를 제한한다.
+                    val adminsSemaphore = Semaphore(MAX_CONCURRENT_DETAIL_REQUESTS)
                     val rooms = coroutineScope {
                         places.map { place ->
                             async {
-                                val detail = detailSemaphore.withPermit {
-                                    getPlaceDetailUseCase(place.placeId).getOrNull()
+                                val admins = adminsSemaphore.withPermit {
+                                    getPlaceAdminsUseCase(place.placeId).getOrNull()
                                 }
                                 AdminSettingUiState.RoomItem(
                                     // Route 인자(Route.Admin.InviteCode/AddDevice)가 Int라 기존 관례를 따라 Int로 보관
                                     placeId = place.placeId.toInt(),
                                     roomName = place.name,
-                                    // 상세 조회 실패 시 null - 실제 0명/0대와 구분해서 UI에서 별도 표시
-                                    adminCount = detail?.adminCount,
-                                    deviceCount = detail?.deviceCount,
+                                    admins = admins.orEmpty().map {
+                                        AdminSettingUiState.AdminProfile(it.userId, it.name, it.profileImage)
+                                    },
                                 )
                             }
                         }.awaitAll()

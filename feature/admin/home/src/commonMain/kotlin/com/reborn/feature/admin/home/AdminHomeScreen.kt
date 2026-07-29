@@ -1,5 +1,6 @@
 package com.reborn.feature.admin.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.designsystem.component.RebornTopAppBar
@@ -43,6 +45,7 @@ fun AdminHomeRoute(
     onNavigateToSetting: () -> Unit = {},
     onNavigateToDeviceList: () -> Unit = {},
     onNavigateToDeviceDetail: (String) -> Unit = {},
+    onNavigateToAddSmartThingsDevice: () -> Unit = {},
     onBottomBarVisibilityChange: (Boolean) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -68,6 +71,7 @@ fun AdminHomeRoute(
                 is AdminHomeEvent.NavigateToSetting -> onNavigateToSetting()
                 is AdminHomeEvent.NavigateToDeviceList -> onNavigateToDeviceList()
                 is AdminHomeEvent.NavigateToDeviceDetail -> onNavigateToDeviceDetail(event.deviceId)
+                is AdminHomeEvent.NavigateToAddSmartThingsDevice -> onNavigateToAddSmartThingsDevice()
             }
         }
     }
@@ -85,7 +89,8 @@ fun AdminHomeRoute(
                 onMoreFeedbackClick = { viewModel.onIntent(AdminHomeIntent.NavigateToFeedbackList) },
                 onDeviceListClick = { viewModel.onIntent(AdminHomeIntent.NavigateToDeviceList) },
                 onDeviceDetailClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToDeviceDetail(id)) },
-                onDevicePowerToggle = { id -> viewModel.onIntent(AdminHomeIntent.TogglePower(id)) }
+                onDevicePowerToggle = { id -> viewModel.onIntent(AdminHomeIntent.TogglePower(id)) },
+                onAddSmartThingsClick = { viewModel.onIntent(AdminHomeIntent.NavigateToAddSmartThingsDevice) }
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
                 state = state,
@@ -106,7 +111,8 @@ fun AdminHomeScreen(
     onMoreFeedbackClick: () -> Unit = {},
     onDeviceListClick: () -> Unit = {},
     onDeviceDetailClick: (String) -> Unit = {},
-    onDevicePowerToggle: (String) -> Unit = {}
+    onDevicePowerToggle: (String) -> Unit = {},
+    onAddSmartThingsClick: () -> Unit = {}
 ) {
     if (!state.hasDevices) {
          Column(
@@ -134,6 +140,17 @@ fun AdminHomeScreen(
                      style = RebornTheme.typography.bodyLarge,
                      color = RebornTheme.color.grayScale900,
                      textAlign = TextAlign.Center
+                 )
+                 // 빈 상태에서 실제로 기기를 추가할 방법이 없었던 문제(#217) - 작은 링크형 버튼으로
+                 // SmartThings 연동(등록) 화면 진입점을 바로 제공한다.
+                 Text(
+                     "SmartThings 연결",
+                     style = RebornTheme.typography.labelMedium,
+                     color = RebornTheme.color.grayScale700,
+                     textDecoration = TextDecoration.Underline,
+                     modifier = Modifier
+                         .clickable(onClick = onAddSmartThingsClick)
+                         .padding(8.dp)
                  )
              }
          }

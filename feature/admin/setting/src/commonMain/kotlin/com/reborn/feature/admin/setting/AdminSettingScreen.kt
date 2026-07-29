@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -145,6 +146,7 @@ fun AdminSettingScreen(
 
 ) {
     var showWithdrawConfirm by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
 
     if (showWithdrawConfirm) {
         AlertDialog(
@@ -217,8 +219,7 @@ fun AdminSettingScreen(
                 RoomListItem(
                     placeId = room.placeId,
                     roomName = room.roomName,
-                    adminCount = room.adminCount,
-                    deviceCount = room.deviceCount,
+                    admins = room.admins,
                     onDeleteClick = { onDeleteRoomClick(room.placeId) },
                     onAddAdminClick = { onAddAdminClick(room.placeId) },
                     onAddDeviceClick = { onAddDeviceClick(room.placeId) },
@@ -254,7 +255,7 @@ fun AdminSettingScreen(
                     )
             ) {
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
-                SettingItem(label = "서비스 소개", onClick = {})
+                SettingItem(label = "서비스 소개", onClick = { uriHandler.openUri(SERVICE_INTRO_URL) })
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
                 SettingItem(label = "이용약관", onClick = onTermsClick)
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
@@ -424,3 +425,5 @@ private fun EditNameDialog(
         }
     )
 }
+
+private const val SERVICE_INTRO_URL = "https://sphenoid-mozzarella-660.notion.site/3971f77b665a8051a7eee4636d98b9d0"

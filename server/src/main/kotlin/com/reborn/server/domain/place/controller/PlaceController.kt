@@ -118,6 +118,24 @@ class PlaceController(
         ApiResponse.success(placeService.getDetail(extractUserId(authentication), placeId))
 
     @Operation(
+        summary = "장소 관리자 목록 조회",
+        description = "특정 장소의 ADMIN 목록을 이름/프로필 이미지와 함께 조회합니다(설정 화면 place 카드용, #217). ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공 — userId, name, profileImage 목록 반환"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{placeId}/admins")
+    fun getAdmins(
+        @PathVariable placeId: Long,
+        authentication: Authentication,
+    ): ApiResponse<PlaceDto.AdminListResponse> =
+        ApiResponse.success(placeService.getAdmins(extractUserId(authentication), placeId))
+
+    @Operation(
         summary = "장소 삭제",
         description = "등록된 장소를 삭제합니다. 삭제 시 기기·사용자 매핑 정보가 CASCADE로 함께 삭제됩니다. (ADMIN 권한 필요)",
     )

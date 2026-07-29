@@ -30,6 +30,7 @@ sealed class AdminHomeEvent {
     data object NavigateToFeedbackList : AdminHomeEvent()
     data object NavigateToSetting : AdminHomeEvent()
     data object NavigateToDeviceList : AdminHomeEvent()
+    data object NavigateToAddSmartThingsDevice : AdminHomeEvent()
     data class NavigateToDeviceDetail(val deviceId: String) : AdminHomeEvent()
 }
 
@@ -65,6 +66,7 @@ class AdminHomeViewModel(
             is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm(alarm = alarmItems))
             is AdminHomeIntent.NavigateToSetting -> navigateToSetting()
             is AdminHomeIntent.NavigateToDeviceList -> navigateToDeviceList()
+            is AdminHomeIntent.NavigateToAddSmartThingsDevice -> navigateToAddSmartThingsDevice()
             is AdminHomeIntent.NavigateToDeviceDetail -> navigateToDeviceDetail(intent.deviceId)
             is AdminHomeIntent.TogglePower -> togglePower(intent.deviceId)
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
@@ -215,6 +217,12 @@ class AdminHomeViewModel(
     private fun navigateToDeviceList() {
         viewModelScope.launch {
             navController.emitEvent(AdminHomeEvent.NavigateToDeviceList)
+        }
+    }
+
+    private fun navigateToAddSmartThingsDevice() {
+        viewModelScope.launch {
+            navController.emitEvent(AdminHomeEvent.NavigateToAddSmartThingsDevice)
         }
     }
 

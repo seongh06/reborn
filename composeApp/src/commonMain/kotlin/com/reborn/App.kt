@@ -287,6 +287,9 @@ fun App(initialFeedbackId: Int? = null) {
                         onNavigateToDeviceDetail = { deviceId ->
                             navController.navigate(Route.Admin.Adjust(deviceId))
                         },
+                        onNavigateToAddSmartThingsDevice = {
+                            navController.navigate(Route.Admin.AddSmartThingsDevice)
+                        },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
                         }

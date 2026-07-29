@@ -4,12 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -26,25 +29,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.feature.admin.setting.Res
-import com.reborn.feature.admin.setting.ic_admin
-import com.reborn.feature.admin.setting.ic_device
 import com.reborn.feature.admin.setting.ic_more_vert
+import com.reborn.feature.admin.setting.ic_person
+import com.reborn.feature.admin.setting.model.AdminSettingUiState
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
+// Figma(node 595:5359 "Frame 380/place 설정") 기준 재디자인(#217) - 장소명 + 관리자 프로필만
+// 보여주고, IoT 기기 개수 칩은 없앰(사용자 요청). 관리자 아바타를 겹쳐서 최대 N명까지 보여주고
+// 나머지는 "+N명"으로, 탭하면 전체 관리자 목록(프로필+이름) 바텀시트가 뜬다.
 @Composable
 fun RoomListItem(
     placeId: Int,
     roomName: String,
-    adminCount: Int?,
-    deviceCount: Int?,
+    admins: List<AdminSettingUiState.AdminProfile>,
     onDeleteClick: () -> Unit,
     onAddAdminClick: () -> Unit,
     onAddDeviceClick: () -> Unit,
@@ -52,44 +59,49 @@ fun RoomListItem(
     onAddAiSpeakerClick: () -> Unit
 ){
     var showAddSheet by remember { mutableStateOf(false) }
+    var showAdminsSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(RebornTheme.color.grayScale100)
-            .border(
-                width = 1.dp,
-                color = RebornTheme.color.grayScale200,
-                shape = RoundedCornerShape(16.dp)
-            )
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ){
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ){
-            Row {
-                Text(
-                    roomName,
-                    style = RebornTheme.typography.headlineMedium,
-                    color = RebornTheme.color.grayScale900
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    painterResource(Res.drawable.ic_more_vert),
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clickable { showAddSheet = true },
-                    contentDescription = "더 보기",
-                    tint = RebornTheme.color.grayScale900
-                )
-            }
+        Row {
+            Text(
+                roomName,
+                style = RebornTheme.typography.headlineMedium,
+                color = RebornTheme.color.grayScale900
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            // 디자인 상 세로 점3개 아이콘이나, 이 프로젝트 전반에서 "더 보기" 액션에 이미 쓰이고
+            // 있는 ic_more_vert를 그대로 재사용(새 아이콘 에셋을 따로 추가하지 않음).
+            Icon(
+                painterResource(Res.drawable.ic_more_vert),
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { showAddSheet = true },
+                contentDescription = "더 보기",
+                tint = RebornTheme.color.grayScale900
+            )
+        }
+        if (admins.isNotEmpty()) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ){
-                RoomInformChip(type = RoomInformType.Admin, value = adminCount)
-                RoomInformChip(type = RoomInformType.IoT, value = deviceCount)
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { showAdminsSheet = true }
+            ) {
+                AdminAvatarStack(admins = admins)
+                val overflow = admins.size - AVATAR_STACK_VISIBLE_COUNT
+                if (overflow > 0) {
+                    Text(
+                        text = "+ ${overflow}명",
+                        style = RebornTheme.typography.labelMedium,
+                        color = RebornTheme.color.grayScale900,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -103,6 +115,100 @@ fun RoomListItem(
             onAddDeviceClick = onAddDeviceClick,
             onDeleteClick = onDeleteClick
         )
+    }
+
+    if (showAdminsSheet) {
+        AdminsBottomSheet(
+            admins = admins,
+            onDismiss = { showAdminsSheet = false }
+        )
+    }
+}
+
+private const val AVATAR_STACK_VISIBLE_COUNT = 3
+private val AVATAR_SIZE = 32.dp
+private val AVATAR_OVERLAP = 16.dp
+
+@Composable
+private fun AdminAvatarStack(admins: List<AdminSettingUiState.AdminProfile>) {
+    val visible = admins.take(AVATAR_STACK_VISIBLE_COUNT)
+    Row(horizontalArrangement = Arrangement.spacedBy(-AVATAR_OVERLAP)) {
+        visible.forEach { admin ->
+            AdminAvatar(
+                profileImage = admin.profileImage,
+                modifier = Modifier.border(2.dp, RebornTheme.color.grayScale100, CircleShape)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminAvatar(profileImage: String?, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(AVATAR_SIZE)
+            .clip(CircleShape)
+            .background(RebornTheme.color.grayScale300),
+        contentAlignment = Alignment.Center
+    ) {
+        if (profileImage != null) {
+            AsyncImage(
+                model = profileImage,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                error = painterResource(Res.drawable.ic_person),
+                modifier = Modifier.size(AVATAR_SIZE).clip(CircleShape)
+            )
+        } else {
+            Icon(
+                painter = painterResource(Res.drawable.ic_person),
+                contentDescription = null,
+                tint = RebornTheme.color.grayScale500,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AdminsBottomSheet(
+    admins: List<AdminSettingUiState.AdminProfile>,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = RebornTheme.color.grayScale100
+    ) {
+        Text(
+            "관리자",
+            style = RebornTheme.typography.titleMedium,
+            color = RebornTheme.color.grayScale900,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+        LazyColumn(
+            modifier = Modifier.padding(bottom = 24.dp)
+        ) {
+            items(items = admins, key = { it.userId }) { admin ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
+                ) {
+                    AdminAvatar(profileImage = admin.profileImage)
+                    Text(
+                        admin.name,
+                        style = RebornTheme.typography.titleSmall,
+                        color = RebornTheme.color.grayScale900
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -205,45 +311,4 @@ private fun AddSheetItem(
             .clickable(onClick = onClick)
             .padding(horizontal = 24.dp, vertical = 16.dp)
     )
-}
-
-@Composable
-private fun RoomInformChip(
-    modifier: Modifier = Modifier,
-    type: RoomInformType,
-    value: Int?,
-) {
-    val style = getUiStyleForType(type)
-    Row(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(RebornTheme.color.grayScale300)
-            .padding(12.dp, 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ){
-        Icon(
-            painterResource(style),
-            modifier = Modifier.size(16.dp),
-            contentDescription = null,
-            tint = RebornTheme.color.grayScale900
-        )
-        Text(
-            // 조회 실패(null)는 "-"로 표시 - 0대와 혼동되지 않도록
-            value?.toString() ?: "-",
-            style = RebornTheme.typography.labelLarge,
-            color = RebornTheme.color.grayScale900
-        )
-    }
-}
-
-enum class RoomInformType {
-    Admin, IoT
-}
-
-@Composable
-private fun getUiStyleForType(type: RoomInformType): DrawableResource {
-    return when (type) {
-        RoomInformType.Admin -> Res.drawable.ic_admin
-        RoomInformType.IoT -> Res.drawable.ic_device
-    }
 }

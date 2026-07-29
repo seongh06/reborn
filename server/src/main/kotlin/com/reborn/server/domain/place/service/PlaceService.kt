@@ -104,6 +104,15 @@ class PlaceService(
         return PlaceConverter.toDetailResponse(place, accessLevel, deviceCount, adminCount)
     }
 
+    // 설정 화면 place 카드에 관리자 프로필(이름/사진)을 보여주기 위한 조회(#217) - 카드에 바로 노출되는
+    // 정보라 getDetail의 adminCount(숫자만)와 별개로 실제 목록이 필요해졌다. ADMIN만 조회 가능.
+    fun getAdmins(userId: Long, placeId: Long): PlaceDto.AdminListResponse {
+        requireAdmin(userId, placeId)
+        val admins = userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(placeId, AccessLevel.ADMIN)
+            .map { PlaceConverter.toAdminItem(it.user) }
+        return PlaceDto.AdminListResponse(admins = admins)
+    }
+
     @Transactional
     fun deletePlace(userId: Long, placeId: Long) {
         requireAdmin(userId, placeId)

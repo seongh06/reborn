@@ -239,6 +239,46 @@ class PlaceServiceTest {
     }
 
     @Test
+    fun `getAdmins - ADMIN이면 관리자 목록을 이름·프로필과 함께 반환한다`() {
+        val admin1 = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN)
+        val otherUser = User(
+            email = "other@reborn.com",
+            name = "다른관리자",
+            profileImage = "https://www.reborn-energy.com/uploads/profile/other.jpg",
+            provider = OAuthProvider.GOOGLE,
+            providerId = "google-3",
+            id = 3,
+        )
+        val admin2 = UserPlaceMapping(user = otherUser, place = place, accessLevel = AccessLevel.ADMIN)
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.ADMIN)
+        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN))
+            .willReturn(listOf(admin1, admin2))
+
+        val response = placeService.getAdmins(1L, 501L)
+
+        assertThat(response.admins).hasSize(2)
+        assertThat(response.admins[0].userId).isEqualTo(1L)
+        assertThat(response.admins[0].name).isEqualTo("테스트")
+        assertThat(response.admins[0].profileImage).isNull()
+        assertThat(response.admins[1].userId).isEqualTo(3L)
+        assertThat(response.admins[1].profileImage).isEqualTo("https://www.reborn-energy.com/uploads/profile/other.jpg")
+    }
+
+    @Test
+    fun `getAdmins - ADMIN 권한이 없으면 예외가 발생한다`() {
+        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
+        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
+            .willReturn(AccessLevel.USER)
+
+        assertThatThrownBy { placeService.getAdmins(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
     fun `deletePlace - ADMIN이면 장소를 삭제한다`() {
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
         given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))

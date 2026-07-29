@@ -15,9 +15,15 @@ sealed interface AdminSettingUiState {
     data class RoomItem(
         val placeId: Int,
         val roomName: String,
-        // 상세 조회(#28) 실패 시 null - 실제 0명/0대와 구분해서 표시
-        val adminCount: Int?,
-        val deviceCount: Int?
+        // 관리자 목록 조회(#217) 실패 시 빈 리스트 - place는 등록 시 최소 1명(등록자)이 항상 ADMIN이라
+        // 정상 조회된 결과가 진짜로 비어있는 경우는 없음, 실패와 구분할 필요가 없어 null 대신 emptyList
+        val admins: List<AdminProfile> = emptyList()
+    )
+
+    data class AdminProfile(
+        val userId: Long,
+        val name: String,
+        val profileImage: String?
     )
 }
 

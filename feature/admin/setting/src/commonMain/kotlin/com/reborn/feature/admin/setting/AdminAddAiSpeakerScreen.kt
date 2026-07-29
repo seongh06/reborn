@@ -67,7 +67,7 @@ fun AdminAddAiSpeakerRoute(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp),
                     value = deviceId,
                     onValueChange = { deviceId = it },
-                    hint = "기기 하단에 부착된 8자리 시리얼 번호 (예: AI7K2P9M)"
+                    hint = "8자리 시리얼 번호 (예: AI7K2P9M)"
                 )
                 Text(
                     "기기 이름",

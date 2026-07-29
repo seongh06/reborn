@@ -2,11 +2,13 @@ package com.reborn.core.data.mapper
 
 import com.reborn.core.model.AdminInviteCode
 import com.reborn.core.model.Place
+import com.reborn.core.model.PlaceAdmin
 import com.reborn.core.model.PlaceDetail
 import com.reborn.core.model.PlaceMembership
 import com.reborn.core.network.AppConfig
 import com.reborn.core.network.model.response.place.AdminCodeResponse
 import com.reborn.core.network.model.response.place.AdminInviteResponse
+import com.reborn.core.network.model.response.place.PlaceAdminItemResponse
 import com.reborn.core.network.model.response.place.PlaceDetailResponse
 import com.reborn.core.network.model.response.place.PlaceItemResponse
 import com.reborn.core.network.model.response.place.PlaceResponse
@@ -35,3 +37,6 @@ fun AdminCodeResponse.toAdminInviteCode(): AdminInviteCode =
 
 fun AdminInviteResponse.toPlaceMembership(): PlaceMembership =
     PlaceMembership(placeId = placeId, placeName = placeName, accessLevel = accessLevel)
+
+fun PlaceAdminItemResponse.toPlaceAdmin(): PlaceAdmin =
+    PlaceAdmin(userId = userId, name = name, profileImage = profileImage)
