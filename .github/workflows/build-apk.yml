@@ -1,0 +1,44 @@
+# dev에 푸시될 때마다 디버그 APK를 빌드해서 워크플로우 아티팩트로 올려둔다 - 배포(deploy.yml)와
+# 완전히 분리된 GitHub-hosted 러너(ubuntu-latest)에서 돈다. 파이5 러너는 백엔드 Docker 빌드만으로도
+# OOM이 났던 전례가 있어(Reload 리포트 참고), Android SDK+Gradle 빌드까지 얹지 않기 위해 일부러
+# 자체 호스팅 러너를 쓰지 않음.
+name: Build Debug APK
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK
+        run: ./gradlew :composeApp:assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reborn-debug-apk
+          path: composeApp/build/outputs/apk/debug/composeApp-debug.apk
+          if-no-files-found: error
+          retention-days: 30
