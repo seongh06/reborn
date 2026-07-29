@@ -62,6 +62,8 @@ class AdminFeedbackViewModel(
             is AdminFeedbackIntent.ClickTab -> handleTabClick(intent.tab)
             is AdminFeedbackIntent.UpdateStatus -> updateStatus(intent.feedbackId, intent.approve)
             is AdminFeedbackIntent.DownloadQr -> downloadQr()
+            is AdminFeedbackIntent.LinkCopied ->
+                navigationManager.emitEvent(AdminFeedbackEvent.ShowSnackbar("링크를 복사했어요."))
         }
     }
 

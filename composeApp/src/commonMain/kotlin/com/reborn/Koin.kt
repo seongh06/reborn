@@ -17,6 +17,7 @@ import com.reborn.core.domain.usecase.GetGoogleSheetsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
+import com.reborn.core.domain.usecase.GetPlaceAdminsUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
@@ -73,6 +74,7 @@ val appDependenciesModule = module {
     factory { UpdateUserProfileImageUseCase(get()) }
     factory { WithdrawUseCase(get()) }
     factory { GetPlaceDetailUseCase(get()) }
+    factory { GetPlaceAdminsUseCase(get()) }
     factory { DeletePlaceUseCase(get()) }
     factory { GeneratePairingCodeUseCase(get()) }
     factory { PairDeviceUseCase(get()) }

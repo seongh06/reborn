@@ -77,7 +77,8 @@ fun AdminFeedbackRoute(
             is AdminFeedbackUiState.FeedbackQR -> AdminFeedbackQRScreen(
                 state = state,
                 onBackClick = onBackClick,
-                onDownloadClick = { viewModel.onIntent(AdminFeedbackIntent.DownloadQr) }
+                onDownloadClick = { viewModel.onIntent(AdminFeedbackIntent.DownloadQr) },
+                onLinkCopied = { viewModel.onIntent(AdminFeedbackIntent.LinkCopied) }
             )
             is AdminFeedbackUiState.FeedbackDetail -> AdminFeedbackDetailScreen(
                 state = state,

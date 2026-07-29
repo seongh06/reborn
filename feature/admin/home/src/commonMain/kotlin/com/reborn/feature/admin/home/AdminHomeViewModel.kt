@@ -30,11 +30,15 @@ sealed class AdminHomeEvent {
     data object NavigateToFeedbackList : AdminHomeEvent()
     data object NavigateToSetting : AdminHomeEvent()
     data object NavigateToDeviceList : AdminHomeEvent()
+    data object NavigateToAddSmartThingsDevice : AdminHomeEvent()
     data class NavigateToDeviceDetail(val deviceId: String) : AdminHomeEvent()
 }
 
 private const val RECENT_FEEDBACK_COUNT = 3
-private val METRIC_CAPABLE_DEVICE_TYPES = setOf("ARDUINO", "SMART_THINGS")
+
+// 전용 온습도 센서(ARDUINO)가 에어컨 내장 센서(SMART_THINGS)보다 정확할 가능성이 높아 우선한다 -
+// 둘 다 등록된 장소에서 어느 쪽 값이 표시될지가 등록 순서에 따라 뒤바뀌던 문제(#218) 수정.
+private val METRIC_DEVICE_TYPE_PRIORITY = listOf("ARDUINO", "SMART_THINGS")
 
 class AdminHomeViewModel(
     private val getPlaceListUseCase: GetPlaceListUseCase,
@@ -65,6 +69,7 @@ class AdminHomeViewModel(
             is AdminHomeIntent.NavigateToAlarm -> navController.navigateTo(AdminHomeUiState.Alarm(alarm = alarmItems))
             is AdminHomeIntent.NavigateToSetting -> navigateToSetting()
             is AdminHomeIntent.NavigateToDeviceList -> navigateToDeviceList()
+            is AdminHomeIntent.NavigateToAddSmartThingsDevice -> navigateToAddSmartThingsDevice()
             is AdminHomeIntent.NavigateToDeviceDetail -> navigateToDeviceDetail(intent.deviceId)
             is AdminHomeIntent.TogglePower -> togglePower(intent.deviceId)
             is AdminHomeIntent.NavigateBack -> navController.navigateBack()
@@ -106,7 +111,8 @@ class AdminHomeViewModel(
                 )
             }
 
-            val metric = serverDevices.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
+            val metric = METRIC_DEVICE_TYPE_PRIORITY
+                .firstNotNullOfOrNull { type -> serverDevices.firstOrNull { it.deviceType == type } }
                 ?.let { device ->
                     getCurrentMetricUseCase(device.deviceId)
                         .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
@@ -215,6 +221,12 @@ class AdminHomeViewModel(
     private fun navigateToDeviceList() {
         viewModelScope.launch {
             navController.emitEvent(AdminHomeEvent.NavigateToDeviceList)
+        }
+    }
+
+    private fun navigateToAddSmartThingsDevice() {
+        viewModelScope.launch {
+            navController.emitEvent(AdminHomeEvent.NavigateToAddSmartThingsDevice)
         }
     }
 

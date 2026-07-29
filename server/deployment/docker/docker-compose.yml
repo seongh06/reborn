@@ -50,6 +50,10 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - TZ=Asia/Seoul
+    volumes:
+      # LocalFileStorage(프로필 이미지 등)가 저장하는 파일 - 호스트에 바인드 마운트해서
+      # 컨테이너가 매 배포마다 재생성돼도(force-recreate 포함) 파일이 유지되게 한다.
+      - /home/seongh06/reborn-data/uploads:/app/uploads
     depends_on:
       database:
         condition: service_healthy

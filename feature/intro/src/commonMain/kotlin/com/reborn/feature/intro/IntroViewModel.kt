@@ -62,10 +62,14 @@ class IntroViewModel(
     // 코드를 들고 있어야 함 - 별도 코드 검증 API가 없어 코드+이름을 한 번에 보내야 하기 때문(#113)
     private var pendingPairingCode: String = ""
 
-    // Setting의 "관리자 초대"(기존 장소)는 route로 placeId를 직접 받으므로 이 값을 쓰지 않고,
-    // 온보딩 흐름(방금 등록한 장소)에서 AdminCode 화면에 placeId를 넘겨주기 위한 용도로만 쓰인다.
+    // registerPlace()의 중복 호출 방지 가드로만 쓰인다 - 뒤로가기 후 재등록 시 이전 장소가
+    // orphan으로 남는 걸 막기 위함(아래 registerPlace 주석 참고).
     var registeredPlaceId: Long? = null
         private set
+
+    // registeredPlaceId는 성공 콜백에서만 채워져서, 요청이 끝나기 전에 버튼을 빠르게 연타하면
+    // 두 요청이 모두 실행돼 장소가 중복 생성될 수 있었음(CodeRabbit #218) - 요청 시작 시점부터 막는다.
+    private var isRegisteringPlace = false
 
     fun onIntent(intent: IntroIntent){
         when(intent){
@@ -73,7 +77,6 @@ class IntroViewModel(
             is IntroIntent.NavigateToSignup -> navigateTo(IntroUiState.Signup)
             is IntroIntent.NavigateToAerometerPairing -> navigateTo(IntroUiState.AerometerPairing)
             is IntroIntent.NavigateToInviteCode -> navigateTo(IntroUiState.InviteCode)
-            is IntroIntent.NavigateToDevicePairing -> navigateTo(IntroUiState.DevicePairing)
             is IntroIntent.NavigateToAerometerDeviceName -> navigateTo(IntroUiState.AerometerDeviceName)
             is IntroIntent.NavigateBack -> navigateBack()
             is IntroIntent.NavigateToAdmin -> navigateToAdmin()
@@ -178,7 +181,8 @@ class IntroViewModel(
     fun registerPlace(name: String, type: String) {
         // Signup 화면에서 DevicePairing으로 넘어간 뒤 뒤로가기로 복귀해 재등록하면, 이전에 등록된
         // 장소가 페어링 코드 한 번 못 받고 orphan으로 남는다 - 최초 등록 이후 재호출은 무시(#160 CodeRabbit 리뷰)
-        if (registeredPlaceId != null) return
+        if (registeredPlaceId != null || isRegisteringPlace) return
+        isRegisteringPlace = true
 
         viewModelScope.launch {
             registerPlaceUseCase(name, type)
@@ -190,6 +194,7 @@ class IntroViewModel(
                     println("IntroViewModel: 장소 등록 실패 - ${it.message}")
                     _event.emit(IntroEvent.ShowErrorSnackbar(it))
                 }
+            isRegisteringPlace = false
         }
     }
 

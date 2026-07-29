@@ -14,10 +14,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -89,6 +91,20 @@ fun App(initialFeedbackId: Int? = null) {
             val scrimColor = RebornTheme.color.grayScale200
             val pillShape = RoundedCornerShape(percent = 50)
 
+            // 태블릿처럼 화면이 넓으면 폰 전용으로 설계된 레이아웃이 그대로 늘어나 UI가 과도하게
+            // 커 보여서(#218), 폰 폭을 넘는 영역은 레터박스 처리하고 콘텐츠는 가운데 고정폭으로 유지
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(RebornTheme.color.grayScale900),
+                contentAlignment = Alignment.TopCenter
+            ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth()
+                    .widthIn(max = 480.dp)
+            ) {
             Scaffold(
 
                 containerColor = RebornTheme.color.grayScale100,
@@ -287,6 +303,11 @@ fun App(initialFeedbackId: Int? = null) {
                         onNavigateToDeviceDetail = { deviceId ->
                             navController.navigate(Route.Admin.Adjust(deviceId))
                         },
+                        onNavigateToAddSmartThingsDevice = {
+                            navController.navigate(Route.Admin.AddSmartThingsDevice) {
+                                launchSingleTop = true
+                            }
+                        },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
                         }
@@ -296,7 +317,9 @@ fun App(initialFeedbackId: Int? = null) {
                             navController.popBackStack()
                         },
                         onNavigateToAddSmartThingsDevice = {
-                            navController.navigate(Route.Admin.AddSmartThingsDevice)
+                            navController.navigate(Route.Admin.AddSmartThingsDevice) {
+                                launchSingleTop = true
+                            }
                         },
                         onNavigateToDeviceDetail = { deviceId ->
                             navController.navigate(Route.Admin.Adjust(deviceId))
@@ -376,6 +399,8 @@ fun App(initialFeedbackId: Int? = null) {
                         }
                     )
                 }
+            }
+            }
             }
         }
     }

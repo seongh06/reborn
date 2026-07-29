@@ -1,5 +1,6 @@
 package com.reborn.server.domain.place.converter
 
+import com.reborn.server.domain.auth.User
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.UserPlaceMapping
@@ -41,5 +42,12 @@ object PlaceConverter {
             adminCount = adminCount,
             qrCode = entity.qrCode,
             createdAt = requireNotNull(entity.createdAt),
+        )
+
+    fun toAdminItem(user: User): PlaceDto.AdminItem =
+        PlaceDto.AdminItem(
+            userId = user.id,
+            name = user.name,
+            profileImage = user.profileImage,
         )
 }

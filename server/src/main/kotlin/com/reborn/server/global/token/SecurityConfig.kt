@@ -56,6 +56,10 @@ class SecurityConfig(
 
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
+                    // LocalFileStorage가 서빙하는 업로드 파일(프로필 이미지 등) - Coil 등 이미지 로더가
+                    // JWT 헤더 없이 직접 요청하므로 공개 접근이어야 한다.
+                    .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
                     .requestMatchers("/api/auth/logout").authenticated()
                     .requestMatchers(HttpMethod.PATCH, "/api/auth/fcm").authenticated()
                     .requestMatchers("/api/auth/**").permitAll()

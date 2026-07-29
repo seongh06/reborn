@@ -32,3 +32,9 @@ data class AdminInviteCode(
     val code: String,
     val expiresAt: String,
 )
+
+data class PlaceAdmin(
+    val userId: Long,
+    val name: String,
+    val profileImage: String?,
+)

@@ -57,4 +57,14 @@ class PlaceDto {
         val qrCode: String,
         val createdAt: LocalDateTime,
     )
+
+    data class AdminItem(
+        val userId: Long,
+        val name: String,
+        val profileImage: String?,
+    )
+
+    data class AdminListResponse(
+        val admins: List<AdminItem>,
+    )
 }
