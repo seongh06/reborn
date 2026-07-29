@@ -62,6 +62,7 @@ class SmartThingsDeviceClient(
 
         val main = response.components["main"]
         val temperature = main?.temperatureMeasurement?.temperature
+        val coolingSetpoint = main?.thermostatCoolingSetpoint?.coolingSetpoint
 
         return SmartThingsDeviceStatus(
             temperature = toCelsius(temperature?.value, temperature?.unit),
@@ -69,7 +70,7 @@ class SmartThingsDeviceClient(
             isPowerOn = main?.switch?.switch?.value?.let { it == "on" },
             operationMode = main?.airConditionerMode?.airConditionerMode?.value,
             windSpeed = main?.airConditionerFanMode?.fanMode?.value,
-            targetTemperature = main?.thermostatCoolingSetpoint?.coolingSetpoint?.value,
+            targetTemperature = toCelsius(coolingSetpoint?.value, coolingSetpoint?.unit),
         )
     }
 

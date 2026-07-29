@@ -64,14 +64,14 @@ fun AdminDeviceDetailScreen(
     // 아닌 기기는 기존 프리셋 기본값을 초기값으로 쓴다 - deviceStatus가 로드되면 그 시점 값으로 편집
     // 기준선(initial*)도 함께 다시 잡혀야 하므로 remember 키에 deviceStatus를 포함한다.
     val status = state.deviceStatus
-    val initialTemperature = remember(status) { status?.temperature ?: 24f }
-    val initialOperationMode = remember(status) { status?.operationMode ?: OperationMode.COOL }
-    val initialWindSpeed = remember(status) { status?.windSpeed ?: WindSpeed.AUTO }
+    val initialTemperature = remember(state.deviceId, status) { status?.temperature ?: 24f }
+    val initialOperationMode = remember(state.deviceId, status) { status?.operationMode ?: OperationMode.COOL }
+    val initialWindSpeed = remember(state.deviceId, status) { status?.windSpeed ?: WindSpeed.AUTO }
     val initialPowerOn = remember(state.deviceId, status) { status?.isPowerOn ?: state.device.isPowerOn }
 
-    var temperature by remember(status) { mutableFloatStateOf(initialTemperature) }
-    var operationMode by remember(status) { mutableStateOf(initialOperationMode) }
-    var windSpeed by remember(status) { mutableStateOf(initialWindSpeed) }
+    var temperature by remember(state.deviceId, status) { mutableFloatStateOf(initialTemperature) }
+    var operationMode by remember(state.deviceId, status) { mutableStateOf(initialOperationMode) }
+    var windSpeed by remember(state.deviceId, status) { mutableStateOf(initialWindSpeed) }
     var isPowerOn by remember(state.deviceId, status) { mutableStateOf(initialPowerOn) }
 
     // 이 기기가 실제로 지원하는 컨트롤만 보여준다(#221) - SmartThings 조회 결과가 아직 없으면(로딩 중)
