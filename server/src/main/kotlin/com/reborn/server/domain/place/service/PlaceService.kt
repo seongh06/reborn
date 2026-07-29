@@ -113,6 +113,22 @@ class PlaceService(
         return PlaceDto.AdminListResponse(admins = admins)
     }
 
+    // 아두이노/AI스피커 SoftAP 프로비저닝 화면(#219)에서 이 장소에 저장된 WiFi를 미리 불러와
+    // 관리자가 매번 재입력하지 않도록 자동 채움. 저장된 적 없으면 ssid/password 모두 null.
+    fun getWifi(userId: Long, placeId: Long): PlaceDto.WifiResponse {
+        val place = requireAdmin(userId, placeId)
+        return PlaceDto.WifiResponse(ssid = place.wifiSsid, password = place.wifiPassword)
+    }
+
+    @Transactional
+    fun updateWifi(userId: Long, placeId: Long, request: PlaceDto.WifiRequest): PlaceDto.WifiResponse {
+        val ssid = request.ssid?.takeIf { it.isNotBlank() }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "WiFi 이름(SSID)은 필수입니다.")
+        val place = requireAdmin(userId, placeId)
+        place.updateWifi(ssid, request.password.orEmpty())
+        return PlaceDto.WifiResponse(ssid = place.wifiSsid, password = place.wifiPassword)
+    }
+
     @Transactional
     fun deletePlace(userId: Long, placeId: Long) {
         requireAdmin(userId, placeId)

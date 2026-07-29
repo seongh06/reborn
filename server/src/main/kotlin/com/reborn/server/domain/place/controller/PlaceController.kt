@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -134,6 +135,46 @@ class PlaceController(
         authentication: Authentication,
     ): ApiResponse<PlaceDto.AdminListResponse> =
         ApiResponse.success(placeService.getAdmins(extractUserId(authentication), placeId))
+
+    @Operation(
+        summary = "장소 WiFi 조회",
+        description = "이 장소에 저장된 아두이노/AI스피커 프로비저닝용 WiFi를 조회합니다(#219). " +
+            "저장된 적 없으면 ssid/password 모두 null. ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공 — ssid, password 반환(미저장 시 둘 다 null)"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{placeId}/wifi")
+    fun getWifi(
+        @PathVariable placeId: Long,
+        authentication: Authentication,
+    ): ApiResponse<PlaceDto.WifiResponse> =
+        ApiResponse.success(placeService.getWifi(extractUserId(authentication), placeId))
+
+    @Operation(
+        summary = "장소 WiFi 저장/수정",
+        description = "이 장소에 연결되는 모든 아두이노/AI스피커가 재사용할 WiFi 정보를 저장합니다(#219). " +
+            "이후 기기 등록 시 관리자가 매번 재입력할 필요가 없습니다. ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "저장 성공 — 저장된 ssid, password 반환"),
+        SwaggerApiResponse(responseCode = "400", description = "SSID 누락"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/{placeId}/wifi")
+    fun updateWifi(
+        @PathVariable placeId: Long,
+        @Valid @RequestBody request: PlaceDto.WifiRequest,
+        authentication: Authentication,
+    ): ApiResponse<PlaceDto.WifiResponse> =
+        ApiResponse.success(placeService.updateWifi(extractUserId(authentication), placeId, request))
 
     @Operation(
         summary = "장소 삭제",

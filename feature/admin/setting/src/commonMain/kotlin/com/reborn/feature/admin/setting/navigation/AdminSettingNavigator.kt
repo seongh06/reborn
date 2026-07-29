@@ -41,28 +41,28 @@ fun NavGraphBuilder.adminSettingNavGraph(
 
 fun NavGraphBuilder.adminAddArduinoNavGraph(
     onBackClick: () -> Unit,
-    onNavigateToWifiSetup: (deviceId: String) -> Unit = {},
+    onNavigateToWifiSetup: (deviceId: String, placeId: Int) -> Unit = { _, _ -> },
 ) {
     composable<Route.Admin.AddArduino> { backStackEntry ->
         val route = backStackEntry.toRoute<Route.Admin.AddArduino>()
         AdminAddArduinoRoute(
             placeId = route.placeId.toLong(),
             onBackClick = onBackClick,
-            onRegisterSuccess = onNavigateToWifiSetup,
+            onRegisterSuccess = { deviceId -> onNavigateToWifiSetup(deviceId, route.placeId) },
         )
     }
 }
 
 fun NavGraphBuilder.adminAddAiSpeakerNavGraph(
     onBackClick: () -> Unit,
-    onNavigateToWifiSetup: (deviceId: String) -> Unit = {},
+    onNavigateToWifiSetup: (deviceId: String, placeId: Int) -> Unit = { _, _ -> },
 ) {
     composable<Route.Admin.AddAiSpeaker> { backStackEntry ->
         val route = backStackEntry.toRoute<Route.Admin.AddAiSpeaker>()
         AdminAddAiSpeakerRoute(
             placeId = route.placeId.toLong(),
             onBackClick = onBackClick,
-            onRegisterSuccess = onNavigateToWifiSetup,
+            onRegisterSuccess = { deviceId -> onNavigateToWifiSetup(deviceId, route.placeId) },
         )
     }
 }
@@ -74,6 +74,7 @@ fun NavGraphBuilder.adminDeviceWifiSetupNavGraph(
         val route = backStackEntry.toRoute<Route.Admin.DeviceWifiSetup>()
         AdminDeviceWifiSetupRoute(
             deviceId = route.deviceId,
+            placeId = route.placeId.toLong(),
             onBackClick = onBackClick,
         )
     }

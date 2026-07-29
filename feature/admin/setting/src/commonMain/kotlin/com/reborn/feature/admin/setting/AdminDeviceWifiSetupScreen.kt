@@ -31,6 +31,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun AdminDeviceWifiSetupRoute(
     deviceId: String,
+    placeId: Long,
     viewModel: AdminDeviceWifiSetupViewModel = koinViewModel(),
     onBackClick: () -> Unit,
 ) {
@@ -39,6 +40,10 @@ fun AdminDeviceWifiSetupRoute(
 
     var ssid by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadSavedWifi(placeId)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->
@@ -53,6 +58,11 @@ fun AdminDeviceWifiSetupRoute(
                     snackbarHostState.showSnackbar(
                         "설정 전송에 실패했습니다. 기기의 WiFi(ReBorn-Setup-…)에 연결돼 있는지 확인해주세요."
                     )
+                is AdminDeviceWifiSetupEvent.SavedWifiLoaded -> {
+                    // 이미 사용자가 뭔가 입력해둔 상태라면(자동 채움이 늦게 도착) 덮어쓰지 않는다
+                    if (ssid.isBlank() && event.ssid != null) ssid = event.ssid
+                    if (password.isBlank() && event.password != null) password = event.password
+                }
             }
         }
     }
@@ -131,7 +141,7 @@ fun AdminDeviceWifiSetupRoute(
             RebornButton(
                 text = "설정 전송",
                 enabled = ssid.isNotBlank() && uiState !is AdminDeviceWifiSetupUiState.Submitting,
-                onClick = { viewModel.configure(ssid.trim(), password, deviceId) }
+                onClick = { viewModel.configure(ssid.trim(), password, deviceId, placeId) }
             )
         }
     }

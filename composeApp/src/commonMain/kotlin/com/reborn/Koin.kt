@@ -20,6 +20,7 @@ import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceAdminsUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetPlaceWifiUseCase
 import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
@@ -36,6 +37,7 @@ import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
+import com.reborn.core.domain.usecase.UpdatePlaceWifiUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileImageUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.core.domain.usecase.WithdrawUseCase
@@ -75,6 +77,8 @@ val appDependenciesModule = module {
     factory { WithdrawUseCase(get()) }
     factory { GetPlaceDetailUseCase(get()) }
     factory { GetPlaceAdminsUseCase(get()) }
+    factory { GetPlaceWifiUseCase(get()) }
+    factory { UpdatePlaceWifiUseCase(get()) }
     factory { DeletePlaceUseCase(get()) }
     factory { GeneratePairingCodeUseCase(get()) }
     factory { PairDeviceUseCase(get()) }
