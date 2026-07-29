@@ -155,7 +155,7 @@ String buildProvisioningFormHtml() {
     "<title>ReBorn 기기 설정</title></head>"
     "<body style=\"font-family:sans-serif;padding:20px;\">"
     "<h2>ReBorn AI 스피커 설정</h2>"
-    "<form action=\"/save\" method=\"POST\">"
+    "<form action=\"/save\" method=\"GET\">"
     "WiFi SSID (2.4GHz만 지원)<br><input type=\"text\" name=\"ssid\" required><br><br>"
     "WiFi 비밀번호<br><input type=\"password\" name=\"password\"><br><br>"
     "시리얼 번호 (기기 하단에 부착된 8자리 코드)<br><input type=\"text\" name=\"device_id\" required><br><br>"
@@ -181,7 +181,10 @@ void runProvisioningPortal() {
   server.on("/", HTTP_GET, [&server]() {
     server.send(200, "text/html", buildProvisioningFormHtml());
   });
-  server.on("/save", HTTP_POST, [&server]() {
+  // POST였다가 GET으로 수정 — 앱(DeviceProvisioningDataSourceImpl)이 아두이노(reborn_dht22.ino)와
+  // 동일하게 GET /save?ssid=&password=&device_id= 로 호출해서, POST로 두면 이 라우트에 안 걸리고
+  // onNotFound(302 리다이렉트)로 빠져 앱이 "저장 완료" 응답을 못 받고 항상 실패로 처리했음.
+  server.on("/save", HTTP_GET, [&server]() {
     String ssid = server.arg("ssid");
     String password = server.arg("password");
     String deviceId = server.arg("device_id");
