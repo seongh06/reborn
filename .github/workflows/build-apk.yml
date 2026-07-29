@@ -41,6 +41,14 @@ jobs:
           printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > composeApp/google-services.json
           python3 -m json.tool composeApp/google-services.json > /dev/null
 
+      - name: Restore debug keystore
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          : "${DEBUG_KEYSTORE_BASE64:?DEBUG_KEYSTORE_BASE64 secret is required}"
+          printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 -d > composeApp/debug.keystore
+
       - name: Build debug APK
         env:
           KAKAO_APP_KEY: ${{ secrets.KAKAO_APP_KEY }}

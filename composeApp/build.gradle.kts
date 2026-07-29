@@ -96,6 +96,18 @@ kotlin {
 android {
     namespace = "com.reborn"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+    // 디버그 서명키를 리포에 고정 커밋해둠 - AGP 기본 debug.keystore는 머신마다(그리고 GitHub
+    // Actions 러너마다 매 실행 시) 새로 생성되어 서명 키가 달라짐. 카카오/구글 로그인은 서명 키의
+    // key hash/SHA-1을 콘솔에 등록해야 동작하는데, 키가 매번 바뀌면 CI가 빌드한 debug APK를 다른
+    // 사람이 설치했을 때 로그인이 전부 실패함. 고정 키스토어로 로컬/CI가 항상 같은 키로 서명하게 함.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
     defaultConfig {
         applicationId = "com.reborn"
         minSdk = libs.versions.android.minSdk.get().toInt()
