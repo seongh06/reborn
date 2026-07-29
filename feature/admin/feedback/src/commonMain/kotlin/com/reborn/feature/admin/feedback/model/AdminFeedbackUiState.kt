@@ -74,4 +74,5 @@ sealed interface AdminFeedbackIntent{
     data class ClickTab(val tab: AdminFeedbackUiState.FeedbackFiltering) : AdminFeedbackIntent
     data class UpdateStatus(val feedbackId: Int, val approve: Boolean) : AdminFeedbackIntent
     data object DownloadQr : AdminFeedbackIntent
+    data object LinkCopied : AdminFeedbackIntent
 }
