@@ -26,9 +26,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.data.domain.PageImpl
@@ -123,6 +125,29 @@ class FeedbackServiceTest {
             "거실 - 덥다",
             mapOf("feedbackId" to "100"),
         )
+    }
+
+    @Test
+    fun `submit - deviceId가 없어도 피드백을 저장한다`() {
+        // feedback.html은 이 장소에 기기가 없거나 사용자가 기기를 지목하지 않으면
+        // deviceId 없이 제출한다(Feedback.device가 nullable인 이유) - 이 요청을 서버가
+        // 거부하면 안 된다는 회귀 방지 테스트.
+        val request = FeedbackDto.SubmitRequest(
+            qrCode = "qr-uuid",
+            deviceId = null,
+            content = "너무 더워요",
+            sessionToken = "sess-1",
+        )
+        val saved = Feedback(device = null, content = "너무 더워요", sessionToken = "sess-1", id = 100).apply { prePersist() }
+
+        given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
+        given(feedbackRepository.existsBySessionToken("sess-1")).willReturn(false)
+        given(feedbackRepository.save(any())).willReturn(saved)
+
+        val response = feedbackService.submit(request, "Mozilla/5.0")
+
+        assertThat(response.feedbackId).isEqualTo(100L)
+        verify(deviceRepository, never()).findByDeviceKey(anyString())
     }
 
     @Test
