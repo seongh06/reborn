@@ -7,6 +7,6 @@ interface AuthLocalDataSource {
     suspend fun clearTokens()
     suspend fun getAccessToken(): String?
     suspend fun getRefreshToken(): String?
-    val tutorialCompleted: Flow<Boolean>
-    suspend fun setTutorialCompleted(completed: Boolean)
+    val tutorialSeenSteps: Flow<Set<String>>
+    suspend fun markTutorialStepSeen(stepId: String)
 }

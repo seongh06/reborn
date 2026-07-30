@@ -19,9 +19,9 @@ class AuthLocalDataSourceImpl(
 
     override suspend fun getRefreshToken(): String? = tokenLocalDataSource.getRefreshToken()
 
-    override val tutorialCompleted: Flow<Boolean> = tokenLocalDataSource.tutorialCompleted
+    override val tutorialSeenSteps: Flow<Set<String>> = tokenLocalDataSource.tutorialSeenSteps
 
-    override suspend fun setTutorialCompleted(completed: Boolean) {
-        tokenLocalDataSource.setTutorialCompleted(completed)
+    override suspend fun markTutorialStepSeen(stepId: String) {
+        tokenLocalDataSource.markTutorialStepSeen(stepId)
     }
 }

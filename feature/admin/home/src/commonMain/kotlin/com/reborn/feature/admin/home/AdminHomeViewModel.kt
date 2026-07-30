@@ -8,9 +8,10 @@ import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
-import com.reborn.core.domain.usecase.GetTutorialCompletedUseCase
-import com.reborn.core.domain.usecase.SetTutorialCompletedUseCase
+import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
+import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.model.Feedback
+import com.reborn.core.model.TutorialStep
 import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.FeedbackListItem
 import com.reborn.core.ui.component.classifyFeedbackType
@@ -49,8 +50,8 @@ class AdminHomeViewModel(
     private val getCurrentMetricUseCase: GetCurrentMetricUseCase,
     private val getFeedbackListUseCase: GetFeedbackListUseCase,
     private val controlDeviceUseCase: ControlDeviceUseCase,
-    private val getTutorialCompletedUseCase: GetTutorialCompletedUseCase,
-    private val setTutorialCompletedUseCase: SetTutorialCompletedUseCase,
+    private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
+    private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminHomeUiState, AdminHomeEvent>(
         initialState = AdminHomeUiState.Loading,
@@ -82,7 +83,7 @@ class AdminHomeViewModel(
             is AdminHomeIntent.NavigateToFeedbackList -> navigateToFeedbackList()
             is AdminHomeIntent.DeleteAlarm -> deleteAlarm(intent.alarmId)
             is AdminHomeIntent.ClickAlarmFilter -> clickAlarmFilter(intent.filter)
-            is AdminHomeIntent.DismissTutorial -> dismissTutorial()
+            is AdminHomeIntent.DismissTutorial -> dismissTutorial(intent.stepId)
         }
     }
 
@@ -103,7 +104,7 @@ class AdminHomeViewModel(
                 return@launch
             }
 
-            val tutorialCompleted = getTutorialCompletedUseCase().first()
+            val seenSteps = getTutorialSeenStepsUseCase().first()
 
             val deviceListResult = getDeviceListUseCase(placeId)
             deviceListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
@@ -144,7 +145,8 @@ class AdminHomeViewModel(
                     feedbackTotalCount = feedbacks.size,
                     feedbackWaitingCount = feedbacks.count { it.status == "PENDING" },
                     recentFeedbacks = recentFeedbacks,
-                    showTutorialHint = !tutorialCompleted && serverDevices.isEmpty(),
+                    showTutorialHint = TutorialStep.HOME_SMART_THINGS !in seenSteps && serverDevices.isEmpty(),
+                    showFirstFeedbackHint = TutorialStep.HOME_FIRST_FEEDBACK !in seenSteps && feedbacks.isNotEmpty(),
                 )
             )
         }
@@ -245,14 +247,18 @@ class AdminHomeViewModel(
         }
     }
 
-    // 지금은 튜토리얼 단계가 이 하나뿐이라 닫으면 바로 전체 완료 처리한다 - 단계가 늘어나면
-    // 마지막 단계에서만 완료 처리하도록 옮겨야 한다.
-    private fun dismissTutorial() {
+    private fun dismissTutorial(stepId: String) {
         navController.updateCurrentState { state ->
-            (state as? AdminHomeUiState.Home)?.copy(showTutorialHint = false) ?: state
+            (state as? AdminHomeUiState.Home)?.let {
+                when (stepId) {
+                    TutorialStep.HOME_SMART_THINGS -> it.copy(showTutorialHint = false)
+                    TutorialStep.HOME_FIRST_FEEDBACK -> it.copy(showFirstFeedbackHint = false)
+                    else -> it
+                }
+            } ?: state
         }
         viewModelScope.launch {
-            setTutorialCompletedUseCase(true)
+            markTutorialStepSeenUseCase(stepId)
         }
     }
 

@@ -16,6 +16,9 @@ sealed interface AdminDataUiState {
         // 조도/재실 인원은 공기계(AEROMETER)가 있어야 수집되는 값이라, 공기계가 연결 안 된
         // 장소에서는 해당 탭 자체를 노출하지 않는다(#236).
         val availableCategories: List<Category> = Category.entries,
+        // 최초 접속 튜토리얼(#240) - "분석 결과" 섹션을 강조. analysisText가 실 AI 분석이든
+        // 기기 미등록 안내 문구든 항상 채워져 있어(fetchAnalysisText) 별도 목데이터 없이 그대로 사용.
+        val showReportHint: Boolean = false,
     ) : AdminDataUiState
 
     enum class Category(val label: String) {
@@ -40,4 +43,5 @@ sealed interface AdminDataIntent {
     data class ClickCategoryTab(val category: AdminDataUiState.Category) : AdminDataIntent
     data class ClickPeriod(val period: AdminDataUiState.Period) : AdminDataIntent
     data object ClickExport : AdminDataIntent
+    data object DismissTutorial : AdminDataIntent
 }

@@ -355,6 +355,9 @@ fun App(initialFeedbackId: Int? = null) {
                         },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
+                        },
+                        onTutorialHintChange = { text ->
+                            tutorialHintText = text
                         }
                     )
                     adminFeedbackNavGraph(
@@ -365,10 +368,17 @@ fun App(initialFeedbackId: Int? = null) {
                             isAdminHomeBottomBarVisible = visible
                         }
                     )
-                    adminDataNavGraph()
+                    adminDataNavGraph(
+                        onTutorialHintChange = { text ->
+                            tutorialHintText = text
+                        }
+                    )
                     adminSettingNavGraph(
                         onBackClick = {
                             navController.popBackStack()
+                        },
+                        onTutorialHintChange = { text ->
+                            tutorialHintText = text
                         },
                         onNavigateToInviteCode = { placeId ->
                             navController.navigate(Route.Admin.InviteCode(placeId))
