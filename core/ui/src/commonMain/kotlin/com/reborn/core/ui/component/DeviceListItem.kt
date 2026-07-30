@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.Res
@@ -90,7 +91,9 @@ fun DeviceListItem(
             Text(
                 text = name,
                 style = RebornTheme.typography.titleMedium,
-                color = RebornTheme.color.grayScale900
+                color = RebornTheme.color.grayScale900,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = "$place · ${if (isOnline) "온라인" else "오프라인"}",

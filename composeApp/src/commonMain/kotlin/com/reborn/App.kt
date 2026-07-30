@@ -331,8 +331,14 @@ fun App(initialFeedbackId: Int? = null) {
                         }
                     )
                     adjustNavGraph(
+                        // IoT 기기 상세 화면에서 뒤로가기는 진입 경로(Home/기기 목록)와 무관하게
+                        // 항상 HomeScreen으로 돌아간다(#235) - 바텀 탭 전환과 동일한 패턴 사용.
                         onBackClick = {
-                            navController.popBackStack()
+                            navController.navigate(Route.Admin.Home) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
