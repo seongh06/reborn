@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.component.RebornSwitch
 import com.reborn.core.designsystem.theme.RebornTheme
@@ -45,9 +46,10 @@ fun SettingToggleItem(
 fun SettingItem(
     label: String,
     onClick: () -> Unit,
-    isDark: Boolean = false
+    isDark: Boolean = false,
+    textColor: Color? = null
 ) {
-    val textColor = if (isDark) RebornTheme.color.grayScale100 else RebornTheme.color.grayScale900
+    val textColor = textColor ?: if (isDark) RebornTheme.color.grayScale100 else RebornTheme.color.grayScale900
     Text(
         text = label,
         modifier = Modifier

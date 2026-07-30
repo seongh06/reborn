@@ -261,7 +261,11 @@ fun AdminSettingScreen(
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
                 SettingItem(label = "로그아웃", onClick = onLogoutClick)
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
-                SettingItem(label = "탈퇴", onClick = { showWithdrawConfirm = true })
+                SettingItem(
+                    label = "탈퇴",
+                    onClick = { showWithdrawConfirm = true },
+                    textColor = RebornTheme.color.reject
+                )
             }
         }
     }
