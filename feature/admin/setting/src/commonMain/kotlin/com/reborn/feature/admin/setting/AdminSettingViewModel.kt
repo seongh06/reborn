@@ -99,7 +99,6 @@ class AdminSettingViewModel(
         navigationManager.updateCurrentState { state ->
             (state as? AdminSettingUiState.Setting)?.let {
                 when (stepId) {
-                    TutorialStep.SETTING_PLACE_MENU -> it.copy(showPlaceMenuHint = false)
                     TutorialStep.SETTING_ADD_DEVICE -> it.copy(showAddDeviceHint = false)
                     else -> it
                 }
@@ -193,7 +192,6 @@ class AdminSettingViewModel(
                     navigationManager.clearAndReset(
                         AdminSettingUiState.Setting(
                             rooms = rooms,
-                            showPlaceMenuHint = TutorialStep.SETTING_PLACE_MENU !in seenSteps && rooms.isNotEmpty(),
                             showAddDeviceHint = TutorialStep.SETTING_ADD_DEVICE !in seenSteps,
                         )
                     )

@@ -13,12 +13,10 @@ import com.reborn.core.domain.usecase.GetSensorAggregateParams
 import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryParams
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
-import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
-import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.model.SensorPoint
-import com.reborn.core.model.TutorialStep
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
+import com.reborn.feature.admin.data.model.MIN_ANALYSIS_DATA_COUNT
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -31,8 +29,6 @@ private val METRIC_CAPABLE_DEVICE_TYPES = setOf("ARDUINO", "SMART_THINGS")
 
 // 목업 시간별 히스토리("어제"/"오늘")의 실제 일수. hourlyDayPatternsFor의 패턴 개수와 항상 같이 맞춰서 사용
 private const val MOCK_HISTORY_DAY_COUNT = 2
-
-private const val ANALYSIS_LOADING_TEXT = "분석 중..."
 
 private val DAYS_IN_MONTH = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
@@ -161,8 +157,6 @@ class AdminDataViewModel(
     private val getAnalysisTextUseCase: GetAnalysisTextUseCase,
     private val exportMetricToSheetsUseCase: ExportMetricToSheetsUseCase,
     private val getGoogleSheetsAuthorizeUrlUseCase: GetGoogleSheetsAuthorizeUrlUseCase,
-    private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
-    private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminDataUiState, AdminDataEvent>(
         initialState = AdminDataUiState.Loading,
@@ -171,6 +165,10 @@ class AdminDataViewModel(
     )
 
     private var loadJob: Job? = null
+
+    // 분석 결과 로딩은 차트/카테고리/기간 로딩(loadJob)과 완전히 독립된 작업이라 같은 Job을
+    // 공유하면 한쪽이 취소될 때 다른 쪽도 조용히 취소된다(CodeRabbit 리뷰) - 별도 Job으로 분리.
+    private var analysisJob: Job? = null
 
     // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소의 첫 ARDUINO/SMART_THINGS
     // 기기로 임시 고정한다.
@@ -217,16 +215,7 @@ class AdminDataViewModel(
             is AdminDataIntent.ClickCategoryTab -> handleCategoryClick(intent.category)
             is AdminDataIntent.ClickPeriod -> handlePeriodClick(intent.period)
             is AdminDataIntent.ClickExport -> exportToGoogleSheets()
-            is AdminDataIntent.DismissTutorial -> dismissTutorial()
-        }
-    }
-
-    private fun dismissTutorial() {
-        navigationManager.updateCurrentState { state ->
-            (state as? AdminDataUiState.Data)?.copy(showReportHint = false) ?: state
-        }
-        viewModelScope.launch {
-            markTutorialStepSeenUseCase(TutorialStep.DATA_REPORT)
+            is AdminDataIntent.ClickRevealAnalysis -> revealAnalysis()
         }
     }
 
@@ -238,7 +227,6 @@ class AdminDataViewModel(
             val period = AdminDataUiState.Period.DAY
             try {
                 resolveDeviceContext()
-                val seenSteps = getTutorialSeenStepsUseCase().first()
                 navigationManager.clearAndReset(
                     AdminDataUiState.Data(
                         selectedCategory = category,
@@ -246,9 +234,7 @@ class AdminDataViewModel(
                         chartLabels = chartLabelsFor(period),
                         chartValues = chartValuesFor(category, period),
                         hasEnoughData = hasEnoughDataFor(period),
-                        analysisText = fetchAnalysisText(category),
                         availableCategories = availableCategories(),
-                        showReportHint = TutorialStep.DATA_REPORT !in seenSteps,
                     )
                 )
             } catch (e: CancellationException) {
@@ -262,6 +248,9 @@ class AdminDataViewModel(
     private fun handleCategoryClick(category: AdminDataUiState.Category) {
         val current = navigationManager.uiState.value as? AdminDataUiState.Data ?: return
         loadJob?.cancel()
+        // 진행 중인 분석 요청이 있다면 취소 - 그대로 두면 카테고리를 바꾼 뒤에 이전 카테고리의
+        // 분석 결과가 뒤늦게 도착해 새 상태에 잘못 덮어써질 수 있다.
+        analysisJob?.cancel()
         loadJob = viewModelScope.launch {
             try {
                 val chartValues = chartValuesFor(category, current.selectedPeriod)
@@ -270,14 +259,11 @@ class AdminDataViewModel(
                         state.copy(
                             selectedCategory = category,
                             chartValues = chartValues,
-                            // AI 분석 문구는 Gemini 호출이라 차트보다 느리게 도착 - 그 사이엔 로딩 문구로 표시
-                            analysisText = ANALYSIS_LOADING_TEXT,
+                            // 카테고리가 바뀌면 이전 분석 결과는 더 이상 맞지 않으니 다시 잠금 상태로
+                            analysisText = null,
+                            isAnalysisLoading = false,
                         )
                     } else state
-                }
-                val analysisText = fetchAnalysisText(category)
-                navigationManager.updateCurrentState { state ->
-                    if (state is AdminDataUiState.Data) state.copy(analysisText = analysisText) else state
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -290,6 +276,7 @@ class AdminDataViewModel(
     private fun handlePeriodClick(period: AdminDataUiState.Period) {
         val current = navigationManager.uiState.value as? AdminDataUiState.Data ?: return
         loadJob?.cancel()
+        analysisJob?.cancel()
         loadJob = viewModelScope.launch {
             try {
                 val chartValues = chartValuesFor(current.selectedCategory, period)
@@ -299,13 +286,47 @@ class AdminDataViewModel(
                             selectedPeriod = period,
                             chartLabels = chartLabelsFor(period),
                             chartValues = chartValues,
-                            hasEnoughData = hasEnoughDataFor(period)
+                            hasEnoughData = hasEnoughDataFor(period),
+                            // 기간이 바뀌면 데이터 개수 자체가 달라지니 분석 결과도 다시 잠금 상태로
+                            analysisText = null,
+                            isAnalysisLoading = false,
                         )
                     } else state
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(e))
+            }
+        }
+    }
+
+    // 분석 결과 블러 카드를 탭했을 때만 Gemini를 호출한다 - 자동 호출을 없애 토큰 낭비를 막는다.
+    // 데이터가 충분하지 않으면(MIN_ANALYSIS_DATA_COUNT 미만) 애초에 화면에서 탭 자체가 안 뜨지만,
+    // 방어적으로 서비스 레이어에서도 한 번 더 막는다.
+    private fun revealAnalysis() {
+        val current = navigationManager.uiState.value as? AdminDataUiState.Data ?: return
+        if (current.isAnalysisLoading || current.analysisText != null) return
+        if (current.chartValues.size < MIN_ANALYSIS_DATA_COUNT) return
+
+        analysisJob?.cancel()
+        analysisJob = viewModelScope.launch {
+            navigationManager.updateCurrentState { state ->
+                if (state is AdminDataUiState.Data) state.copy(isAnalysisLoading = true) else state
+            }
+            try {
+                val analysisText = fetchAnalysisText(current.selectedCategory)
+                navigationManager.updateCurrentState { state ->
+                    if (state is AdminDataUiState.Data) {
+                        state.copy(analysisText = analysisText, isAnalysisLoading = false)
+                    } else state
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                navigationManager.updateCurrentState { state ->
+                    if (state is AdminDataUiState.Data) state.copy(isAnalysisLoading = false) else state
+                }
                 navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(e))
             }
         }
@@ -414,10 +435,12 @@ class AdminDataViewModel(
         return getSensorAggregateUseCase(params).first()
     }
 
+    // Gemini 호출 실패는 여기서 문구로 삼키지 않고 그대로 던진다 - revealAnalysis()의 catch가
+    // analysisText를 null로 유지하고 에러 스낵바를 띄워야 사용자가 블러 카드를 다시 탭해
+    // 재시도할 수 있다(CodeRabbit 리뷰) - 삼키면 실패 문구가 "AI로 생성된 문구"로 굳어버린다.
     private suspend fun fetchAnalysisText(category: AdminDataUiState.Category): String {
         val deviceId = resolveDeviceId() ?: return "아직 등록된 기기가 없어 분석할 수 없습니다."
-        return runCatching { getAnalysisTextUseCase(GetAnalysisTextParams(deviceId, category.name)).first() }
-            .getOrElse { "지금은 분석을 불러올 수 없습니다. 잠시 후 다시 시도해주세요." }
+        return getAnalysisTextUseCase(GetAnalysisTextParams(deviceId, category.name)).first()
     }
 
     private fun exportToGoogleSheets() {

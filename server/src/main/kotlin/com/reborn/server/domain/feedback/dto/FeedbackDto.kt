@@ -7,7 +7,9 @@ class FeedbackDto {
 
     data class SubmitRequest(
         @field:NotBlank val qrCode: String? = null,
-        @field:NotBlank val deviceId: String? = null,
+        // 이 장소에 기기가 없거나 사용자가 특정 기기를 지목하지 않으면 null로 온다 -
+        // feedback.html은 selectedDeviceId가 null이어도 제출 버튼을 막지 않는다.
+        val deviceId: String? = null,
         @field:NotBlank val content: String? = null,
         @field:NotBlank val sessionToken: String? = null,
     )

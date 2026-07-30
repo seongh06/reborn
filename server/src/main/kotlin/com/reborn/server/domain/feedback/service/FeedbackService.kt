@@ -60,7 +60,6 @@ class FeedbackService(
         val qrCode = request.qrCode?.takeIf { it.isNotBlank() }
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "qrCode는 필수입니다.")
         val deviceId = request.deviceId?.takeIf { it.isNotBlank() }
-            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "deviceId는 필수입니다.")
         val content = request.content?.takeIf { it.isNotBlank() }
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "피드백 내용은 필수입니다.")
         val sessionToken = request.sessionToken?.takeIf { it.isNotBlank() }
@@ -68,20 +67,25 @@ class FeedbackService(
 
         val place = placeRepository.findByQrCode(qrCode)
             ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        // deviceId는 선택값 - QR 웹페이지(feedback.html)는 이 장소에 등록된 기기가 없거나 사용자가
+        // 특정 기기를 지목하지 않으면 deviceId 없이도 제출 가능하도록 만들어져 있다(Feedback.device가
+        // nullable인 이유). deviceId가 오면 기존처럼 해당 장소 소속 기기인지 검증한다.
         // QR 웹페이지(#163)는 GET /api/feedback/context가 내려준 DB 내부 id로 deviceId를 보낸다 -
         // deviceKey는 기기 자체 인증 비밀값이라 비로그인 공개 API로 노출하지 않기 위함(CodeRabbit 리뷰).
         // deviceKey 문자열을 그대로 보내는 기존 호출부(테스트 등)도 계속 동작하도록 폴백을 둔다.
-        val device = (deviceId.toLongOrNull()?.let { deviceRepository.findById(it).orElse(null) }
-            ?: deviceRepository.findByDeviceKey(deviceId))
-            ?.takeIf { it.place.id == place.id }
-            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 또는 기기입니다.")
+        val device = deviceId?.let { id ->
+            (id.toLongOrNull()?.let { deviceRepository.findById(it).orElse(null) }
+                ?: deviceRepository.findByDeviceKey(id))
+                ?.takeIf { it.place.id == place.id }
+                ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 또는 기기입니다.")
+        }
 
         if (feedbackRepository.existsBySessionToken(sessionToken)) {
             throw BusinessAlertException(CommonErrorCode.TOO_MANY_REQUESTS, "이미 피드백을 제출하셨습니다. 잠시 후 다시 시도해주세요.")
         }
 
         val feedback = feedbackRepository.save(
-            Feedback(device = device, content = content, sessionToken = sessionToken, userAgent = userAgent),
+            Feedback(device = device, place = place, content = content, sessionToken = sessionToken, userAgent = userAgent),
         )
 
         notifyAdmins(place, feedback)
@@ -190,9 +194,9 @@ class FeedbackService(
             }
         } else {
             if (statusFilter != null) {
-                feedbackRepository.findAllByDevice_PlaceIdAndStatus(placeId, statusFilter, pageable)
+                feedbackRepository.findAllByPlaceIdAndStatus(placeId, statusFilter, pageable)
             } else {
-                feedbackRepository.findAllByDevice_PlaceId(placeId, pageable)
+                feedbackRepository.findAllByPlaceId(placeId, pageable)
             }
         }
 
@@ -202,10 +206,10 @@ class FeedbackService(
     fun getCount(userId: Long, placeId: Long): FeedbackDto.CountResponse {
         requireAdmin(userId, placeId)
 
-        val total = feedbackRepository.countByDevice_PlaceId(placeId)
-        val pending = feedbackRepository.countByDevice_PlaceIdAndStatus(placeId, FeedbackStatus.PENDING)
-        val approved = feedbackRepository.countByDevice_PlaceIdAndStatus(placeId, FeedbackStatus.APPROVED)
-        val rejected = feedbackRepository.countByDevice_PlaceIdAndStatus(placeId, FeedbackStatus.REJECTED)
+        val total = feedbackRepository.countByPlaceId(placeId)
+        val pending = feedbackRepository.countByPlaceIdAndStatus(placeId, FeedbackStatus.PENDING)
+        val approved = feedbackRepository.countByPlaceIdAndStatus(placeId, FeedbackStatus.APPROVED)
+        val rejected = feedbackRepository.countByPlaceIdAndStatus(placeId, FeedbackStatus.REJECTED)
 
         return FeedbackConverter.toCountResponse(total, pending, approved, rejected)
     }
@@ -215,9 +219,7 @@ class FeedbackService(
         val feedback = feedbackRepository.findById(feedbackId).orElseThrow {
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 피드백입니다.")
         }
-        val placeId = feedback.device?.place?.id
-            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 피드백입니다.")
-        requireAdmin(userId, placeId)
+        requireAdmin(userId, feedback.place.id)
 
         if (feedback.status != FeedbackStatus.PENDING) {
             throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "이미 처리된 피드백입니다.")

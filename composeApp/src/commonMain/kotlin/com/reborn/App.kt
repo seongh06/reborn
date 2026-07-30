@@ -368,17 +368,10 @@ fun App(initialFeedbackId: Int? = null) {
                             isAdminHomeBottomBarVisible = visible
                         }
                     )
-                    adminDataNavGraph(
-                        onTutorialHintChange = { text ->
-                            tutorialHintText = text
-                        }
-                    )
+                    adminDataNavGraph()
                     adminSettingNavGraph(
                         onBackClick = {
                             navController.popBackStack()
-                        },
-                        onTutorialHintChange = { text ->
-                            tutorialHintText = text
                         },
                         onNavigateToInviteCode = { placeId ->
                             navController.navigate(Route.Admin.InviteCode(placeId))

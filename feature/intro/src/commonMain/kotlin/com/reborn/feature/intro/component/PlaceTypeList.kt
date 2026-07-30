@@ -1,7 +1,6 @@
 package com.reborn.feature.intro.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,24 +23,19 @@ fun PlaceTypeList(
     onClick: () -> Unit,
     selected: Boolean = false
 ) {
+    val backgroundColor = if (selected) RebornTheme.color.grayScale300 else RebornTheme.color.grayScale100
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(4.dp))
-            .background(RebornTheme.color.grayScale100)
-            .then(
-                if (selected) {
-                    Modifier.border(2.dp, RebornTheme.color.grayScale900, RoundedCornerShape(4.dp))
-                } else {
-                    Modifier
-                }
-            )
+            .background(backgroundColor)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = placeType.name,
+            text = placeType.label,
             style = RebornTheme.typography.titleLarge,
             color = RebornTheme.color.grayScale900
         )

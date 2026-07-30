@@ -144,7 +144,8 @@ CREATE TABLE IF NOT EXISTS `metric_logs`
 CREATE TABLE IF NOT EXISTS `feedback`
 (
     `id`            BIGINT        NOT NULL AUTO_INCREMENT COMMENT '피드백 PK',
-    `device_id`     BIGINT        NULL COMMENT '기기 FK (기기 삭제 시 NULL)',
+    `device_id`     BIGINT        NULL COMMENT '기기 FK (기기 삭제 시 NULL, 애초에 기기 미지목 제출도 가능)',
+    `place_id`      BIGINT        NOT NULL COMMENT '장소 FK - device가 없어도 항상 채워짐(목록/개수 조회 기준)',
     `content`       VARCHAR(1000) NOT NULL COMMENT '피드백 내용',
     `session_token` VARCHAR(255)  NULL COMMENT 'QR 접속 임시 세션 토큰 (음성 피드백은 NULL)',
     `user_agent`    VARCHAR(1024) NULL COMMENT '브라우저 User-Agent',
@@ -160,8 +161,11 @@ CREATE TABLE IF NOT EXISTS `feedback`
     `updated_at`    DATETIME(6)   NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
     KEY `idx_feedback_device_status` (`device_id`, `status`) COMMENT '기기별 상태 필터 조회 최적화',
+    KEY `idx_feedback_place_status` (`place_id`, `status`) COMMENT '장소별 상태 필터 조회 최적화(device 미지목 포함)',
     CONSTRAINT `fk_feedback_device`
-        FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE SET NULL
+        FOREIGN KEY (`device_id`) REFERENCES `device` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_feedback_place`
+        FOREIGN KEY (`place_id`) REFERENCES `place` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci

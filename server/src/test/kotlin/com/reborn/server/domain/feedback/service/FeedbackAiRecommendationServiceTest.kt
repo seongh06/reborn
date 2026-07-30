@@ -47,7 +47,7 @@ class FeedbackAiRecommendationServiceTest {
 
     @Test
     fun `generateAndSave - 최신 메트릭과 Gemini 응답이 있으면 피드백에 추천값을 저장한다`() {
-        val feedback = Feedback(device = device, content = "너무 더워요", sessionToken = "sess-1", id = 100)
+        val feedback = Feedback(device = device, place = place, content = "너무 더워요", sessionToken = "sess-1", id = 100)
         val latestMetric = MetricLog(device = device, temperature = 28.0, humidity = 60.0, illuminance = 300, occupancy = 2, id = 1)
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
@@ -67,7 +67,7 @@ class FeedbackAiRecommendationServiceTest {
 
     @Test
     fun `generateAndSave - 최신 메트릭이 없으면 아무 것도 하지 않는다`() {
-        val feedback = Feedback(device = device, content = "너무 더워요", sessionToken = "sess-1", id = 100)
+        val feedback = Feedback(device = device, place = place, content = "너무 더워요", sessionToken = "sess-1", id = 100)
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
         given(metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(10L)).willReturn(null)
 
@@ -79,7 +79,7 @@ class FeedbackAiRecommendationServiceTest {
 
     @Test
     fun `generateAndSave - Gemini가 추천을 못 만들면 저장하지 않는다`() {
-        val feedback = Feedback(device = device, content = "너무 더워요", sessionToken = "sess-1", id = 100)
+        val feedback = Feedback(device = device, place = place, content = "너무 더워요", sessionToken = "sess-1", id = 100)
         val latestMetric = MetricLog(device = device, temperature = 28.0, humidity = 60.0, id = 1)
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
@@ -103,7 +103,7 @@ class FeedbackAiRecommendationServiceTest {
 
     @Test
     fun `generateAndSave - Gemini 호출이 예외를 던져도 전파하지 않는다`() {
-        val feedback = Feedback(device = device, content = "너무 더워요", sessionToken = "sess-1", id = 100)
+        val feedback = Feedback(device = device, place = place, content = "너무 더워요", sessionToken = "sess-1", id = 100)
         val latestMetric = MetricLog(device = device, temperature = 28.0, humidity = 60.0, id = 1)
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
