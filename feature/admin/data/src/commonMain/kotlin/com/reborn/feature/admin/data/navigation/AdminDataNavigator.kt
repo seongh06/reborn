@@ -12,10 +12,9 @@ fun NavController.navigateAdminData(navOptions: NavOptions) {
 }
 
 fun NavGraphBuilder.adminDataNavGraph(
-    onBackClick: () -> Unit = {},
-    onTutorialHintChange: (String?) -> Unit = {}
+    onBackClick: () -> Unit = {}
 ) {
     composable<Route.Admin.Data> {
-        AdminDataRoute(onBackClick = onBackClick, onTutorialHintChange = onTutorialHintChange)
+        AdminDataRoute(onBackClick = onBackClick)
     }
 }

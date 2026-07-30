@@ -13,12 +13,10 @@ import com.reborn.core.domain.usecase.GetSensorAggregateParams
 import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryParams
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
-import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
-import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.model.SensorPoint
-import com.reborn.core.model.TutorialStep
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
+import com.reborn.feature.admin.data.model.MIN_ANALYSIS_DATA_COUNT
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -31,8 +29,6 @@ private val METRIC_CAPABLE_DEVICE_TYPES = setOf("ARDUINO", "SMART_THINGS")
 
 // 목업 시간별 히스토리("어제"/"오늘")의 실제 일수. hourlyDayPatternsFor의 패턴 개수와 항상 같이 맞춰서 사용
 private const val MOCK_HISTORY_DAY_COUNT = 2
-
-private const val ANALYSIS_LOADING_TEXT = "분석 중..."
 
 private val DAYS_IN_MONTH = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
@@ -161,8 +157,6 @@ class AdminDataViewModel(
     private val getAnalysisTextUseCase: GetAnalysisTextUseCase,
     private val exportMetricToSheetsUseCase: ExportMetricToSheetsUseCase,
     private val getGoogleSheetsAuthorizeUrlUseCase: GetGoogleSheetsAuthorizeUrlUseCase,
-    private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
-    private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminDataUiState, AdminDataEvent>(
         initialState = AdminDataUiState.Loading,
@@ -217,16 +211,7 @@ class AdminDataViewModel(
             is AdminDataIntent.ClickCategoryTab -> handleCategoryClick(intent.category)
             is AdminDataIntent.ClickPeriod -> handlePeriodClick(intent.period)
             is AdminDataIntent.ClickExport -> exportToGoogleSheets()
-            is AdminDataIntent.DismissTutorial -> dismissTutorial()
-        }
-    }
-
-    private fun dismissTutorial() {
-        navigationManager.updateCurrentState { state ->
-            (state as? AdminDataUiState.Data)?.copy(showReportHint = false) ?: state
-        }
-        viewModelScope.launch {
-            markTutorialStepSeenUseCase(TutorialStep.DATA_REPORT)
+            is AdminDataIntent.ClickRevealAnalysis -> revealAnalysis()
         }
     }
 
@@ -238,7 +223,6 @@ class AdminDataViewModel(
             val period = AdminDataUiState.Period.DAY
             try {
                 resolveDeviceContext()
-                val seenSteps = getTutorialSeenStepsUseCase().first()
                 navigationManager.clearAndReset(
                     AdminDataUiState.Data(
                         selectedCategory = category,
@@ -246,9 +230,7 @@ class AdminDataViewModel(
                         chartLabels = chartLabelsFor(period),
                         chartValues = chartValuesFor(category, period),
                         hasEnoughData = hasEnoughDataFor(period),
-                        analysisText = fetchAnalysisText(category),
                         availableCategories = availableCategories(),
-                        showReportHint = TutorialStep.DATA_REPORT !in seenSteps,
                     )
                 )
             } catch (e: CancellationException) {
@@ -270,14 +252,11 @@ class AdminDataViewModel(
                         state.copy(
                             selectedCategory = category,
                             chartValues = chartValues,
-                            // AI 분석 문구는 Gemini 호출이라 차트보다 느리게 도착 - 그 사이엔 로딩 문구로 표시
-                            analysisText = ANALYSIS_LOADING_TEXT,
+                            // 카테고리가 바뀌면 이전 분석 결과는 더 이상 맞지 않으니 다시 잠금 상태로
+                            analysisText = null,
+                            isAnalysisLoading = false,
                         )
                     } else state
-                }
-                val analysisText = fetchAnalysisText(category)
-                navigationManager.updateCurrentState { state ->
-                    if (state is AdminDataUiState.Data) state.copy(analysisText = analysisText) else state
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -299,13 +278,47 @@ class AdminDataViewModel(
                             selectedPeriod = period,
                             chartLabels = chartLabelsFor(period),
                             chartValues = chartValues,
-                            hasEnoughData = hasEnoughDataFor(period)
+                            hasEnoughData = hasEnoughDataFor(period),
+                            // 기간이 바뀌면 데이터 개수 자체가 달라지니 분석 결과도 다시 잠금 상태로
+                            analysisText = null,
+                            isAnalysisLoading = false,
                         )
                     } else state
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(e))
+            }
+        }
+    }
+
+    // 분석 결과 블러 카드를 탭했을 때만 Gemini를 호출한다 - 자동 호출을 없애 토큰 낭비를 막는다.
+    // 데이터가 충분하지 않으면(MIN_ANALYSIS_DATA_COUNT 미만) 애초에 화면에서 탭 자체가 안 뜨지만,
+    // 방어적으로 서비스 레이어에서도 한 번 더 막는다.
+    private fun revealAnalysis() {
+        val current = navigationManager.uiState.value as? AdminDataUiState.Data ?: return
+        if (current.isAnalysisLoading || current.analysisText != null) return
+        if (current.chartValues.size < MIN_ANALYSIS_DATA_COUNT) return
+
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            navigationManager.updateCurrentState { state ->
+                if (state is AdminDataUiState.Data) state.copy(isAnalysisLoading = true) else state
+            }
+            try {
+                val analysisText = fetchAnalysisText(current.selectedCategory)
+                navigationManager.updateCurrentState { state ->
+                    if (state is AdminDataUiState.Data) {
+                        state.copy(analysisText = analysisText, isAnalysisLoading = false)
+                    } else state
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                navigationManager.updateCurrentState { state ->
+                    if (state is AdminDataUiState.Data) state.copy(isAnalysisLoading = false) else state
+                }
                 navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(e))
             }
         }

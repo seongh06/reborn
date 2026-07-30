@@ -65,8 +65,6 @@ fun RoomListItem(
     onAddDeviceClick: () -> Unit,
     onAddArduinoClick: () -> Unit,
     onAddAiSpeakerClick: () -> Unit,
-    // 최초 접속 튜토리얼(#240) - null이면 하이라이트 대상이 아님(첫 번째 카드에만 지정됨)
-    onMenuTutorialTarget: ((Rect) -> Unit)? = null,
     showAddDeviceHint: Boolean = false,
     onDismissAddDeviceHint: () -> Unit = {}
 ){
@@ -95,14 +93,7 @@ fun RoomListItem(
                 painterResource(Res.drawable.ic_more_vert),
                 modifier = Modifier
                     .size(24.dp)
-                    .clickable { showAddSheet = true }
-                    .let { base ->
-                        if (onMenuTutorialTarget != null) {
-                            base.tutorialTarget { rect -> onMenuTutorialTarget(rect) }
-                        } else {
-                            base
-                        }
-                    },
+                    .clickable { showAddSheet = true },
                 contentDescription = "더 보기",
                 tint = RebornTheme.color.grayScale900
             )
@@ -300,17 +291,18 @@ private fun AddSheet(
             Column(
                 modifier = Modifier.padding(bottom = 24.dp)
             ) {
-                AddSheetItem(text = "관리자 초대", onClick = { selectAndDismiss(onAddAdminClick) })
-                Column(modifier = Modifier.tutorialTarget { addDeviceHintRect = it }) {
-                    AddSheetItem(text = "아두이노 추가", onClick = { selectAndDismiss(onAddArduinoClick) })
-                    AddSheetItem(text = "AI 스피커 추가", onClick = { selectAndDismiss(onAddAiSpeakerClick) })
-                }
-                // 최초 접속 튜토리얼(#240) - 하이라이트 대상 바로 아래 설명 카드를 시트 흐름 안에 둔다.
+                // 최초 접속 튜토리얼(#240) - "장소 삭제/나가기" 등 항목이 시트 하단에 고정돼
+                // 있어서 설명 카드를 목록 중간에 끼워 넣으면 겹쳐 보일 수 있다 - 항상 맨 위에 둔다.
                 if (showAddDeviceHint) {
                     TutorialHintCard(
                         text = "여기서 아두이노나 AI 스피커를 등록할 수 있어요.",
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
                     )
+                }
+                AddSheetItem(text = "관리자 초대", onClick = { selectAndDismiss(onAddAdminClick) })
+                Column(modifier = Modifier.tutorialTarget { addDeviceHintRect = it }) {
+                    AddSheetItem(text = "아두이노 추가", onClick = { selectAndDismiss(onAddArduinoClick) })
+                    AddSheetItem(text = "AI 스피커 추가", onClick = { selectAndDismiss(onAddAiSpeakerClick) })
                 }
                 AddSheetItem(text = "공기계 추가", onClick = { selectAndDismiss(onAddDeviceClick) })
                 if (isOwner && otherAdmins.isNotEmpty()) {

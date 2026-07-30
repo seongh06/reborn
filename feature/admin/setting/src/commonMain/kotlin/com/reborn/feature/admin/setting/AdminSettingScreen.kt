@@ -25,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
@@ -50,7 +48,6 @@ import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.model.TutorialStep
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.SettingItem
-import com.reborn.core.ui.component.TutorialHighlightOverlay
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.setting.Res
 import com.reborn.feature.admin.setting.component.RoomListItem
@@ -59,10 +56,6 @@ import com.reborn.feature.admin.setting.model.AdminSettingUiState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
-
-// 최초 접속 튜토리얼(#240) 설명 문구 - 바텀 네비 자리에 대신 뜨는 TutorialHintCard(App.kt)에서 쓴다.
-private const val PLACE_MENU_TUTORIAL_HINT =
-    "장소 이름 옆 점3개를 누르면 관리자 초대, 기기 추가, 장소 삭제를 할 수 있어요."
 
 @Composable
 fun AdminSettingRoute(
@@ -74,22 +67,11 @@ fun AdminSettingRoute(
     onNavigateToAddAiSpeaker: (Int) -> Unit = {},
     onNavigateToAddPlace: () -> Unit = {},
     onNavigateToTerms: () -> Unit = {},
-    onLoggedOut: () -> Unit = {},
-    onTutorialHintChange: (String?) -> Unit = {}
+    onLoggedOut: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-    // 점3개 메뉴 하이라이트가 떠 있는 동안엔 바텀 네비 자리를 설명 카드가 대신한다(#240).
-    // 기기 추가 하이라이트(바텀시트 내부)는 시트 안에서 자체적으로 문구를 보여주므로 여기서
-    // 다루지 않는다.
-    SideEffect {
-        val state = uiState
-        onTutorialHintChange(
-            if (state is AdminSettingUiState.Setting && state.showPlaceMenuHint) PLACE_MENU_TUTORIAL_HINT else null
-        )
-    }
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(AdminSettingIntent.LoadInitial)
@@ -173,7 +155,6 @@ fun AdminSettingScreen(
 
 ) {
     var showWithdrawConfirm by remember { mutableStateOf(false) }
-    var placeMenuHintRect by remember { mutableStateOf<Rect?>(null) }
     val uriHandler = LocalUriHandler.current
 
     if (showWithdrawConfirm) {
@@ -207,7 +188,6 @@ fun AdminSettingScreen(
         )
     }
 
-    Box {
     Column(
         modifier = Modifier
             .rebornDefault(Color.White)
@@ -245,7 +225,7 @@ fun AdminSettingScreen(
                 style = RebornTheme.typography.titleMedium,
                 color = RebornTheme.color.grayScale900
             )
-            state.rooms.forEachIndexed { index, room ->
+            state.rooms.forEach { room ->
                 RoomListItem(
                     placeId = room.placeId,
                     roomName = room.roomName,
@@ -258,8 +238,6 @@ fun AdminSettingScreen(
                     onAddDeviceClick = { onAddDeviceClick(room.placeId) },
                     onAddArduinoClick = { onAddArduinoClick(room.placeId) },
                     onAddAiSpeakerClick = { onAddAiSpeakerClick(room.placeId) },
-                    // 여러 장소가 있어도 하이라이트는 첫 번째 카드에만 - 예시로 충분함(#240)
-                    onMenuTutorialTarget = if (index == 0) { rect -> placeMenuHintRect = rect } else null,
                     showAddDeviceHint = state.showAddDeviceHint,
                     onDismissAddDeviceHint = { onDismissTutorial(TutorialStep.SETTING_ADD_DEVICE) }
                 )
@@ -304,15 +282,6 @@ fun AdminSettingScreen(
                     textColor = RebornTheme.color.reject
                 )
             }
-        }
-    }
-
-        // 최초 접속 튜토리얼(#240) - 첫 번째 place 카드의 점3개 메뉴를 강조.
-        if (state.showPlaceMenuHint) {
-            TutorialHighlightOverlay(
-                highlightRect = placeMenuHintRect,
-                onDismiss = { onDismissTutorial(TutorialStep.SETTING_PLACE_MENU) }
-            )
         }
     }
 }
