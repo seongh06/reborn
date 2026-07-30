@@ -122,7 +122,7 @@ private fun AwaitingConsentContent(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Text(
-            "브라우저에서 SmartThings 계정 연동을 완료한 뒤 이 화면으로 돌아와서 아래 버튼을 눌러주세요.",
+            "브라우저에서 SmartThings 계정 연동을 완료하면 자동으로 이 화면으로 돌아와요. 자동으로 돌아오지 않으면 아래 버튼을 눌러주세요.",
             style = RebornTheme.typography.bodyLarge,
             color = RebornTheme.color.grayScale900
         )

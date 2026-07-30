@@ -29,6 +29,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- SmartThings OAuth 동의 완료 후 서버 콜백 페이지가 이 스킴으로 자동 복귀시킨다(#239) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="reborn" android:host="smartthings" />
+            </intent-filter>
         </activity>
 
         <!-- 카카오 SDK의 v2-auth 라이브러리가 이 액티비티를 이미 선언(launchMode=singleTask)하고 있고,

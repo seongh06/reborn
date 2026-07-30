@@ -59,19 +59,32 @@ class SmartThingsController(
         val placeName = runCatching { smartThingsService.handleCallback(code, state) }
             .getOrElse { e ->
                 val message = (e as? BusinessAlertException)?.message ?: "연동 중 오류가 발생했습니다."
-                return htmlResponse(HttpStatus.BAD_REQUEST, "SmartThings 연동 실패", message)
+                return htmlResponse(HttpStatus.BAD_REQUEST, "SmartThings 연동 실패", message, success = false)
             }
 
-        return htmlResponse(HttpStatus.OK, "SmartThings 연동 완료", "\"$placeName\" 장소에 SmartThings 계정이 연동되었습니다. 앱으로 돌아가주세요.")
+        return htmlResponse(
+            HttpStatus.OK,
+            "SmartThings 연동 완료",
+            "\"$placeName\" 장소에 SmartThings 계정이 연동되었습니다.",
+            success = true,
+        )
     }
 
-    private fun htmlResponse(status: HttpStatus, title: String, message: String): ResponseEntity<String> {
+    // 연동 완료 후 사람이 직접 "앱으로 돌아가기"를 눌러야 했던 문제(#239) - 커스텀 스킴 딥링크
+    // (reborn://smartthings/callback)로 자동 복귀를 시도한다. 일부 브라우저가 사용자 제스처 없는
+    // 자동 리다이렉트를 막을 수 있어, 자동 시도가 실패해도 수동으로 누를 수 있는 링크를 함께 둔다.
+    private fun htmlResponse(status: HttpStatus, title: String, message: String, success: Boolean): ResponseEntity<String> {
+        val deepLink = "reborn://smartthings/callback?success=$success"
         val html = """
             <!DOCTYPE html>
-            <html lang="ko"><head><meta charset="UTF-8"><title>$title</title></head>
+            <html lang="ko"><head><meta charset="UTF-8"><title>$title</title>
+                <meta http-equiv="refresh" content="0;url=$deepLink">
+            </head>
             <body style="font-family:sans-serif;text-align:center;padding-top:80px;">
                 <h2>$title</h2>
                 <p>$message</p>
+                <p><a href="$deepLink">자동으로 돌아가지지 않으면 여기를 눌러주세요</a></p>
+                <script>window.location.href = "$deepLink";</script>
             </body></html>
         """.trimIndent()
         return ResponseEntity.status(status)
