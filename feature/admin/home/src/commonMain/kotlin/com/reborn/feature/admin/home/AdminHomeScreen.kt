@@ -2,6 +2,7 @@ package com.reborn.feature.admin.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,9 +18,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -30,6 +34,8 @@ import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.Dashboard
 import com.reborn.core.ui.component.FeedbackStatusSection
+import com.reborn.core.ui.component.TutorialSpotlightOverlay
+import com.reborn.core.ui.component.tutorialTarget
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.home.component.FeedbackListSection
 import com.reborn.feature.admin.home.component.IoTListSection
@@ -92,7 +98,8 @@ fun AdminHomeRoute(
                 onDeviceListClick = { viewModel.onIntent(AdminHomeIntent.NavigateToDeviceList) },
                 onDeviceDetailClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToDeviceDetail(id)) },
                 onDevicePowerToggle = { id -> viewModel.onIntent(AdminHomeIntent.TogglePower(id)) },
-                onAddSmartThingsClick = { viewModel.onIntent(AdminHomeIntent.NavigateToAddSmartThingsDevice) }
+                onAddSmartThingsClick = { viewModel.onIntent(AdminHomeIntent.NavigateToAddSmartThingsDevice) },
+                onDismissTutorial = { viewModel.onIntent(AdminHomeIntent.DismissTutorial) }
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
                 state = state,
@@ -115,50 +122,65 @@ fun AdminHomeScreen(
     onDeviceListClick: () -> Unit = {},
     onDeviceDetailClick: (String) -> Unit = {},
     onDevicePowerToggle: (String) -> Unit = {},
-    onAddSmartThingsClick: () -> Unit = {}
+    onAddSmartThingsClick: () -> Unit = {},
+    onDismissTutorial: () -> Unit = {}
 ) {
     if (!state.hasDevices) {
-         Column(
-             modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
-         ) {
-             RebornTopAppBar(
-                 title = "Re:Born",
-                 onNavigateAlert = onAlarmClick,
-                 onNavigateSetting = onSettingClick,
-                 backgroundColor = RebornTheme.color.grayScale100
-             )
+         var smartThingsHintRect by remember { mutableStateOf<Rect?>(null) }
+
+         Box {
              Column(
-                 modifier = Modifier.fillMaxSize().padding(bottom = 60.dp),
-                 horizontalAlignment = Alignment.CenterHorizontally,
-                 verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
-             ){
-                 Icon(
-                     painter = painterResource(Res.drawable.ic_none_iot),
-                     contentDescription = null,
-                     tint = RebornTheme.color.grayScale700,
-                     modifier = Modifier.size(100.dp)
+                 modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+             ) {
+                 RebornTopAppBar(
+                     title = "Re:Born",
+                     onNavigateAlert = onAlarmClick,
+                     onNavigateSetting = onSettingClick,
+                     backgroundColor = RebornTheme.color.grayScale100
                  )
-                 Text(
-                     "현재 연결된 IoT 디바이스가 없어요\nIoT 디바이스를 추가해보세요",
-                     style = RebornTheme.typography.bodyLarge,
-                     color = RebornTheme.color.grayScale900,
-                     textAlign = TextAlign.Center
-                 )
-                 // 빈 상태에서 실제로 기기를 추가할 방법이 없었던 문제(#217) - 작은 링크형 버튼으로
-                 // SmartThings 연동(등록) 화면 진입점을 바로 제공한다.
-                 Text(
-                     "SmartThings 연결",
-                     style = RebornTheme.typography.labelMedium,
-                     color = RebornTheme.color.grayScale700,
-                     textDecoration = TextDecoration.Underline,
-                     modifier = Modifier
-                         .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                         .clickable(
-                             role = Role.Button,
-                             onClickLabel = "SmartThings 연결",
-                             onClick = onAddSmartThingsClick
-                         )
-                         .padding(8.dp)
+                 Column(
+                     modifier = Modifier.fillMaxSize().padding(bottom = 60.dp),
+                     horizontalAlignment = Alignment.CenterHorizontally,
+                     verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
+                 ){
+                     Icon(
+                         painter = painterResource(Res.drawable.ic_none_iot),
+                         contentDescription = null,
+                         tint = RebornTheme.color.grayScale700,
+                         modifier = Modifier.size(100.dp)
+                     )
+                     Text(
+                         "현재 연결된 IoT 디바이스가 없어요\nIoT 디바이스를 추가해보세요",
+                         style = RebornTheme.typography.bodyLarge,
+                         color = RebornTheme.color.grayScale900,
+                         textAlign = TextAlign.Center
+                     )
+                     // 빈 상태에서 실제로 기기를 추가할 방법이 없었던 문제(#217) - 작은 링크형 버튼으로
+                     // SmartThings 연동(등록) 화면 진입점을 바로 제공한다.
+                     Text(
+                         "SmartThings 연결",
+                         style = RebornTheme.typography.labelMedium,
+                         color = RebornTheme.color.grayScale700,
+                         textDecoration = TextDecoration.Underline,
+                         modifier = Modifier
+                             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                             .tutorialTarget { smartThingsHintRect = it }
+                             .clickable(
+                                 role = Role.Button,
+                                 onClickLabel = "SmartThings 연결",
+                                 onClick = onAddSmartThingsClick
+                             )
+                             .padding(8.dp)
+                     )
+                 }
+             }
+
+             // 최초 접속 튜토리얼(#240) 1단계 - 신규 사용자에게 SmartThings 연결 진입점을 강조.
+             if (state.showTutorialHint) {
+                 TutorialSpotlightOverlay(
+                     highlightRect = smartThingsHintRect,
+                     explanation = "아직 연결된 기기가 없네요. SmartThings 계정을 연동하면 에어컨 등 기기를 바로 제어할 수 있어요. 여기를 눌러서 시작해보세요!",
+                     onDismiss = onDismissTutorial
                  )
              }
          }
