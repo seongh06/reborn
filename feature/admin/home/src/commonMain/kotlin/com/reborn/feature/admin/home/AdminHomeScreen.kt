@@ -98,7 +98,8 @@ fun AdminHomeRoute(
                 state = state,
                 onBackClick = { viewModel.onIntent(AdminHomeIntent.NavigateBack) },
                 onFilterClick = { filter -> viewModel.onIntent(AdminHomeIntent.ClickAlarmFilter(filter)) },
-                onAlarmDelete = { id -> viewModel.onIntent(AdminHomeIntent.DeleteAlarm(id)) }
+                onAlarmDelete = { id -> viewModel.onIntent(AdminHomeIntent.DeleteAlarm(id)) },
+                onAlarmClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToFeedback(id)) }
             )
         }
     }
