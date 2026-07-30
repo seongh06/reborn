@@ -33,13 +33,14 @@ flowchart TD
 
     subgraph External_Network ["클라이언트 및 기기"]
         direction TB
-        Arduino["Arduino<br>(온습도·조도 측정)"]:::hardware
+        Arduino["Arduino<br>(온습도 측정)"]:::hardware
+        AiSpeaker["AI 스피커<br>(음성 피드백)"]:::hardware
         TargetIoT["제어 대상 IoT 기기<br>(에어컨, 조명 등 — SmartThings 등록 기기)"]:::hardware
 
         subgraph App ["앱 및 웹"]
             QRWeb["정적 웹페이지<br>(QR 스캔 → 온습도 조회 · 피드백)"]:::client
             AdminApp["관리자 휴대폰<br>(대시보드, 제어 명령 발송, 피드백 관리)"]:::client
-            KioskApp["공기계 휴대폰<br>(조도/재실 수집, SmartThings API 직접 호출)"]:::client
+            KioskApp["공기계 휴대폰<br>(조도/재실 인원 수집 전용)"]:::client
         end
     end
 
@@ -47,10 +48,10 @@ flowchart TD
         Router["Router<br>(공유기 포트포워딩)"]:::hardware
     end
 
-    subgraph HomeServer ["자체 홈서버 (Docker Compose)"]
+    subgraph HomeServer ["자체 홈서버 - Raspberry Pi 5 (Docker Compose)"]
         direction TB
         Nginx["Nginx<br>(Reverse Proxy)"]:::container
-        SpringBoot["Spring Boot + Kotlin"]:::container
+        SpringBoot["Spring Boot + Kotlin<br>(SmartThings 자격증명 직접 보유)"]:::container
 
         subgraph DB_Cache ["데이터 저장소 및 문서"]
             direction LR
@@ -66,7 +67,9 @@ flowchart TD
         FCM["Firebase<br>(Cloud Messaging)"]:::external
         S3["AWS S3"]:::external
         Slack["Slack Webhook"]:::external
-        SmartThings["SmartThings Cloud API<br>(IoT 기기 제어)"]:::external
+        Gemini["Gemini API<br>(피드백 분석·추천, 음성 인식)"]:::external
+        SmartThings["SmartThings Cloud API<br>(IoT 기기 제어 + 온습도 폴링)"]:::external
+        Sheets["Google Sheets API<br>(데이터 내보내기)"]:::external
     end
 
     subgraph CICD ["CI/CD"]
@@ -77,19 +80,18 @@ flowchart TD
     end
 
     Arduino -- "HTTP POST<br>[Device Key]" --> Router
+    AiSpeaker -- "HTTP POST<br>[Device Key, 음성]" --> Router
     QRWeb -- "HTTP POST<br>[QR 세션 토큰]" --> Router
 
     AdminApp -- "HTTP REST<br>[JWT Token]" --> Router
-    AdminApp <-->|"WebSocket 양방향<br>(/ws/control: 제어 명령 발송)"| Router
-
     KioskApp -- "HTTP POST<br>[deviceId]" --> Router
-    KioskApp <-->|"WebSocket 양방향<br>(/ws/control: 제어 명령 수신)"| Router
-
-    KioskApp -- "SmartThings REST API<br>(디바이스 커맨드 호출)" --> SmartThings
-    SmartThings -- "클라우드-투-디바이스 제어" --> TargetIoT
 
     Router -- "외부 트래픽 전달" --> Nginx
     Nginx -- "Proxy Pass" --> SpringBoot
+
+    SpringBoot -- "제어 명령 직접 호출" --> SmartThings
+    SmartThings -- "클라우드-투-디바이스 제어" --> TargetIoT
+    SpringBoot -. "주기적 온습도 폴링<br>(Arduino 미보유 장소)" .-> SmartThings
 
     SpringBoot -- "R/W" --> MySQL
     SpringBoot -- "Token / Cache" --> Redis
@@ -98,11 +100,18 @@ flowchart TD
     SpringBoot -. "@Async 푸시 요청" .-> FCM
     SpringBoot -. "파일 업로드" .-> S3
     SpringBoot -. "알람 발송" .-> Slack
+    SpringBoot -. "분석·음성 인식 요청" .-> Gemini
+    SpringBoot -. "데이터 내보내기" .-> Sheets
     AdminApp -. "소셜 로그인" .-> OAuth
 
     GitHub --> GHActions --> DockerBuild
     DockerBuild -. "Image Pull & Deploy" .-> HomeServer
 ```
+
+> `/ws/control` WebSocket 중계 방식은 폐기되었습니다. SmartThings OAuth가 PKCE(공개 클라이언트)를 지원하지
+> 않아 client_secret이 서버에만 있어야 하고, 이 때문에 **서버가 장소별 SmartThings 자격증명을 직접 보유하고
+> API를 동기 호출**하는 구조로 변경되었습니다 — 공기계 앱은 IoT 제어 흐름에서 완전히 제외되고,
+> 조도/재실 인원 수집 전용 역할만 남았습니다.
 
 ### 핵심 데이터 흐름 — QR 피드백 → 관리자 승인 → IoT 제어
 
@@ -111,8 +120,8 @@ sequenceDiagram
     participant V  as 방문자 (QR 웹)
     participant S  as Spring Boot 서버
     participant F  as FCM
+    participant G  as Gemini API
     participant AM as 관리자 앱
-    participant KS as 공기계 앱
     participant ST as SmartThings Cloud
     participant AC as IoT (에어컨)
 
@@ -120,10 +129,10 @@ sequenceDiagram
     S  ->> S  : feedback 테이블 저장
     S  ->> F  : 알림 트리거 (관리자 fcmToken)
     F  ->> AM : Push 알림 "피드백 도착"
+    S  -->> G : (비동기) 맞춤 온도 추천 분석 요청
 
-    AM ->> S  : 피드백 승인 + 제어 명령 (WebSocket)
-    S  ->> KS : 제어 명령 중계 (WebSocket)
-    KS ->> ST : SmartThings REST API 호출 (디바이스 커맨드)
+    AM ->> S  : IoT 기기 제어 명령 (REST)
+    S  ->> ST : SmartThings REST API 직접 호출 (디바이스 커맨드)
     ST ->> AC : 클라우드-투-디바이스 제어 (에어컨 온도 조절 등)
 ```
 
@@ -133,14 +142,19 @@ sequenceDiagram
 
 | 기능 | 설명 |
 |------|------|
-| **실시간 환경 모니터링** | Arduino 센서로 온도·습도·조도·재실 인원 수집 및 앱 대시보드 표시, 불쾌지수 자동 계산 |
-| **QR 피드백 시스템** | 방문자가 QR 스캔만으로 현재 환경 확인 및 불편 사항 피드백 제출 |
+| **실시간 환경 모니터링** | Arduino/SmartThings 센서로 온도·습도·조도·재실 인원 수집 및 앱 대시보드 표시, 불쾌지수 자동 계산 |
+| **QR 피드백 시스템** | 방문자가 QR 스캔만으로 현재 환경 확인 및 불편 사항 피드백 제출 (세션당 1회 제한) |
+| **AI 스피커 음성 피드백** | QR 없이 음성으로도 피드백 제출, Gemini가 음성 인식·응답 |
 | **FCM 푸시 알림** | 피드백 도착 시 관리자 앱으로 실시간 Push 알림 발송 |
-| **IoT 원격 제어** | 관리자 앱 → 서버(WebSocket) → 공기계 앱 → **SmartThings API** 호출로 실제 기기(에어컨 등) 제어 |
+| **IoT 원격/자동 제어** | 관리자 앱 → 서버가 **SmartThings API를 직접 호출**해 실제 기기(에어컨 등) 제어. 조건 기반 자동 제어 규칙 실행 지원 |
+| **AI 분석 리포트** | 방문자 피드백·환경 데이터를 Gemini가 분석해 요약 제공 — 토큰 절약을 위해 자동 호출 대신 사용자가 직접 열람을 요청할 때만 호출 |
+| **Google Sheets 내보내기** | 수집된 환경 데이터를 장소별로 연동된 Google Sheets로 내보내기 |
+| **기기 사전 발급 시리얼** | 판매용 아두이노/AI 스피커에 사전 인쇄된 시리얼로 등록 (device_serial 재고 관리) |
+| **장소 방장(Owner) 권한** | 장소를 등록한 관리자가 방장이 되어 장소 삭제·방장 위임 권한을 가짐, 그 외 관리자는 나가기만 가능 |
+| **최초 접속 튜토리얼** | 신규 관리자에게 화면별 핵심 기능(SmartThings 연결, 기기 등록 등)을 코치마크로 안내 |
 | **단일 앱 이중 모드** | 하나의 앱에서 관리자 모드 / 공기계 모드 선택 운용 |
 | **소셜 로그인** | Kakao / Google OAuth 2.0 로그인 지원 |
-| **AI 보고서 요약** | 기간별 센서 데이터를 AI가 분석하여 환경 개선 제안 제공 (고도화 예정) |
-| **자체 홈서버 운영** | Docker Compose 기반 자체 인프라로 상용 클라우드 비용 없이 운영 |
+| **자체 홈서버 운영** | Raspberry Pi 5 + Docker Compose 기반 자체 인프라로 상용 클라우드 비용 없이 운영 |
 
 <br>
 
@@ -164,7 +178,15 @@ sequenceDiagram
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry_Pi-A22846?style=flat-square&logo=raspberrypi&logoColor=white)
 
-> 홈서버는 개발 단계에서 예비 노트북을 우선 활용하고 있으며, 상황에 따라 Raspberry Pi 등 저전력 기기로 이전도 고려하고 있습니다.
+> 홈서버는 Raspberry Pi 5에서 Docker Compose로 운영합니다. self-hosted GitHub Actions 러너를 파이 위에
+> 직접 띄워, dev 브랜치 푸시마다 백엔드/APK가 자동 빌드·배포됩니다.
+
+### 외부 연동 · AI
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
+![Kakao](https://img.shields.io/badge/Kakao-FFCD00?style=flat-square&logo=kakaotalk&logoColor=black)
+![Google](https://img.shields.io/badge/Google-4285F4?style=flat-square&logo=google&logoColor=white)
+![AWS S3](https://img.shields.io/badge/AWS_S3-569A31?style=flat-square&logo=amazons3&logoColor=white)
 
 ### IoT
 ![Arduino](https://img.shields.io/badge/Arduino-00878A?style=flat-square&logo=arduino&logoColor=white)
@@ -176,29 +198,31 @@ sequenceDiagram
 
 ```
 reborn/
-├── build-logic/          # Convention Plugin (Gradle DSL)
+├── build-logic/          # Convention Plugin (Gradle DSL) — application/compose/feature/library
 ├── composeApp/           # 앱 진입점 — 모드 선택(관리자/공기계)
 ├── core/
 │   ├── common            # 유틸, 권한 처리
 │   ├── data               # Repository 구현체
+│   ├── datastore           # DataStore(Okio 기반) — 토큰/튜토리얼 완료 상태 로컬 저장
 │   ├── designsystem       # 컬러, 타이포, 컴포넌트 토큰
 │   ├── domain             # UseCase, Repository 인터페이스
 │   ├── model               # 도메인 데이터 클래스
 │   ├── navigation          # 앱 네비게이션 정의
 │   ├── network             # Ktor 클라이언트
-│   └── ui                  # 공용 UI 컴포넌트
+│   └── ui                  # 공용 UI 컴포넌트 (튜토리얼 오버레이 등)
 ├── feature/
 │   ├── intro              # 모드 선택 · 소셜 로그인 · 페어링/초대 코드
-│   ├── aerometer          # 공기계 모드 (센서 수집 · IoT 제어)
+│   ├── aerometer          # 공기계 모드 (조도/재실 인원 수집 전용)
 │   └── admin/
 │       ├── home            # 대시보드
-│       ├── data             # 센서 로그 조회
+│       ├── data             # 센서 로그 조회 · AI 분석 · Sheets 내보내기
 │       ├── feedback         # 피드백 관리
-│       ├── adjust           # IoT 제어 명령 발송
-│       └── setting          # 앱 설정
+│       ├── adjust           # IoT 원격/자동 제어
+│       └── setting          # 장소·기기·계정 설정 (방장 위임/나가기 포함)
 └── server/               # Spring Boot 백엔드
+    ├── deployment/migration/  # 운영 DB 수동 ALTER 스크립트 (schema.sql은 신규 생성만 담당)
     ├── global/           # 전역 설정 (JWT, Redis, Swagger, 예외처리 등)
-    └── domain/           # 기능별 도메인 (auth, place, device, data, feedback)
+    └── domain/           # 기능별 도메인 (auth, place, device, metric, feedback, smartthings, googlesheets)
 ```
 
 <br>
