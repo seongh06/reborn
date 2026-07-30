@@ -26,7 +26,7 @@ import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsDeviceListUseCase
-import com.reborn.core.domain.usecase.GetTutorialCompletedUseCase
+import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
@@ -37,7 +37,7 @@ import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
-import com.reborn.core.domain.usecase.SetTutorialCompletedUseCase
+import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
 import com.reborn.core.domain.usecase.UpdatePlaceWifiUseCase
@@ -74,8 +74,8 @@ val appDependenciesModule = module {
     factory { GenerateAdminCodeUseCase(get()) }
     factory { RedeemAdminCodeUseCase(get()) }
     factory { GetPlaceListUseCase(get()) }
-    factory { GetTutorialCompletedUseCase(get()) }
-    factory { SetTutorialCompletedUseCase(get()) }
+    factory { GetTutorialSeenStepsUseCase(get()) }
+    factory { MarkTutorialStepSeenUseCase(get()) }
     factory { GetUserProfileUseCase(get()) }
     factory { UpdateUserProfileUseCase(get()) }
     factory { UpdateUserProfileImageUseCase(get()) }

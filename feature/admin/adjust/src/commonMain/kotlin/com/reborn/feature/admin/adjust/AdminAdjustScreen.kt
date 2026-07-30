@@ -16,6 +16,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,12 +37,17 @@ import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
 import org.koin.compose.viewmodel.koinViewModel
 
+// 최초 접속 튜토리얼(#240) 설명 문구 - 바텀 네비 자리에 대신 뜨는 TutorialHintCard(App.kt)에서 쓴다.
+private const val REMOTE_TAB_HINT = "여기서 전원, 온도, 바람세기 등을 바로 조절할 수 있어요."
+private const val AUTO_TAB_HINT = "조건을 설정해두면 알아서 자동으로 제어돼요. 규칙을 만들어보세요!"
+
 @Composable
 fun AdminAdjustRoute(
     viewModel: AdminAdjustViewModel = koinViewModel(),
     onBackClick: () -> Unit,
     initialDeviceId: String? = null,
-    onBottomBarVisibilityChange: (Boolean) -> Unit = {}
+    onBottomBarVisibilityChange: (Boolean) -> Unit = {},
+    onTutorialHintChange: (String?) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -50,6 +56,20 @@ fun AdminAdjustRoute(
     LaunchedEffect(uiState) {
         onBottomBarVisibilityChange(
             uiState !is AdminAdjustUiState.AddDevice && uiState !is AdminAdjustUiState.DeviceDetail
+        )
+    }
+
+    SideEffect {
+        val state = uiState
+        onTutorialHintChange(
+            if (state is AdminAdjustUiState.DeviceDetail) {
+                when (state.selectedTab) {
+                    AdminAdjustUiState.ControlMethod.Remote -> if (state.showRemoteTabHint) REMOTE_TAB_HINT else null
+                    AdminAdjustUiState.ControlMethod.MANUALEdit -> if (state.showAutoTabHint) AUTO_TAB_HINT else null
+                }
+            } else {
+                null
+            }
         )
     }
 
@@ -109,7 +129,8 @@ fun AdminAdjustRoute(
                         )
                     )
                 },
-                onDeleteClick = { viewModel.onIntent(AdminAdjustIntent.DeleteDevice(state.deviceId)) }
+                onDeleteClick = { viewModel.onIntent(AdminAdjustIntent.DeleteDevice(state.deviceId)) },
+                onDismissTutorial = { stepId -> viewModel.onIntent(AdminAdjustIntent.DismissTutorial(stepId)) }
             )
         }
     }

@@ -13,7 +13,10 @@ import com.reborn.core.domain.usecase.GetSensorAggregateParams
 import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryParams
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
+import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
+import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.model.SensorPoint
+import com.reborn.core.model.TutorialStep
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
 import kotlinx.coroutines.CancellationException
@@ -158,6 +161,8 @@ class AdminDataViewModel(
     private val getAnalysisTextUseCase: GetAnalysisTextUseCase,
     private val exportMetricToSheetsUseCase: ExportMetricToSheetsUseCase,
     private val getGoogleSheetsAuthorizeUrlUseCase: GetGoogleSheetsAuthorizeUrlUseCase,
+    private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
+    private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminDataUiState, AdminDataEvent>(
         initialState = AdminDataUiState.Loading,
@@ -212,6 +217,16 @@ class AdminDataViewModel(
             is AdminDataIntent.ClickCategoryTab -> handleCategoryClick(intent.category)
             is AdminDataIntent.ClickPeriod -> handlePeriodClick(intent.period)
             is AdminDataIntent.ClickExport -> exportToGoogleSheets()
+            is AdminDataIntent.DismissTutorial -> dismissTutorial()
+        }
+    }
+
+    private fun dismissTutorial() {
+        navigationManager.updateCurrentState { state ->
+            (state as? AdminDataUiState.Data)?.copy(showReportHint = false) ?: state
+        }
+        viewModelScope.launch {
+            markTutorialStepSeenUseCase(TutorialStep.DATA_REPORT)
         }
     }
 
@@ -223,6 +238,7 @@ class AdminDataViewModel(
             val period = AdminDataUiState.Period.DAY
             try {
                 resolveDeviceContext()
+                val seenSteps = getTutorialSeenStepsUseCase().first()
                 navigationManager.clearAndReset(
                     AdminDataUiState.Data(
                         selectedCategory = category,
@@ -232,6 +248,7 @@ class AdminDataViewModel(
                         hasEnoughData = hasEnoughDataFor(period),
                         analysisText = fetchAnalysisText(category),
                         availableCategories = availableCategories(),
+                        showReportHint = TutorialStep.DATA_REPORT !in seenSteps,
                     )
                 )
             } catch (e: CancellationException) {

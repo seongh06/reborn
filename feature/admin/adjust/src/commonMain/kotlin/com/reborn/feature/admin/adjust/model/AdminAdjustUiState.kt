@@ -28,6 +28,10 @@ sealed interface AdminAdjustUiState {
         // null이면 아직 조회 전(#221) - 성공하면 채워짐, 실패해도 조용히 null 유지(하드코딩 기본값으로 폴백)
         val metric: Metric? = null,
         val deviceStatus: DeviceCurrentStatus? = null,
+        // 최초 접속 튜토리얼(#240) - 원격/자동 제어 탭 각각 처음 볼 때 해당 탭의 컨텐츠 영역을
+        // 강조한다. 서로 독립이라 둘 다 true일 수 있고, 화면은 currentTab에 맞는 것만 보여준다.
+        val showRemoteTabHint: Boolean = false,
+        val showAutoTabHint: Boolean = false,
     ) : AdminAdjustUiState
 
     enum class ControlMethod(val method: String) {
@@ -78,4 +82,5 @@ sealed interface AdminAdjustIntent {
         val autoControlState: AutoControlUiState
     ) : AdminAdjustIntent
     data class DeleteDevice(val deviceId: String) : AdminAdjustIntent
+    data class DismissTutorial(val stepId: String) : AdminAdjustIntent
 }

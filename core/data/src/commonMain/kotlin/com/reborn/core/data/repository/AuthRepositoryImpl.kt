@@ -58,8 +58,8 @@ class AuthRepositoryImpl(
             .toResult()
             .mapCatching { local.clearTokens() }
 
-    override fun getTutorialCompleted(): Flow<Boolean> = local.tutorialCompleted
+    override fun getTutorialSeenSteps(): Flow<Set<String>> = local.tutorialSeenSteps
 
-    override suspend fun setTutorialCompleted(completed: Boolean): Result<Unit> =
-        runCatching { local.setTutorialCompleted(completed) }
+    override suspend fun markTutorialStepSeen(stepId: String): Result<Unit> =
+        runCatching { local.markTutorialStepSeen(stepId) }
 }

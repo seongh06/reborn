@@ -12,6 +12,6 @@ interface AuthRepository {
     suspend fun updateProfile(name: String): Result<UserProfile>
     suspend fun updateProfileImage(bytes: ByteArray, fileName: String, mimeType: String): Result<UserProfile>
     suspend fun withdraw(): Result<Unit>
-    fun getTutorialCompleted(): Flow<Boolean>
-    suspend fun setTutorialCompleted(completed: Boolean): Result<Unit>
+    fun getTutorialSeenSteps(): Flow<Set<String>>
+    suspend fun markTutorialStepSeen(stepId: String): Result<Unit>
 }

@@ -4,8 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -14,91 +14,103 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.translate
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.ext.toRect
 
 // 최초 접속 튜토리얼(#240) 공용 컴포넌트 - 화면을 어둡게 덮고 highlightRect 부분만 뚫어서
-// 강조한 뒤, 뚫린 부분 위/아래(공간이 남는 쪽)에 설명 문구를 보여준다. 화면 아무 곳이나 탭하면
-// 다음 단계로 넘어간다(Yakssok_Android #65/#66 패턴 참고).
+// 강조한다. 설명 문구는 화면마다 다른 위치에 뜨는 대신 App.kt(바텀 네비 자리)에서 별도로
+// 보여준다 - TutorialHintCard 참고. 화면 아무 곳이나 탭하면 다음 단계로 넘어간다.
 @Composable
-fun TutorialSpotlightOverlay(
+fun TutorialHighlightOverlay(
     highlightRect: Rect?,
-    explanation: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    cornerRadius: androidx.compose.ui.unit.Dp = 16.dp,
+    cornerRadius: Dp = 8.dp,
+    // 하이라이트 대상(텍스트+자체 padding) 딱 그대로면 너무 빡빡해 보여서, 여기서 한 번 더
+    // 살짝 여유를 준다.
+    highlightPadding: Dp = 4.dp,
+    dimAlpha: Float = 0.55f,
 ) {
     val density = LocalDensity.current
-    val screenHeightPx = LocalWindowInfo.current.containerSize.height
-
-    var explainCardHeightPx by remember { mutableStateOf(0) }
     var canvasSize by remember { mutableStateOf(Size.Zero) }
+    // highlightRect는 tutorialTarget()이 positionInRoot()로 잰 "화면 루트 기준" 좌표라, 이
+    // Canvas 자신의 로컬 좌표계와 다를 수 있다(예: 상위에 레터박싱 Box가 있는 경우) - Canvas
+    // 자신의 루트 기준 위치를 빼서 로컬 좌표로 보정해야 정확한 자리에 구멍이 뚫린다.
+    var canvasRootOffset by remember { mutableStateOf(Offset.Zero) }
 
     val overlayRadiusPx = with(density) { cornerRadius.toPx() }
-    val overlayPath = remember(highlightRect, canvasSize, overlayRadiusPx) {
+    val highlightPaddingPx = with(density) { highlightPadding.toPx() }
+    val localHighlightRect = remember(highlightRect, canvasRootOffset, highlightPaddingPx) {
+        highlightRect?.translate(-canvasRootOffset.x, -canvasRootOffset.y)?.let {
+            Rect(
+                left = it.left - highlightPaddingPx,
+                top = it.top - highlightPaddingPx,
+                right = it.right + highlightPaddingPx,
+                bottom = it.bottom + highlightPaddingPx
+            )
+        }
+    }
+    val overlayPath = remember(localHighlightRect, canvasSize, overlayRadiusPx) {
         Path().apply {
             addRect(Rect(0f, 0f, canvasSize.width, canvasSize.height))
-            highlightRect?.let {
+            localHighlightRect?.let {
                 addRoundRect(RoundRect(rect = it, cornerRadius = CornerRadius(overlayRadiusPx, overlayRadiusPx)))
             }
             fillType = PathFillType.EvenOdd
         }
     }
 
-    // 하이라이트 아래쪽에 설명 카드를 놓을 공간이 부족하면(화면 하단부 강조) 위쪽에 놓는다.
-    val placeBelow = highlightRect == null ||
-        (screenHeightPx - highlightRect.bottom) > (explainCardHeightPx + 48).coerceAtLeast(160)
-
     val interactionSource = remember { MutableInteractionSource() }
     // DrawScope 람다는 @Composable 컨텍스트가 아니라 RebornTheme.color를 그 안에서 바로 못
     // 읽는다 - Canvas 밖에서 먼저 읽어서 캡처해야 한다.
-    val overlayColor = RebornTheme.color.grayScale900.copy(alpha = 0.8f)
+    val overlayColor = RebornTheme.color.grayScale900.copy(alpha = dimAlpha)
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .onSizeChanged { size -> canvasSize = Size(size.width.toFloat(), size.height.toFloat()) }
-                .clickable(interactionSource = interactionSource, indication = null, onClick = onDismiss)
-        ) {
-            drawPath(path = overlayPath, color = overlayColor)
-        }
-
-        val alignment = if (placeBelow) Alignment.TopStart else Alignment.BottomStart
-        val topPaddingDp = if (placeBelow && highlightRect != null) {
-            with(density) { highlightRect.bottom.toDp() } + 16.dp
-        } else 0.dp
-        val bottomPaddingDp = if (!placeBelow && highlightRect != null) {
-            with(density) { (screenHeightPx - highlightRect.top).toDp() } + 16.dp
-        } else 0.dp
-
-        Text(
-            text = explanation,
-            style = RebornTheme.typography.bodyMedium,
-            color = RebornTheme.color.grayScale100,
-            modifier = Modifier
-                .align(alignment)
-                .padding(start = 24.dp, end = 24.dp, top = topPaddingDp, bottom = bottomPaddingDp)
-                .onSizeChanged { explainCardHeightPx = it.height }
-                .clip(RoundedCornerShape(12.dp))
-                .background(RebornTheme.color.grayScale800)
-                .padding(16.dp)
-        )
+    Canvas(
+        modifier = modifier
+            .fillMaxSize()
+            .onGloballyPositioned { coordinates ->
+                canvasRootOffset = coordinates.positionInRoot()
+                canvasSize = coordinates.size.toSize()
+            }
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onDismiss)
+    ) {
+        drawPath(path = overlayPath, color = overlayColor)
     }
+}
+
+// 튜토리얼 설명 문구 카드 - 바텀 네비게이션 자리(App.kt)에 대신 뜬다. grayScale100 배경 + 큰
+// 라운드로 눈에 띄게, 글자는 titleSmall로 충분히 크게.
+@Composable
+fun TutorialHintCard(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        style = RebornTheme.typography.titleSmall,
+        color = RebornTheme.color.grayScale900,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(RebornTheme.color.grayScale100)
+            .padding(horizontal = 20.dp, vertical = 18.dp)
+    )
 }
 
 // 하이라이트 대상 컴포저블에 붙여서 화면 루트 기준 위치를 얻는다.

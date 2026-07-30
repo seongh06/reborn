@@ -29,12 +29,10 @@ class TokenLocalDataSource(
         dataStore.updateData { it.copy(deviceId = deviceId, appToken = appToken, isAerometer = true) }
     }
 
-    val tutorialCompleted: Flow<Boolean> = dataStore.data.map { it.tutorialCompleted }
+    val tutorialSeenSteps: Flow<Set<String>> = dataStore.data.map { it.tutorialSeenSteps }
 
-    suspend fun isTutorialCompleted(): Boolean = dataStore.data.first().tutorialCompleted
-
-    suspend fun setTutorialCompleted(completed: Boolean) {
-        dataStore.updateData { it.copy(tutorialCompleted = completed) }
+    suspend fun markTutorialStepSeen(stepId: String) {
+        dataStore.updateData { it.copy(tutorialSeenSteps = it.tutorialSeenSteps + stepId) }
     }
 
     suspend fun clear() {
