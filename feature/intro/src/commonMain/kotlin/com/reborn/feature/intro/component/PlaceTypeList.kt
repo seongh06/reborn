@@ -1,42 +1,31 @@
 package com.reborn.feature.intro.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.feature.intro.model.PlaceType
-import org.jetbrains.compose.resources.painterResource
 
+// Figma(node 595:4831 "Text and image", signup 화면) 기준 - 이미지 없이 제목+설명 텍스트만
+// 있는 카드(#252 후속). placeType.image는 더 이상 이 화면에서 쓰지 않는다.
 @Composable
 fun PlaceTypeList(
     placeType: PlaceType,
     onClick: () -> Unit,
     selected: Boolean = false
 ) {
-    Row(
+    Column(
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(4.dp))
             .background(RebornTheme.color.grayScale100)
@@ -48,29 +37,18 @@ fun PlaceTypeList(
                 }
             )
             .clickable(onClick = onClick)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Image(
-            painter = painterResource(placeType.image),
-            contentDescription = placeType.name,
-            modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp))
+        Text(
+            text = placeType.name,
+            style = RebornTheme.typography.titleLarge,
+            color = RebornTheme.color.grayScale900
         )
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ){
-            Text(
-                text = placeType.name,
-                style = RebornTheme.typography.headlineMedium,
-                color = RebornTheme.color.grayScale900
-            )
-            Text(
-                text = placeType.description,
-                style = RebornTheme.typography.bodyMedium,
-                color = RebornTheme.color.grayScale700
-            )
-        }
+        Text(
+            text = placeType.description,
+            style = RebornTheme.typography.bodyLarge,
+            color = RebornTheme.color.grayScale700
+        )
     }
 }
