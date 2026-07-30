@@ -231,7 +231,7 @@ class PlaceController(
     @PutMapping("/{placeId}/owner")
     fun transferOwner(
         @PathVariable placeId: Long,
-        @RequestBody request: PlaceDto.TransferOwnerRequest,
+        @Valid @RequestBody request: PlaceDto.TransferOwnerRequest,
         authentication: Authentication,
     ): ApiResponse<PlaceDto.TransferOwnerResponse> =
         ApiResponse.success(placeService.transferOwner(extractUserId(authentication), placeId, request))

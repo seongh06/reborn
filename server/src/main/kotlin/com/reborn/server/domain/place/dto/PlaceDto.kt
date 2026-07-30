@@ -1,6 +1,7 @@
 package com.reborn.server.domain.place.dto
 
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
 
@@ -72,7 +73,7 @@ class PlaceDto {
     )
 
     data class TransferOwnerRequest(
-        val newOwnerUserId: Long? = null,
+        @field:NotNull val newOwnerUserId: Long? = null,
     )
 
     data class TransferOwnerResponse(

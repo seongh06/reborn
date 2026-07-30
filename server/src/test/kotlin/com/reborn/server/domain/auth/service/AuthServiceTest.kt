@@ -29,6 +29,7 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
@@ -383,12 +384,16 @@ class AuthServiceTest {
 
     @Test
     fun `withdraw - 유일한 관리자였던 장소는 hard delete된다`() {
-        val user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
+        val user = User(
+            email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1,
+        )
         val place = Place(name = "우리집", qrCode = "qr-uuid", type = PlaceType.HOME, id = 501)
         val mapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
 
-        given(userPlaceMappingRepository.findAllByUserIdAndAccessLevel(1L, AccessLevel.ADMIN)).willReturn(listOf(mapping))
-        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN)).willReturn(listOf(mapping))
+        given(userPlaceMappingRepository.findAllByUserIdAndAccessLevel(1L, AccessLevel.ADMIN))
+            .willReturn(listOf(mapping))
+        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN))
+            .willReturn(listOf(mapping))
         given(userPlaceMappingRepository.findAllByUserId(1L)).willReturn(listOf(mapping))
         given(userRepository.findById(1L)).willReturn(Optional.of(user))
 
@@ -401,13 +406,19 @@ class AuthServiceTest {
 
     @Test
     fun `withdraw - 다른 관리자가 남아있는 장소에서 방장이었다면 다음 관리자에게 위임하고 장소는 유지된다`() {
-        val user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
-        val otherAdmin = User(email = "other@reborn.com", name = "다른관리자", provider = OAuthProvider.GOOGLE, providerId = "google-3", id = 3)
+        val user = User(
+            email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1,
+        )
+        val otherAdmin = User(
+            email = "other@reborn.com", name = "다른관리자", provider = OAuthProvider.GOOGLE, providerId = "google-3", id = 3,
+        )
         val place = Place(name = "우리집", qrCode = "qr-uuid", type = PlaceType.HOME, id = 501)
         val ownerMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
-        val successorMapping = UserPlaceMapping(user = otherAdmin, place = place, accessLevel = AccessLevel.ADMIN, isOwner = false)
+        val successorMapping =
+            UserPlaceMapping(user = otherAdmin, place = place, accessLevel = AccessLevel.ADMIN, isOwner = false)
 
-        given(userPlaceMappingRepository.findAllByUserIdAndAccessLevel(1L, AccessLevel.ADMIN)).willReturn(listOf(ownerMapping))
+        given(userPlaceMappingRepository.findAllByUserIdAndAccessLevel(1L, AccessLevel.ADMIN))
+            .willReturn(listOf(ownerMapping))
         given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN))
             .willReturn(listOf(ownerMapping, successorMapping))
         given(userPlaceMappingRepository.findAllByUserId(1L)).willReturn(listOf(ownerMapping))
@@ -418,6 +429,42 @@ class AuthServiceTest {
         assertThat(successorMapping.isOwner).isTrue()
         verify(placeRepository, never()).deleteByIdInBulk(501L)
         verify(userRepository).delete(user)
+    }
+
+    @Test
+    fun `withdraw - 공유 관리자 장소의 방장 위임과 유일 관리자 장소의 hard delete가 함께 있으면 위임을 먼저 flush한다`() {
+        val user = User(
+            email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1,
+        )
+        val otherAdmin = User(
+            email = "other@reborn.com", name = "다른관리자", provider = OAuthProvider.GOOGLE, providerId = "google-3", id = 3,
+        )
+        val sharedPlace = Place(name = "공유 장소", qrCode = "qr-shared", type = PlaceType.HOME, id = 501)
+        val solePlace = Place(name = "혼자 관리하는 장소", qrCode = "qr-sole", type = PlaceType.HOME, id = 502)
+        val sharedOwnerMapping =
+            UserPlaceMapping(user = user, place = sharedPlace, accessLevel = AccessLevel.ADMIN, isOwner = true)
+        val successorMapping = UserPlaceMapping(
+            user = otherAdmin, place = sharedPlace, accessLevel = AccessLevel.ADMIN, isOwner = false,
+        )
+        val soleAdminMapping =
+            UserPlaceMapping(user = user, place = solePlace, accessLevel = AccessLevel.ADMIN, isOwner = true)
+
+        given(userPlaceMappingRepository.findAllByUserIdAndAccessLevel(1L, AccessLevel.ADMIN))
+            .willReturn(listOf(sharedOwnerMapping, soleAdminMapping))
+        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN))
+            .willReturn(listOf(sharedOwnerMapping, successorMapping))
+        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(502L, AccessLevel.ADMIN))
+            .willReturn(listOf(soleAdminMapping))
+        given(userPlaceMappingRepository.findAllByUserId(1L)).willReturn(listOf(sharedOwnerMapping, soleAdminMapping))
+        given(userRepository.findById(1L)).willReturn(Optional.of(user))
+
+        authService.withdraw(1L)
+
+        assertThat(successorMapping.isOwner).isTrue()
+        val inOrder = inOrder(userPlaceMappingRepository, placeRepository)
+        inOrder.verify(userPlaceMappingRepository).flush()
+        inOrder.verify(placeRepository).deleteByIdInBulk(502L)
+        verify(placeRepository, never()).deleteByIdInBulk(501L)
     }
 
     companion object {

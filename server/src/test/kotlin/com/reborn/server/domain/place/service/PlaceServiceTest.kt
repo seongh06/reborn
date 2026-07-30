@@ -419,14 +419,22 @@ class PlaceServiceTest {
 
     @Test
     fun `transferOwner - 방장이면 같은 장소의 다른 관리자에게 위임한다`() {
-        val currentOwnerMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
-        val otherUser = User(email = "other@reborn.com", name = "다른관리자", provider = OAuthProvider.GOOGLE, providerId = "google-3", id = 3)
-        val newOwnerMapping = UserPlaceMapping(user = otherUser, place = place, accessLevel = AccessLevel.ADMIN, isOwner = false)
+        val currentOwnerMapping =
+            UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
+        val otherUser = User(
+            email = "other@reborn.com",
+            name = "다른관리자",
+            provider = OAuthProvider.GOOGLE,
+            providerId = "google-3",
+            id = 3,
+        )
+        val newOwnerMapping =
+            UserPlaceMapping(user = otherUser, place = place, accessLevel = AccessLevel.ADMIN, isOwner = false)
         val request = PlaceDto.TransferOwnerRequest(newOwnerUserId = 3L)
 
         given(placeRepository.existsById(501L)).willReturn(true)
         given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(true)
-        given(userPlaceMappingRepository.findByPlaceIdAndIsOwnerTrue(501L)).willReturn(currentOwnerMapping)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(currentOwnerMapping)
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(3L, 501L)).willReturn(newOwnerMapping)
 
         val response = placeService.transferOwner(1L, 501L, request)
@@ -449,13 +457,48 @@ class PlaceServiceTest {
 
     @Test
     fun `transferOwner - 대상이 해당 장소의 관리자가 아니면 예외가 발생한다`() {
-        val currentOwnerMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
+        val currentOwnerMapping =
+            UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
         given(placeRepository.existsById(501L)).willReturn(true)
         given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(true)
-        given(userPlaceMappingRepository.findByPlaceIdAndIsOwnerTrue(501L)).willReturn(currentOwnerMapping)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(currentOwnerMapping)
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(3L, 501L)).willReturn(null)
 
         assertThatThrownBy { placeService.transferOwner(1L, 501L, PlaceDto.TransferOwnerRequest(newOwnerUserId = 3L)) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `transferOwner - 본인에게 위임하려 하면 예외가 발생한다`() {
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(true)
+
+        assertThatThrownBy { placeService.transferOwner(1L, 501L, PlaceDto.TransferOwnerRequest(newOwnerUserId = 1L)) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `transferOwner - 대상이 ADMIN이 아닌 USER면 예외가 발생한다`() {
+        val currentOwnerMapping =
+            UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
+        val targetUser = User(
+            email = "target@reborn.com",
+            name = "일반사용자",
+            provider = OAuthProvider.GOOGLE,
+            providerId = "google-4",
+            id = 4,
+        )
+        val targetMapping = UserPlaceMapping(user = targetUser, place = place, accessLevel = AccessLevel.USER)
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(true)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(currentOwnerMapping)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(4L, 501L)).willReturn(targetMapping)
+
+        assertThatThrownBy { placeService.transferOwner(1L, 501L, PlaceDto.TransferOwnerRequest(newOwnerUserId = 4L)) }
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)

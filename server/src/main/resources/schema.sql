@@ -68,10 +68,16 @@ CREATE TABLE IF NOT EXISTS `user_place_mapping`
     `place_id`     BIGINT      NOT NULL COMMENT '장소 FK',
     `access_level` VARCHAR(10) NOT NULL COMMENT '권한 (ADMIN / USER)',
     `is_owner`     TINYINT(1)  NOT NULL DEFAULT 0 COMMENT '방장 여부 - 장소당 1명, 하드 삭제/방장 위임 권한',
+    -- MySQL은 partial/filtered unique index를 지원하지 않아, is_owner=1인 행만 place_id를
+    -- 노출하는 생성 컬럼(그 외엔 NULL - MySQL unique index는 NULL을 서로 다른 값으로 취급해
+    -- 여러 개 허용)으로 "장소당 방장 1명"을 DB 레벨에서 강제한다. 애플리케이션에서 읽거나 쓸
+    -- 필요 없음 - MySQL이 INSERT/UPDATE마다 자동 계산.
+    `owner_place_id` BIGINT GENERATED ALWAYS AS (IF(`is_owner` = 1, `place_id`, NULL)) VIRTUAL,
     `created_at`   DATETIME(6) NOT NULL COMMENT '매핑일시',
     `updated_at`   DATETIME(6) NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_place` (`user_id`, `place_id`),
+    UNIQUE KEY `uk_user_place_mapping_owner_place` (`owner_place_id`),
     CONSTRAINT `fk_upm_user`
         FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_upm_place`

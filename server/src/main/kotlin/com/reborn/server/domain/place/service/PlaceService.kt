@@ -156,7 +156,11 @@ class PlaceService(
 
     // 방장 위임 - 현재 방장만 호출 가능, 대상은 같은 장소의 ADMIN이어야 한다.
     @Transactional
-    fun transferOwner(userId: Long, placeId: Long, request: PlaceDto.TransferOwnerRequest): PlaceDto.TransferOwnerResponse {
+    fun transferOwner(
+        userId: Long,
+        placeId: Long,
+        request: PlaceDto.TransferOwnerRequest,
+    ): PlaceDto.TransferOwnerResponse {
         val newOwnerUserId = request.newOwnerUserId
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "newOwnerUserId는 필수입니다.")
         requireOwner(userId, placeId)
@@ -164,8 +168,9 @@ class PlaceService(
             throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "이미 방장입니다.")
         }
 
-        val currentOwnerMapping = userPlaceMappingRepository.findByPlaceIdAndIsOwnerTrue(placeId)
-            ?: throw BusinessAlertException(CommonErrorCode.INTERNAL_SERVER_ERROR, "방장 정보를 찾을 수 없습니다.")
+        // requireOwner()가 이미 userId가 이 장소의 방장임을 확인했으므로 isOwner로 다시 조회할
+        // 필요 없이 그 매핑을 그대로 재사용한다(CodeRabbit).
+        val currentOwnerMapping = requireNotNull(userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId))
         val newOwnerMapping = userPlaceMappingRepository.findByUserIdAndPlaceId(newOwnerUserId, placeId)
             ?.takeIf { it.accessLevel == AccessLevel.ADMIN }
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "해당 장소의 관리자만 방장으로 위임할 수 있습니다.")

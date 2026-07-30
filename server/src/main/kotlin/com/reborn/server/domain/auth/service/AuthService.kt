@@ -198,6 +198,10 @@ class AuthService(
                 successor?.assignOwner()
             }
 
+        // 방장 위임(assignOwner)은 dirty-checking으로만 대기 중인 변경이라, 아래 JPQL bulk
+        // delete(clearAutomatically=true)가 flush 없이 영속성 컨텍스트를 그냥 비워버리면 이
+        // 변경이 DB에 한 번도 반영되지 못한 채 사라진다 - bulk delete 전에 명시적으로 flush.
+        userPlaceMappingRepository.flush()
         soleAdminMappings.forEach { mapping -> placeRepository.deleteByIdInBulk(mapping.place.id) }
 
         userPlaceMappingRepository.deleteAll(userPlaceMappingRepository.findAllByUserId(userId))

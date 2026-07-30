@@ -415,7 +415,20 @@ private fun TransferOwnerBottomSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
     var target by remember { mutableStateOf<AdminSettingUiState.AdminProfile?>(null) }
+
+    // AddSheet의 selectAndDismiss와 동일한 패턴 - hide 애니메이션이 끝난 뒤에 콜백을 실행해서
+    // 시트가 애니메이션 없이 뚝 사라지지 않게 한다.
+    fun confirmAndDismiss(userId: Long) {
+        scope.launch {
+            sheetState.hide()
+        }.invokeOnCompletion {
+            if (!sheetState.isVisible) {
+                onSelect(userId)
+            }
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -435,7 +448,7 @@ private fun TransferOwnerBottomSheet(
             modifier = Modifier.padding(horizontal = 24.dp)
         )
         LazyColumn(
-            modifier = Modifier.padding(vertical = 12.dp, horizontal = 0.dp).padding(bottom = 24.dp)
+            modifier = Modifier.padding(top = 12.dp, bottom = 36.dp)
         ) {
             items(items = admins, key = { it.userId }) { admin ->
                 Row(
@@ -475,7 +488,7 @@ private fun TransferOwnerBottomSheet(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { onSelect(candidate.userId) }) {
+                TextButton(onClick = { confirmAndDismiss(candidate.userId) }) {
                     Text("위임", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale900)
                 }
             },

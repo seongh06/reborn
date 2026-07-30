@@ -77,7 +77,10 @@ class PlaceDataSourceImpl(
         httpClient.delete("/api/place/$placeId/leave")
     }.asApiResponse()
 
-    override suspend fun transferOwner(placeId: Long, request: TransferOwnerRequest): ApiResponse<TransferOwnerResponse> =
+    override suspend fun transferOwner(
+        placeId: Long,
+        request: TransferOwnerRequest,
+    ): ApiResponse<TransferOwnerResponse> =
         runCatching {
             httpClient.put("/api/place/$placeId/owner") {
                 setBody(request)

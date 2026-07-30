@@ -15,8 +15,15 @@ import com.reborn.core.network.model.response.place.PlaceItemResponse
 import com.reborn.core.network.model.response.place.PlaceResponse
 import com.reborn.core.network.model.response.place.PlaceWifiResponse
 
-fun PlaceResponse.toPlace(accessLevel: String = "ADMIN", isOwner: Boolean = true): Place =
-    Place(placeId = placeId, name = name, type = type, accessLevel = accessLevel, isOwner = isOwner, createdAt = createdAt)
+fun PlaceResponse.toPlace(accessLevel: String = "ADMIN", isOwner: Boolean): Place =
+    Place(
+        placeId = placeId,
+        name = name,
+        type = type,
+        accessLevel = accessLevel,
+        isOwner = isOwner,
+        createdAt = createdAt,
+    )
 
 fun PlaceItemResponse.toPlace(): Place =
     Place(placeId = placeId, name = name, type = type, accessLevel = accessLevel, isOwner = isOwner, createdAt = createdAt)

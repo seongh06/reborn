@@ -35,6 +35,4 @@ interface UserPlaceMappingRepository : JpaRepository<UserPlaceMapping, Long> {
     // TransientObjectException 위험이 있어, isOwner만 스칼라로 조회한다.
     @Query("SELECT m.isOwner FROM UserPlaceMapping m WHERE m.user.id = :userId AND m.place.id = :placeId")
     fun findIsOwnerByUserIdAndPlaceId(@Param("userId") userId: Long, @Param("placeId") placeId: Long): Boolean?
-
-    fun findByPlaceIdAndIsOwnerTrue(placeId: Long): UserPlaceMapping?
 }
