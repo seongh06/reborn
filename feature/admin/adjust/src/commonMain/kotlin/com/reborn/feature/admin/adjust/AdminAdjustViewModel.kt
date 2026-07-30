@@ -60,6 +60,13 @@ class AdminAdjustViewModel(
         return resolved
     }
 
+    // 캐시해둔 placeId가 가리키는 장소가 그 사이 삭제되는 등으로 이 값을 쓰는 호출이 실패하면
+    // 캐시를 지워서 다음 진입 시 장소 목록을 다시 조회하게 한다 - 캐시가 죽은 채로 남아있으면
+    // 장소가 삭제된 뒤에도 이 화면 전체가 계속 실패한다(#232).
+    private fun invalidatePlaceId() {
+        resolvedPlaceId = null
+    }
+
     // 동일 기기에 토글/원격 제어가 겹쳐 들어오면 이전 요청의 응답이 나중에 도착해 UI가
     // 실제 상태와 어긋날 수 있어(CodeRabbit #178) 기기별로 진행 중인 제어 요청을 직렬화한다.
     private val pendingControlJobs = mutableMapOf<String, Job>()
@@ -117,6 +124,7 @@ class AdminAdjustViewModel(
                     }
                 }
                 .onFailure {
+                    invalidatePlaceId()
                     navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it))
                     navController.clearAndReset(AdminAdjustUiState.Adjust(emptyList()))
                 }
