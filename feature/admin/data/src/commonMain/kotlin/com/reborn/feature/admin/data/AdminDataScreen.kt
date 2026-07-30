@@ -89,7 +89,7 @@ fun AdminDataScreen(
     ) {
         RebornTopAppBar(title = "${state.place} 보고서", onNavigateDataExport = onExportClick)
         TabBar(
-            tabItems = AdminDataUiState.Category.entries,
+            tabItems = state.availableCategories,
             selectedTab = state.selectedCategory,
             onTabSelected = onCategoryClick,
             getDisplayName = { it.label }

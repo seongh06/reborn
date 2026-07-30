@@ -12,7 +12,10 @@ sealed interface AdminDataUiState {
         val chartLabels: List<String> = emptyList(),
         val chartValues: List<Float> = emptyList(),
         val hasEnoughData: Boolean = true,
-        val analysisText: String = ""
+        val analysisText: String = "",
+        // 조도/재실 인원은 공기계(AEROMETER)가 있어야 수집되는 값이라, 공기계가 연결 안 된
+        // 장소에서는 해당 탭 자체를 노출하지 않는다(#236).
+        val availableCategories: List<Category> = Category.entries,
     ) : AdminDataUiState
 
     enum class Category(val label: String) {

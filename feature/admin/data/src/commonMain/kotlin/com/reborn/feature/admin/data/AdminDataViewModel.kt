@@ -170,16 +170,38 @@ class AdminDataViewModel(
     // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소의 첫 ARDUINO/SMART_THINGS
     // 기기로 임시 고정한다.
     private var resolvedDeviceId: String? = null
+    private var hasAerometer: Boolean = false
+    private var deviceContextResolved: Boolean = false
 
-    private suspend fun resolveDeviceId(): String? {
-        resolvedDeviceId?.let { return it }
-        val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId ?: return null
-        val resolved = getDeviceListUseCase(placeId).getOrNull()
-            ?.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }
-            ?.deviceId
-        resolvedDeviceId = resolved
-        return resolved
+    // 장소의 기기 목록을 조회해 (조회/제어 대상 deviceId, 공기계 연결 여부)를 함께 얻는다 - 조도/재실
+    // 인원 탭은 공기계(AEROMETER)가 있어야만 노출해야 하므로(#236) deviceId만 필요했던 이전 로직에
+    // 공기계 존재 여부도 같이 계산한다. 실패 시 캐시를 지워 다음 진입 때 다시 조회한다(#232와 동일한
+    // 이유 - 캐시가 죽은 채로 남아있으면 장소가 삭제된 뒤에도 계속 실패한다).
+    private suspend fun resolveDeviceContext(): String? {
+        if (deviceContextResolved) return resolvedDeviceId
+        val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        if (placeId == null) {
+            deviceContextResolved = true
+            return null
+        }
+        val devices = getDeviceListUseCase(placeId).getOrNull()
+        if (devices == null) return null
+        resolvedDeviceId = devices.firstOrNull { it.deviceType in METRIC_CAPABLE_DEVICE_TYPES }?.deviceId
+        hasAerometer = devices.any { it.deviceType == "AEROMETER" }
+        deviceContextResolved = true
+        return resolvedDeviceId
     }
+
+    private suspend fun resolveDeviceId(): String? = resolveDeviceContext()
+
+    private fun availableCategories(): List<AdminDataUiState.Category> =
+        if (hasAerometer) {
+            AdminDataUiState.Category.entries
+        } else {
+            AdminDataUiState.Category.entries.filterNot {
+                it == AdminDataUiState.Category.ILLUMINANCE || it == AdminDataUiState.Category.PEOPLE_COUNT
+            }
+        }
 
     val uiState = navigationManager.uiState
     val event = navigationManager.event
@@ -200,6 +222,7 @@ class AdminDataViewModel(
             val category = AdminDataUiState.Category.TEMPERATURE
             val period = AdminDataUiState.Period.DAY
             try {
+                resolveDeviceContext()
                 navigationManager.clearAndReset(
                     AdminDataUiState.Data(
                         selectedCategory = category,
@@ -207,7 +230,8 @@ class AdminDataViewModel(
                         chartLabels = chartLabelsFor(period),
                         chartValues = chartValuesFor(category, period),
                         hasEnoughData = hasEnoughDataFor(period),
-                        analysisText = fetchAnalysisText(category)
+                        analysisText = fetchAnalysisText(category),
+                        availableCategories = availableCategories(),
                     )
                 )
             } catch (e: CancellationException) {
