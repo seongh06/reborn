@@ -32,11 +32,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.reborn.core.designsystem.theme.RebornTheme
+import com.reborn.core.ui.component.TutorialHighlightOverlay
+import com.reborn.core.ui.component.TutorialHintCard
+import com.reborn.core.ui.component.tutorialTarget
 import com.reborn.feature.admin.setting.Res
 import com.reborn.feature.admin.setting.ic_more_vert
 import com.reborn.feature.admin.setting.ic_person
@@ -56,7 +60,11 @@ fun RoomListItem(
     onAddAdminClick: () -> Unit,
     onAddDeviceClick: () -> Unit,
     onAddArduinoClick: () -> Unit,
-    onAddAiSpeakerClick: () -> Unit
+    onAddAiSpeakerClick: () -> Unit,
+    // 최초 접속 튜토리얼(#240) - null이면 하이라이트 대상이 아님(첫 번째 카드에만 지정됨)
+    onMenuTutorialTarget: ((Rect) -> Unit)? = null,
+    showAddDeviceHint: Boolean = false,
+    onDismissAddDeviceHint: () -> Unit = {}
 ){
     var showAddSheet by remember { mutableStateOf(false) }
     var showAdminsSheet by remember { mutableStateOf(false) }
@@ -82,7 +90,14 @@ fun RoomListItem(
                 painterResource(Res.drawable.ic_more_vert),
                 modifier = Modifier
                     .size(24.dp)
-                    .clickable { showAddSheet = true },
+                    .clickable { showAddSheet = true }
+                    .let { base ->
+                        if (onMenuTutorialTarget != null) {
+                            base.tutorialTarget { rect -> onMenuTutorialTarget(rect) }
+                        } else {
+                            base
+                        }
+                    },
                 contentDescription = "더 보기",
                 tint = RebornTheme.color.grayScale900
             )
@@ -113,7 +128,9 @@ fun RoomListItem(
             onAddArduinoClick = onAddArduinoClick,
             onAddAiSpeakerClick = onAddAiSpeakerClick,
             onAddDeviceClick = onAddDeviceClick,
-            onDeleteClick = onDeleteClick
+            onDeleteClick = onDeleteClick,
+            showAddDeviceHint = showAddDeviceHint,
+            onDismissAddDeviceHint = onDismissAddDeviceHint
         )
     }
 
@@ -225,11 +242,16 @@ private fun AddSheet(
     onAddArduinoClick: () -> Unit,
     onAddAiSpeakerClick: () -> Unit,
     onAddDeviceClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    showAddDeviceHint: Boolean = false,
+    onDismissAddDeviceHint: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    // 최초 접속 튜토리얼(#240) - 바텀시트는 별도 Popup 레이어라 하이라이트 오버레이/설명 카드를
+    // App.kt 바텀 네비 대신 이 시트 안에서 자체적으로 그린다.
+    var addDeviceHintRect by remember { mutableStateOf<Rect?>(null) }
 
     fun selectAndDismiss(onClick: () -> Unit) {
         scope.launch {
@@ -249,19 +271,37 @@ private fun AddSheet(
         sheetState = sheetState,
         containerColor = RebornTheme.color.grayScale100
     ) {
-        Column(
-            modifier = Modifier.padding(bottom = 24.dp)
-        ) {
-            AddSheetItem(text = "관리자 초대", onClick = { selectAndDismiss(onAddAdminClick) })
-            AddSheetItem(text = "아두이노 추가", onClick = { selectAndDismiss(onAddArduinoClick) })
-            AddSheetItem(text = "AI 스피커 추가", onClick = { selectAndDismiss(onAddAiSpeakerClick) })
-            AddSheetItem(text = "공기계 추가", onClick = { selectAndDismiss(onAddDeviceClick) })
-            HorizontalDivider(color = RebornTheme.color.grayScale300)
-            AddSheetItem(
-                text = "장소 삭제",
-                textColor = RebornTheme.color.reject,
-                onClick = { showDeleteConfirm = true }
-            )
+        Box {
+            Column(
+                modifier = Modifier.padding(bottom = 24.dp)
+            ) {
+                AddSheetItem(text = "관리자 초대", onClick = { selectAndDismiss(onAddAdminClick) })
+                Column(modifier = Modifier.tutorialTarget { addDeviceHintRect = it }) {
+                    AddSheetItem(text = "아두이노 추가", onClick = { selectAndDismiss(onAddArduinoClick) })
+                    AddSheetItem(text = "AI 스피커 추가", onClick = { selectAndDismiss(onAddAiSpeakerClick) })
+                }
+                // 최초 접속 튜토리얼(#240) - 하이라이트 대상 바로 아래 설명 카드를 시트 흐름 안에 둔다.
+                if (showAddDeviceHint) {
+                    TutorialHintCard(
+                        text = "여기서 아두이노나 AI 스피커를 등록할 수 있어요.",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                    )
+                }
+                AddSheetItem(text = "공기계 추가", onClick = { selectAndDismiss(onAddDeviceClick) })
+                HorizontalDivider(color = RebornTheme.color.grayScale300)
+                AddSheetItem(
+                    text = "장소 삭제",
+                    textColor = RebornTheme.color.reject,
+                    onClick = { showDeleteConfirm = true }
+                )
+            }
+
+            if (showAddDeviceHint) {
+                TutorialHighlightOverlay(
+                    highlightRect = addDeviceHintRect,
+                    onDismiss = onDismissAddDeviceHint
+                )
+            }
         }
     }
 

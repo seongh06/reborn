@@ -15,10 +15,11 @@ import com.reborn.core.ui.component.SectionTitleComponent
 fun FeedbackListSection(
     recentFeedbacks: List<FeedbackListItem>,
     onFeedbackClick: (Int) -> Unit,
-    onMoreClick: () -> Unit
+    onMoreClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp, 8.dp),
+        modifier = modifier.fillMaxWidth().padding(16.dp, 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         SectionTitleComponent(title = "실시간 피드백", onMoreClick = onMoreClick)

@@ -14,7 +14,14 @@ sealed interface AdminHomeUiState{
         val metric: Metric? = null,
         val feedbackTotalCount: Int = 0,
         val feedbackWaitingCount: Int = 0,
-        val recentFeedbacks: List<FeedbackListItem> = emptyList()
+        val recentFeedbacks: List<FeedbackListItem> = emptyList(),
+        // 최초 접속 튜토리얼(#240) - 기기가 하나도 없는 신규 사용자에게 SmartThings 연결
+        // 진입점을 하이라이트로 안내한다.
+        val showTutorialHint: Boolean = false,
+        // 최초 접속 튜토리얼(#240) - 첫 피드백이 도착했을 때 "실시간 피드백" 섹션을 하이라이트로
+        // 안내한다. 별도의 0->1 전이 추적 없이 "피드백이 1건 이상 && 이 단계를 아직 안 봄"으로
+        // 판단 - 다른 단계들과 동일한 패턴(현재 상태 + 미확인 여부).
+        val showFirstFeedbackHint: Boolean = false,
     ): AdminHomeUiState
     data class Alarm(
         val alarm: List<AlarmItem> = emptyList(),
@@ -64,4 +71,5 @@ sealed interface AdminHomeIntent{
     data object NavigateToFeedbackList : AdminHomeIntent
     data class DeleteAlarm(val alarmId: Int) : AdminHomeIntent
     data class ClickAlarmFilter(val filter: AdminHomeUiState.AlarmFilter) : AdminHomeIntent
+    data class DismissTutorial(val stepId: String) : AdminHomeIntent
 }

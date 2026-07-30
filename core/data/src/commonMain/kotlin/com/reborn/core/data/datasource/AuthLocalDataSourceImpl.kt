@@ -1,6 +1,7 @@
 package com.reborn.core.data.datasource
 
 import com.reborn.core.datastore.TokenLocalDataSource
+import kotlinx.coroutines.flow.Flow
 
 class AuthLocalDataSourceImpl(
     private val tokenLocalDataSource: TokenLocalDataSource,
@@ -17,4 +18,10 @@ class AuthLocalDataSourceImpl(
     override suspend fun getAccessToken(): String? = tokenLocalDataSource.getAccessToken()
 
     override suspend fun getRefreshToken(): String? = tokenLocalDataSource.getRefreshToken()
+
+    override val tutorialSeenSteps: Flow<Set<String>> = tokenLocalDataSource.tutorialSeenSteps
+
+    override suspend fun markTutorialStepSeen(stepId: String) {
+        tokenLocalDataSource.markTutorialStepSeen(stepId)
+    }
 }

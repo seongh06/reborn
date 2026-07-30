@@ -10,6 +10,7 @@ import com.reborn.core.network.di.AuthTokenCacheInvalidator
 import com.reborn.core.network.model.request.auth.FcmTokenUpdateRequest
 import com.reborn.core.network.model.request.auth.LoginRequest
 import com.reborn.core.network.model.request.auth.UpdateProfileRequest
+import kotlinx.coroutines.flow.Flow
 
 class AuthRepositoryImpl(
     private val remote: AuthDataSource,
@@ -66,4 +67,9 @@ class AuthRepositoryImpl(
                 local.clearTokens()
                 tokenCacheInvalidator.invalidate()
             }
+
+    override fun getTutorialSeenSteps(): Flow<Set<String>> = local.tutorialSeenSteps
+
+    override suspend fun markTutorialStepSeen(stepId: String): Result<Unit> =
+        runCatching { local.markTutorialStepSeen(stepId) }
 }

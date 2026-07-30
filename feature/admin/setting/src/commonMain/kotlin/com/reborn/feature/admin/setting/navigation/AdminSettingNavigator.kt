@@ -23,7 +23,8 @@ fun NavGraphBuilder.adminSettingNavGraph(
     onNavigateToAddAiSpeaker: (Int) -> Unit = {},
     onNavigateToAddPlace: () -> Unit = {},
     onNavigateToTerms: () -> Unit = {},
-    onLoggedOut: () -> Unit = {}
+    onLoggedOut: () -> Unit = {},
+    onTutorialHintChange: (String?) -> Unit = {}
 ) {
     composable<Route.Admin.Setting> {
         AdminSettingRoute(
@@ -34,7 +35,8 @@ fun NavGraphBuilder.adminSettingNavGraph(
             onNavigateToAddAiSpeaker = onNavigateToAddAiSpeaker,
             onNavigateToAddPlace = onNavigateToAddPlace,
             onNavigateToTerms = onNavigateToTerms,
-            onLoggedOut = onLoggedOut
+            onLoggedOut = onLoggedOut,
+            onTutorialHintChange = onTutorialHintChange
         )
     }
 }

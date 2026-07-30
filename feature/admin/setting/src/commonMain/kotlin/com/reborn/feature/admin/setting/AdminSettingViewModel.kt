@@ -6,16 +6,20 @@ import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
 import com.reborn.core.domain.usecase.GetPlaceAdminsUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
+import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileImageUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.core.domain.usecase.WithdrawUseCase
+import com.reborn.core.model.TutorialStep
 import com.reborn.feature.admin.setting.model.AdminSettingIntent
 import com.reborn.feature.admin.setting.model.AdminSettingUiState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -41,6 +45,8 @@ class AdminSettingViewModel(
     private val updateUserProfileUseCase: UpdateUserProfileUseCase,
     private val updateUserProfileImageUseCase: UpdateUserProfileImageUseCase,
     private val withdrawUseCase: WithdrawUseCase,
+    private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
+    private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminSettingUiState, AdminSettingEvent>(
         initialState = AdminSettingUiState.Loading,
@@ -79,6 +85,22 @@ class AdminSettingViewModel(
             is AdminSettingIntent.UpdateProfileName -> updateProfileName(intent.name)
             is AdminSettingIntent.UpdateProfileImage ->
                 updateProfileImage(intent.bytes, intent.fileName, intent.mimeType)
+            is AdminSettingIntent.DismissTutorial -> dismissTutorial(intent.stepId)
+        }
+    }
+
+    private fun dismissTutorial(stepId: String) {
+        navigationManager.updateCurrentState { state ->
+            (state as? AdminSettingUiState.Setting)?.let {
+                when (stepId) {
+                    TutorialStep.SETTING_PLACE_MENU -> it.copy(showPlaceMenuHint = false)
+                    TutorialStep.SETTING_ADD_DEVICE -> it.copy(showAddDeviceHint = false)
+                    else -> it
+                }
+            } ?: state
+        }
+        viewModelScope.launch {
+            markTutorialStepSeenUseCase(stepId)
         }
     }
 
@@ -129,6 +151,8 @@ class AdminSettingViewModel(
                 }
             }
 
+            val seenSteps = getTutorialSeenStepsUseCase().first()
+
             getPlaceListUseCase()
                 .onSuccess { places ->
                     // 장소 목록(#27)에는 관리자 프로필이 없어 place 카드에 아바타를 보여주려면(#217)
@@ -159,7 +183,13 @@ class AdminSettingViewModel(
                             }
                         }.awaitAll()
                     }
-                    navigationManager.clearAndReset(AdminSettingUiState.Setting(rooms = rooms))
+                    navigationManager.clearAndReset(
+                        AdminSettingUiState.Setting(
+                            rooms = rooms,
+                            showPlaceMenuHint = TutorialStep.SETTING_PLACE_MENU !in seenSteps && rooms.isNotEmpty(),
+                            showAddDeviceHint = TutorialStep.SETTING_ADD_DEVICE !in seenSteps,
+                        )
+                    )
                     applyProfileWhenReady()
                 }
                 .onFailure {

@@ -3,6 +3,7 @@ package com.reborn.core.datastore
 import androidx.datastore.core.DataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 class TokenLocalDataSource(
     private val dataStore: DataStore<AuthTokens>,
@@ -26,6 +27,12 @@ class TokenLocalDataSource(
     // 페어링 성공 시 자격증명 저장과 동시에 "이 인스턴스는 공기계다"라는 상태도 함께 기록한다.
     suspend fun saveDeviceCredentials(deviceId: String, appToken: String) {
         dataStore.updateData { it.copy(deviceId = deviceId, appToken = appToken, isAerometer = true) }
+    }
+
+    val tutorialSeenSteps: Flow<Set<String>> = dataStore.data.map { it.tutorialSeenSteps }
+
+    suspend fun markTutorialStepSeen(stepId: String) {
+        dataStore.updateData { it.copy(tutorialSeenSteps = it.tutorialSeenSteps + stepId) }
     }
 
     suspend fun clear() {

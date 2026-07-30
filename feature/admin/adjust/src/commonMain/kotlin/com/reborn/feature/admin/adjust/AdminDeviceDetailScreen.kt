@@ -2,6 +2,7 @@ package com.reborn.feature.admin.adjust
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,16 +19,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
+import com.reborn.core.model.TutorialStep
 import com.reborn.core.ui.component.DataType
 import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.SensorChip
 import com.reborn.core.ui.component.TabBar
+import com.reborn.core.ui.component.TutorialHighlightOverlay
+import com.reborn.core.ui.component.tutorialTarget
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.adjust.component.DeviceSection
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
@@ -39,6 +44,10 @@ import com.reborn.feature.admin.adjust.model.defaultAutoControlState
 import com.reborn.feature.admin.adjust.screen.AutoControlScreen
 import com.reborn.feature.admin.adjust.screen.RemoteControlScreen
 import kotlin.math.roundToInt
+
+// 최초 접속 튜토리얼(#240) 설명 문구 - 바텀 네비 자리에 대신 뜨는 TutorialHintCard(App.kt)에서 쓴다.
+private const val REMOTE_TAB_TUTORIAL_HINT = "여기서 전원, 온도, 바람세기 등을 바로 조절할 수 있어요."
+private const val AUTO_TAB_TUTORIAL_HINT = "조건을 설정해두면 알아서 자동으로 제어돼요. 규칙을 만들어보세요!"
 
 @Composable
 fun AdminDeviceDetailScreen(
@@ -53,10 +62,12 @@ fun AdminDeviceDetailScreen(
     ) -> Unit = { _, _, _, _ -> },
     onSendAutoControlClick: (AutoControlUiState) -> Unit = {},
     onDeleteClick: () -> Unit = {},
+    onDismissTutorial: (String) -> Unit = {},
 ) {
     val deviceType = state.device.deviceType
     val isSmartThings = state.device.serverDeviceType == "SMART_THINGS"
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var tabContentRect by remember { mutableStateOf<Rect?>(null) }
 
     val currentTab = state.selectedTab
 
@@ -128,6 +139,7 @@ fun AdminDeviceDetailScreen(
         )
     }
 
+    Box {
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
@@ -182,6 +194,7 @@ fun AdminDeviceDetailScreen(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .tutorialTarget { tabContentRect = it }
         ) {
             when (currentTab) {
                 AdminAdjustUiState.ControlMethod.Remote -> RemoteControlScreen(
@@ -240,6 +253,25 @@ fun AdminDeviceDetailScreen(
                 )
 
             }
+        }
+    }
+
+        // 최초 접속 튜토리얼(#240) - 원격/자동제어 탭 컨텐츠를 각각 처음 볼 때 강조.
+        val showTabHint = when (currentTab) {
+            AdminAdjustUiState.ControlMethod.Remote -> state.showRemoteTabHint
+            AdminAdjustUiState.ControlMethod.MANUALEdit -> state.showAutoTabHint
+        }
+        if (showTabHint) {
+            TutorialHighlightOverlay(
+                highlightRect = tabContentRect,
+                onDismiss = {
+                    val stepId = when (currentTab) {
+                        AdminAdjustUiState.ControlMethod.Remote -> TutorialStep.ADJUST_REMOTE_TAB
+                        AdminAdjustUiState.ControlMethod.MANUALEdit -> TutorialStep.ADJUST_AUTO_TAB
+                    }
+                    onDismissTutorial(stepId)
+                }
+            )
         }
     }
 }

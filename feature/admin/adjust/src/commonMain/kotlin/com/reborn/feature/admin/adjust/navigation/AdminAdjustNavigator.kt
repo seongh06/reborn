@@ -14,14 +14,16 @@ fun NavController.navigateAdminAdjust(navOptions: NavOptions) {
 
 fun NavGraphBuilder.adjustNavGraph(
     onBackClick: () -> Unit,
-    onBottomBarVisibilityChange: (Boolean) -> Unit = {}
+    onBottomBarVisibilityChange: (Boolean) -> Unit = {},
+    onTutorialHintChange: (String?) -> Unit = {}
 ) {
     composable<Route.Admin.Adjust> { backStackEntry ->
         val route = backStackEntry.toRoute<Route.Admin.Adjust>()
         AdminAdjustRoute(
             onBackClick = onBackClick,
             initialDeviceId = route.deviceId,
-            onBottomBarVisibilityChange = onBottomBarVisibilityChange
+            onBottomBarVisibilityChange = onBottomBarVisibilityChange,
+            onTutorialHintChange = onTutorialHintChange
         )
     }
 }

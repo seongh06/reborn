@@ -10,8 +10,11 @@ import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetDeviceStatusUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
+import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.model.AutoControlRule
+import com.reborn.core.model.TutorialStep
 import com.reborn.core.ui.component.DeviceType
 import com.reborn.feature.admin.adjust.model.AdminAdjustIntent
 import com.reborn.feature.admin.adjust.model.AdminAdjustUiState
@@ -21,6 +24,7 @@ import com.reborn.feature.admin.adjust.model.OperationMode
 import com.reborn.feature.admin.adjust.model.WindSpeed
 import com.reborn.feature.admin.adjust.model.defaultAutoControlState
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 sealed class AdminAdjustEvent {
@@ -38,6 +42,8 @@ class AdminAdjustViewModel(
     private val getAutoControlRuleUseCase: GetAutoControlRuleUseCase,
     private val getCurrentMetricUseCase: GetCurrentMetricUseCase,
     private val getDeviceStatusUseCase: GetDeviceStatusUseCase,
+    private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
+    private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminAdjustUiState, AdminAdjustEvent>(
         initialState = AdminAdjustUiState.Loading,
@@ -49,6 +55,10 @@ class AdminAdjustViewModel(
     val event = navController.event
 
     private var devices: List<AdminAdjustUiState.DeviceItem> = emptyList()
+
+    // 최초 접속 튜토리얼(#240) - checkInitialState()에서 한 번 읽어두고, 원격/자동제어 탭
+    // 하이라이트 여부를 DeviceDetail 진입/전환 시마다 이 값으로 판단한다.
+    private var seenTutorialSteps: Set<String> = emptySet()
 
     // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
     private var resolvedPlaceId: Long? = null
@@ -91,12 +101,29 @@ class AdminAdjustViewModel(
             is AdminAdjustIntent.SendRemoteControl -> sendRemoteControl(intent)
             is AdminAdjustIntent.SendAutoControl -> sendAutoControl(intent)
             is AdminAdjustIntent.DeleteDevice -> deleteDevice(intent.deviceId)
+            is AdminAdjustIntent.DismissTutorial -> dismissTutorial(intent.stepId)
+        }
+    }
+
+    private fun dismissTutorial(stepId: String) {
+        navController.updateCurrentState { state ->
+            (state as? AdminAdjustUiState.DeviceDetail)?.let {
+                when (stepId) {
+                    TutorialStep.ADJUST_REMOTE_TAB -> it.copy(showRemoteTabHint = false)
+                    TutorialStep.ADJUST_AUTO_TAB -> it.copy(showAutoTabHint = false)
+                    else -> it
+                }
+            } ?: state
+        }
+        viewModelScope.launch {
+            markTutorialStepSeenUseCase(stepId)
         }
     }
 
     private fun checkInitialState(deviceId: String? = null) {
         navController.clearAndReset(AdminAdjustUiState.Loading)
         viewModelScope.launch {
+            seenTutorialSteps = getTutorialSeenStepsUseCase().first()
             val placeId = resolvePlaceId()
             if (placeId == null) {
                 navController.emitEvent(
@@ -159,7 +186,15 @@ class AdminAdjustViewModel(
             ?: return navController.emitEvent(
                 AdminAdjustEvent.ShowErrorSnackbar(IllegalArgumentException("기기를 찾을 수 없습니다."))
             )
-        navController.navigateTo(AdminAdjustUiState.DeviceDetail(intent.controlMethod, intent.deviceId, device))
+        navController.navigateTo(
+            AdminAdjustUiState.DeviceDetail(
+                selectedTab = intent.controlMethod,
+                deviceId = intent.deviceId,
+                device = device,
+                showRemoteTabHint = TutorialStep.ADJUST_REMOTE_TAB !in seenTutorialSteps,
+                showAutoTabHint = TutorialStep.ADJUST_AUTO_TAB !in seenTutorialSteps,
+            )
+        )
         loadData(intent.controlMethod)
         loadMetric(intent.deviceId)
         if (device.serverDeviceType == "SMART_THINGS") {
