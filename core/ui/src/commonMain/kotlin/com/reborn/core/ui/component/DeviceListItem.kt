@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
@@ -104,6 +103,9 @@ fun DeviceListItem(
     }
 }
 
+// Figma(595:5067 등 adjust_item)는 전원 버튼을 카드 배경과 같은 색으로 블렌딩된 원형 아이콘
+// 버튼으로 그린다 - 채워진 원으로 온/오프를 표현하던 기존 디자인 대신, 아이콘 자체의 색상
+// (진하게/흐리게)만으로 상태를 표현한다(#235).
 @Composable
 fun DeviceOnOffButton(
     isPowerOn: Boolean,
@@ -112,16 +114,16 @@ fun DeviceOnOffButton(
 ){
     Box(
         modifier = Modifier
+            .size(36.dp)
             .clip(RoundedCornerShape(999.dp))
-            .background(if (isPowerOn && isOnline) Color.White else RebornTheme.color.grayScale400)
-            .clickable(onClick = onClick)
-            .padding(12.dp)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ){
         Icon(
             painter = painterResource(Res.drawable.ic_power),
             contentDescription = null,
-            modifier = Modifier.size(12.dp),
-            tint = if (isPowerOn && isOnline) RebornTheme.color.grayScale900 else  Color.White
+            modifier = Modifier.size(14.dp),
+            tint = if (isPowerOn && isOnline) RebornTheme.color.grayScale900 else RebornTheme.color.grayScale500
         )
     }
 }
