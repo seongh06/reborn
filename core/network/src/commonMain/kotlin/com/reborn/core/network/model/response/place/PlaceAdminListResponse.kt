@@ -7,6 +7,7 @@ data class PlaceAdminItemResponse(
     val userId: Long,
     val name: String,
     val profileImage: String? = null,
+    val isOwner: Boolean = false,
 )
 
 @Serializable

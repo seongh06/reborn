@@ -17,6 +17,7 @@ import com.reborn.core.model.PlaceWifi
 import com.reborn.core.network.datasource.PlaceDataSource
 import com.reborn.core.network.model.request.place.AdminInviteRequest
 import com.reborn.core.network.model.request.place.RegisterPlaceRequest
+import com.reborn.core.network.model.request.place.TransferOwnerRequest
 import com.reborn.core.network.model.request.place.UpdatePlaceWifiRequest
 
 class PlaceRepositoryImpl(
@@ -25,7 +26,8 @@ class PlaceRepositoryImpl(
 
     override suspend fun register(name: String, type: String): Result<Place> =
         remote.register(RegisterPlaceRequest(name, type))
-            .toResult { it.toPlace() }
+            // 장소 등록은 항상 등록한 사람을 ADMIN이자 방장으로 만든다(서버 PlaceService.register()).
+            .toResult { it.toPlace(isOwner = true) }
 
     override suspend fun generateAdminCode(placeId: Long): Result<AdminInviteCode> =
         remote.generateAdminCode(placeId)
@@ -57,5 +59,13 @@ class PlaceRepositoryImpl(
 
     override suspend fun delete(placeId: Long): Result<Unit> =
         remote.delete(placeId)
+            .toResult { }
+
+    override suspend fun leave(placeId: Long): Result<Unit> =
+        remote.leave(placeId)
+            .toResult { }
+
+    override suspend fun transferOwner(placeId: Long, newOwnerUserId: Long): Result<Unit> =
+        remote.transferOwner(placeId, TransferOwnerRequest(newOwnerUserId))
             .toResult { }
 }

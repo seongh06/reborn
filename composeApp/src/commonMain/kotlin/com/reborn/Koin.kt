@@ -8,6 +8,8 @@ import com.reborn.core.domain.usecase.ConfigureDeviceWifiUseCase
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.DeleteDeviceUseCase
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
+import com.reborn.core.domain.usecase.LeavePlaceUseCase
+import com.reborn.core.domain.usecase.TransferPlaceOwnerUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
 import com.reborn.core.domain.usecase.ExportMetricToSheetsUseCase
 import com.reborn.core.domain.usecase.GeneratePairingCodeUseCase
@@ -85,6 +87,8 @@ val appDependenciesModule = module {
     factory { GetPlaceWifiUseCase(get()) }
     factory { UpdatePlaceWifiUseCase(get()) }
     factory { DeletePlaceUseCase(get()) }
+    factory { LeavePlaceUseCase(get()) }
+    factory { TransferPlaceOwnerUseCase(get()) }
     factory { GeneratePairingCodeUseCase(get()) }
     factory { PairDeviceUseCase(get()) }
     factory { GetDeviceListUseCase(get()) }

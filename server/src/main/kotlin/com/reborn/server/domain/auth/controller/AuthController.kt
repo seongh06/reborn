@@ -148,14 +148,14 @@ class AuthController(
 
     @Operation(
         summary = "회원 탈퇴",
-        description = "인증된 사용자를 탈퇴 처리합니다. 사용자가 어떤 장소의 유일한 ADMIN이면 " +
-            "(다른 관리자가 없으면) 차단됩니다.",
+        description = "인증된 사용자를 탈퇴 처리합니다. 사용자가 어떤 장소의 유일한 ADMIN이었다면 " +
+            "그 장소도 함께 hard delete됩니다. 다른 관리자가 남아있는 장소에서 방장이었다면 " +
+            "남은 관리자에게 방장이 자동으로 위임된 뒤 탈퇴가 진행됩니다.",
     )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "탈퇴 완료"),
         SwaggerApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 AccessToken"),
         SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
-        SwaggerApiResponse(responseCode = "409", description = "유일한 관리자로 등록된 장소가 있어 탈퇴 불가"),
     )
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/me")

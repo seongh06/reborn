@@ -4,6 +4,7 @@ import com.reborn.core.network.datasource.PlaceDataSource
 import com.reborn.core.network.model.ApiResponse
 import com.reborn.core.network.model.request.place.AdminInviteRequest
 import com.reborn.core.network.model.request.place.RegisterPlaceRequest
+import com.reborn.core.network.model.request.place.TransferOwnerRequest
 import com.reborn.core.network.model.request.place.UpdatePlaceWifiRequest
 import com.reborn.core.network.model.response.place.AdminCodeResponse
 import com.reborn.core.network.model.response.place.AdminInviteResponse
@@ -12,6 +13,7 @@ import com.reborn.core.network.model.response.place.PlaceDetailResponse
 import com.reborn.core.network.model.response.place.PlaceListResponse
 import com.reborn.core.network.model.response.place.PlaceResponse
 import com.reborn.core.network.model.response.place.PlaceWifiResponse
+import com.reborn.core.network.model.response.place.TransferOwnerResponse
 import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
@@ -70,4 +72,18 @@ class PlaceDataSourceImpl(
     override suspend fun delete(placeId: Long): ApiResponse<Unit?> = runCatching {
         httpClient.delete("/api/place/$placeId")
     }.asApiResponse()
+
+    override suspend fun leave(placeId: Long): ApiResponse<Unit?> = runCatching {
+        httpClient.delete("/api/place/$placeId/leave")
+    }.asApiResponse()
+
+    override suspend fun transferOwner(
+        placeId: Long,
+        request: TransferOwnerRequest,
+    ): ApiResponse<TransferOwnerResponse> =
+        runCatching {
+            httpClient.put("/api/place/$placeId/owner") {
+                setBody(request)
+            }
+        }.asApiResponse()
 }

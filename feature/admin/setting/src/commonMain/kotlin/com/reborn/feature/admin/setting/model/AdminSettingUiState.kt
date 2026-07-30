@@ -21,6 +21,9 @@ sealed interface AdminSettingUiState {
     data class RoomItem(
         val placeId: Int,
         val roomName: String,
+        // 방장(#추가 API) 여부 - 방장만 장소를 하드 삭제하거나 방장을 위임할 수 있고,
+        // 그 외 관리자는 나가기(leave)만 할 수 있다.
+        val isOwner: Boolean = false,
         // 관리자 목록 조회(#217) 실패 시 빈 리스트 - place는 등록 시 최소 1명(등록자)이 항상 ADMIN이라
         // 정상 조회된 결과가 진짜로 비어있는 경우는 없음, 실패와 구분할 필요가 없어 null 대신 emptyList
         val admins: List<AdminProfile> = emptyList()
@@ -29,7 +32,8 @@ sealed interface AdminSettingUiState {
     data class AdminProfile(
         val userId: Long,
         val name: String,
-        val profileImage: String?
+        val profileImage: String?,
+        val isOwner: Boolean = false,
     )
 }
 
@@ -37,6 +41,8 @@ sealed interface AdminSettingIntent {
     data object LoadInitial : AdminSettingIntent
     data object NavigateBack : AdminSettingIntent
     data class DeleteRoom(val placeId: Int) : AdminSettingIntent
+    data class LeaveRoom(val placeId: Int) : AdminSettingIntent
+    data class TransferOwner(val placeId: Int, val newOwnerUserId: Long) : AdminSettingIntent
     data class ClickAddAdmin(val placeId: Int) : AdminSettingIntent
     data class ClickAddDevice(val placeId: Int) : AdminSettingIntent
     data class ClickAddArduino(val placeId: Int) : AdminSettingIntent

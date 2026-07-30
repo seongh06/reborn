@@ -13,5 +13,6 @@ data class PlaceItemResponse(
     val name: String,
     val type: String,
     val accessLevel: String,
+    val isOwner: Boolean = false,
     val createdAt: String,
 )

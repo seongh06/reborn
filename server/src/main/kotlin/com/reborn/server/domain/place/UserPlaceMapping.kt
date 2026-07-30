@@ -30,8 +30,22 @@ class UserPlaceMapping(
     @Enumerated(EnumType.STRING)
     val accessLevel: AccessLevel,
 
+    // 장소를 등록한 최초 관리자(혹은 위임받은 관리자) - 장소 하드 삭제, 방장 위임 등 파괴적
+    // 작업은 방장만 할 수 있다. 장소당 정확히 1명이어야 하며 register()/transferOwner()가 보장.
+    @Column(name = "is_owner", nullable = false)
+    var isOwner: Boolean = false,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-) : BaseEntity()
+) : BaseEntity() {
+
+    fun assignOwner() {
+        isOwner = true
+    }
+
+    fun revokeOwner() {
+        isOwner = false
+    }
+}

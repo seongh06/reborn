@@ -41,7 +41,9 @@ class PlaceService(
         }
 
         val place = placeRepository.save(Place(name = name, qrCode = generateUuid(), type = type))
-        userPlaceMappingRepository.save(UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN))
+        userPlaceMappingRepository.save(
+            UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true),
+        )
 
         return PlaceConverter.toRegisterResponse(place)
     }
@@ -98,10 +100,11 @@ class PlaceService(
         }
         val accessLevel = userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(userId, placeId)
             ?: throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "권한이 없습니다.")
+        val isOwner = userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(userId, placeId) ?: false
 
         val deviceCount = deviceRepository.countByPlaceId(placeId).toInt()
         val adminCount = userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(placeId, AccessLevel.ADMIN).size
-        return PlaceConverter.toDetailResponse(place, accessLevel, deviceCount, adminCount)
+        return PlaceConverter.toDetailResponse(place, accessLevel, isOwner, deviceCount, adminCount)
     }
 
     // 설정 화면 place 카드에 관리자 프로필(이름/사진)을 보여주기 위한 조회(#217) - 카드에 바로 노출되는
@@ -109,7 +112,7 @@ class PlaceService(
     fun getAdmins(userId: Long, placeId: Long): PlaceDto.AdminListResponse {
         requireAdmin(userId, placeId)
         val admins = userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(placeId, AccessLevel.ADMIN)
-            .map { PlaceConverter.toAdminItem(it.user) }
+            .map { PlaceConverter.toAdminItem(it) }
         return PlaceDto.AdminListResponse(admins = admins)
     }
 
@@ -129,10 +132,53 @@ class PlaceService(
         return PlaceDto.WifiResponse(ssid = place.wifiSsid, password = place.wifiPassword)
     }
 
+    // 장소 하드 삭제는 방장만 할 수 있다 - 방장이 아닌 관리자는 leavePlace()로 자기 매핑만 나간다.
     @Transactional
     fun deletePlace(userId: Long, placeId: Long) {
-        requireAdmin(userId, placeId)
+        requireOwner(userId, placeId)
         placeRepository.deleteByIdInBulk(placeId)
+    }
+
+    // 방장이 아닌 관리자/사용자가 장소에서 스스로 빠지는 API - 장소는 그대로 유지되고 내 매핑만 지운다.
+    // 방장은 나갈 수 없다(장소가 방장 없는 상태가 되므로) - 위임 먼저 하거나 삭제해야 한다.
+    @Transactional
+    fun leavePlace(userId: Long, placeId: Long) {
+        val mapping = userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "해당 장소에 속해있지 않습니다.")
+        if (mapping.isOwner) {
+            throw BusinessAlertException(
+                CommonErrorCode.CONFLICT,
+                "방장은 장소를 나갈 수 없습니다. 다른 관리자에게 방장을 위임한 뒤 나가거나, 장소를 삭제해주세요.",
+            )
+        }
+        userPlaceMappingRepository.deleteByUserIdAndPlaceId(userId, placeId)
+    }
+
+    // 방장 위임 - 현재 방장만 호출 가능, 대상은 같은 장소의 ADMIN이어야 한다.
+    @Transactional
+    fun transferOwner(
+        userId: Long,
+        placeId: Long,
+        request: PlaceDto.TransferOwnerRequest,
+    ): PlaceDto.TransferOwnerResponse {
+        val newOwnerUserId = request.newOwnerUserId
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "newOwnerUserId는 필수입니다.")
+        requireOwner(userId, placeId)
+        if (newOwnerUserId == userId) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "이미 방장입니다.")
+        }
+
+        // requireOwner()가 이미 userId가 이 장소의 방장임을 확인했으므로 isOwner로 다시 조회할
+        // 필요 없이 그 매핑을 그대로 재사용한다(CodeRabbit).
+        val currentOwnerMapping = requireNotNull(userPlaceMappingRepository.findByUserIdAndPlaceId(userId, placeId))
+        val newOwnerMapping = userPlaceMappingRepository.findByUserIdAndPlaceId(newOwnerUserId, placeId)
+            ?.takeIf { it.accessLevel == AccessLevel.ADMIN }
+            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "해당 장소의 관리자만 방장으로 위임할 수 있습니다.")
+
+        currentOwnerMapping.revokeOwner()
+        newOwnerMapping.assignOwner()
+
+        return PlaceDto.TransferOwnerResponse(placeId = placeId, newOwnerUserId = newOwnerUserId)
     }
 
     private fun requireAdmin(userId: Long, placeId: Long): Place {
@@ -144,6 +190,16 @@ class PlaceService(
             throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.")
         }
         return place
+    }
+
+    private fun requireOwner(userId: Long, placeId: Long) {
+        if (!placeRepository.existsById(placeId)) {
+            throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
+        }
+        val isOwner = userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(userId, placeId)
+        if (isOwner != true) {
+            throw BusinessAlertException(CommonErrorCode.FORBIDDEN, "방장만 할 수 있습니다.")
+        }
     }
 
     private fun reserveUniqueCode(prefix: String, length: Int, value: String): String {

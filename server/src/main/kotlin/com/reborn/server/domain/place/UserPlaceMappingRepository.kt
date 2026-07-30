@@ -30,4 +30,9 @@ interface UserPlaceMappingRepository : JpaRepository<UserPlaceMapping, Long> {
     fun existsByUserIdAndPlaceId(userId: Long, placeId: Long): Boolean
 
     fun deleteByUserIdAndPlaceId(userId: Long, placeId: Long)
+
+    // 방장 여부만 필요한 곳(requireOwner)에서 엔티티를 통째로 로드하면 #118과 같은 이유로
+    // TransientObjectException 위험이 있어, isOwner만 스칼라로 조회한다.
+    @Query("SELECT m.isOwner FROM UserPlaceMapping m WHERE m.user.id = :userId AND m.place.id = :placeId")
+    fun findIsOwnerByUserIdAndPlaceId(@Param("userId") userId: Long, @Param("placeId") placeId: Long): Boolean?
 }

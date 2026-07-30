@@ -1,6 +1,7 @@
 package com.reborn.server.domain.place.dto
 
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
 
@@ -40,6 +41,7 @@ class PlaceDto {
         val name: String,
         val type: String,
         val accessLevel: String,
+        val isOwner: Boolean,
         val createdAt: LocalDateTime,
     )
 
@@ -52,6 +54,7 @@ class PlaceDto {
         val name: String,
         val type: String,
         val accessLevel: String,
+        val isOwner: Boolean,
         val deviceCount: Int,
         val adminCount: Int,
         val qrCode: String,
@@ -62,10 +65,20 @@ class PlaceDto {
         val userId: Long,
         val name: String,
         val profileImage: String?,
+        val isOwner: Boolean,
     )
 
     data class AdminListResponse(
         val admins: List<AdminItem>,
+    )
+
+    data class TransferOwnerRequest(
+        @field:NotNull val newOwnerUserId: Long? = null,
+    )
+
+    data class TransferOwnerResponse(
+        val placeId: Long,
+        val newOwnerUserId: Long,
     )
 
     data class WifiRequest(

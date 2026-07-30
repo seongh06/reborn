@@ -55,8 +55,12 @@ import org.jetbrains.compose.resources.painterResource
 fun RoomListItem(
     placeId: Int,
     roomName: String,
+    // 방장(#추가 API) 여부 - 방장만 장소 하드 삭제/방장 위임 가능, 그 외 관리자는 나가기만 가능
+    isOwner: Boolean = false,
     admins: List<AdminSettingUiState.AdminProfile>,
     onDeleteClick: () -> Unit,
+    onLeaveClick: () -> Unit = {},
+    onTransferOwnerClick: (Long) -> Unit = {},
     onAddAdminClick: () -> Unit,
     onAddDeviceClick: () -> Unit,
     onAddArduinoClick: () -> Unit,
@@ -68,6 +72,7 @@ fun RoomListItem(
 ){
     var showAddSheet by remember { mutableStateOf(false) }
     var showAdminsSheet by remember { mutableStateOf(false) }
+    var showTransferOwnerSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -123,12 +128,16 @@ fun RoomListItem(
 
     if (showAddSheet) {
         AddSheet(
+            isOwner = isOwner,
+            otherAdmins = admins.filterNot { it.isOwner },
             onDismiss = { showAddSheet = false },
             onAddAdminClick = onAddAdminClick,
             onAddArduinoClick = onAddArduinoClick,
             onAddAiSpeakerClick = onAddAiSpeakerClick,
             onAddDeviceClick = onAddDeviceClick,
             onDeleteClick = onDeleteClick,
+            onLeaveClick = onLeaveClick,
+            onOpenTransferOwnerSheet = { showTransferOwnerSheet = true },
             showAddDeviceHint = showAddDeviceHint,
             onDismissAddDeviceHint = onDismissAddDeviceHint
         )
@@ -138,6 +147,17 @@ fun RoomListItem(
         AdminsBottomSheet(
             admins = admins,
             onDismiss = { showAdminsSheet = false }
+        )
+    }
+
+    if (showTransferOwnerSheet) {
+        TransferOwnerBottomSheet(
+            admins = admins.filterNot { it.isOwner },
+            onSelect = { userId ->
+                showTransferOwnerSheet = false
+                onTransferOwnerClick(userId)
+            },
+            onDismiss = { showTransferOwnerSheet = false }
         )
     }
 }
@@ -237,18 +257,23 @@ private fun AdminsBottomSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddSheet(
+    isOwner: Boolean,
+    otherAdmins: List<AdminSettingUiState.AdminProfile>,
     onDismiss: () -> Unit,
     onAddAdminClick: () -> Unit,
     onAddArduinoClick: () -> Unit,
     onAddAiSpeakerClick: () -> Unit,
     onAddDeviceClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onLeaveClick: () -> Unit,
+    onOpenTransferOwnerSheet: () -> Unit,
     showAddDeviceHint: Boolean = false,
     onDismissAddDeviceHint: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showLeaveConfirm by remember { mutableStateOf(false) }
     // 최초 접속 튜토리얼(#240) - 바텀시트는 별도 Popup 레이어라 하이라이트 오버레이/설명 카드를
     // App.kt 바텀 네비 대신 이 시트 안에서 자체적으로 그린다.
     var addDeviceHintRect by remember { mutableStateOf<Rect?>(null) }
@@ -288,12 +313,26 @@ private fun AddSheet(
                     )
                 }
                 AddSheetItem(text = "공기계 추가", onClick = { selectAndDismiss(onAddDeviceClick) })
+                if (isOwner && otherAdmins.isNotEmpty()) {
+                    AddSheetItem(
+                        text = "방장 위임",
+                        onClick = { selectAndDismiss(onOpenTransferOwnerSheet) }
+                    )
+                }
                 HorizontalDivider(color = RebornTheme.color.grayScale300)
-                AddSheetItem(
-                    text = "장소 삭제",
-                    textColor = RebornTheme.color.reject,
-                    onClick = { showDeleteConfirm = true }
-                )
+                if (isOwner) {
+                    AddSheetItem(
+                        text = "장소 삭제",
+                        textColor = RebornTheme.color.reject,
+                        onClick = { showDeleteConfirm = true }
+                    )
+                } else {
+                    AddSheetItem(
+                        text = "장소 나가기",
+                        textColor = RebornTheme.color.reject,
+                        onClick = { showLeaveConfirm = true }
+                    )
+                }
             }
 
             if (showAddDeviceHint) {
@@ -329,6 +368,132 @@ private fun AddSheet(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("취소", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale700)
+                }
+            }
+        )
+    }
+
+    if (showLeaveConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLeaveConfirm = false },
+            title = {
+                Text(
+                    "장소를 나갈까요?",
+                    style = RebornTheme.typography.titleMedium,
+                    color = RebornTheme.color.grayScale900
+                )
+            },
+            text = {
+                Text(
+                    "나가면 이 장소의 목록에서 더 이상 보이지 않아요. 장소 자체는 그대로 유지돼요.",
+                    style = RebornTheme.typography.bodyMedium,
+                    color = RebornTheme.color.grayScale700
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showLeaveConfirm = false; selectAndDismiss(onLeaveClick) }) {
+                    Text("나가기", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.reject)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveConfirm = false }) {
+                    Text("취소", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale700)
+                }
+            }
+        )
+    }
+}
+
+// 방장 위임 대상 선택 바텀시트 - AddSheet가 닫힌 뒤(RoomListItem 레벨) 별도로 뜬다. AddSheet
+// 내부에 두면 selectAndDismiss로 AddSheet 자체가 dispose될 때 상태가 함께 사라져버린다.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TransferOwnerBottomSheet(
+    admins: List<AdminSettingUiState.AdminProfile>,
+    onSelect: (Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    var target by remember { mutableStateOf<AdminSettingUiState.AdminProfile?>(null) }
+
+    // AddSheet의 selectAndDismiss와 동일한 패턴 - hide 애니메이션이 끝난 뒤에 콜백을 실행해서
+    // 시트가 애니메이션 없이 뚝 사라지지 않게 한다.
+    fun confirmAndDismiss(userId: Long) {
+        scope.launch {
+            sheetState.hide()
+        }.invokeOnCompletion {
+            if (!sheetState.isVisible) {
+                onSelect(userId)
+            }
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = RebornTheme.color.grayScale100
+    ) {
+        Text(
+            "방장 위임",
+            style = RebornTheme.typography.titleMedium,
+            color = RebornTheme.color.grayScale900,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+        Text(
+            "방장을 넘겨줄 관리자를 선택하세요.",
+            style = RebornTheme.typography.bodyMedium,
+            color = RebornTheme.color.grayScale700,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        LazyColumn(
+            modifier = Modifier.padding(top = 12.dp, bottom = 36.dp)
+        ) {
+            items(items = admins, key = { it.userId }) { admin ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { target = admin }
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
+                ) {
+                    AdminAvatar(profileImage = admin.profileImage)
+                    Text(
+                        admin.name,
+                        style = RebornTheme.typography.titleSmall,
+                        color = RebornTheme.color.grayScale900
+                    )
+                }
+            }
+        }
+    }
+
+    target?.let { candidate ->
+        AlertDialog(
+            onDismissRequest = { target = null },
+            title = {
+                Text(
+                    "${candidate.name}님에게 방장을 위임할까요?",
+                    style = RebornTheme.typography.titleMedium,
+                    color = RebornTheme.color.grayScale900
+                )
+            },
+            text = {
+                Text(
+                    "위임하면 이후 장소 삭제·방장 위임 권한이 ${candidate.name}님에게 넘어가요.",
+                    style = RebornTheme.typography.bodyMedium,
+                    color = RebornTheme.color.grayScale700
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { confirmAndDismiss(candidate.userId) }) {
+                    Text("위임", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale900)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { target = null }) {
                     Text("취소", style = RebornTheme.typography.labelLarge, color = RebornTheme.color.grayScale700)
                 }
             }
