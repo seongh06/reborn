@@ -1,6 +1,7 @@
 package com.reborn.server.domain.feedback
 
 import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.place.Place
 import com.reborn.server.global.jpa.BaseEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -21,6 +22,13 @@ class Feedback(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_id")
     val device: Device?,
+
+    // device가 없어도(장소에 기기가 없거나 사용자가 지목하지 않음) 이 피드백이 어느 장소
+    // 소속인지는 항상 알아야 목록/개수 조회·처리 권한 확인이 가능하다 - device.place로
+    // 유추하면 device가 null일 때 조회 쿼리(JOIN)에서 통째로 누락되므로 별도 FK로 둔다.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "place_id", nullable = false)
+    val place: Place,
 
     @Column(nullable = false, length = 1000)
     val content: String,

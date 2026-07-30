@@ -166,6 +166,10 @@ class AdminDataViewModel(
 
     private var loadJob: Job? = null
 
+    // 분석 결과 로딩은 차트/카테고리/기간 로딩(loadJob)과 완전히 독립된 작업이라 같은 Job을
+    // 공유하면 한쪽이 취소될 때 다른 쪽도 조용히 취소된다(CodeRabbit 리뷰) - 별도 Job으로 분리.
+    private var analysisJob: Job? = null
+
     // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소의 첫 ARDUINO/SMART_THINGS
     // 기기로 임시 고정한다.
     private var resolvedDeviceId: String? = null
@@ -244,6 +248,9 @@ class AdminDataViewModel(
     private fun handleCategoryClick(category: AdminDataUiState.Category) {
         val current = navigationManager.uiState.value as? AdminDataUiState.Data ?: return
         loadJob?.cancel()
+        // 진행 중인 분석 요청이 있다면 취소 - 그대로 두면 카테고리를 바꾼 뒤에 이전 카테고리의
+        // 분석 결과가 뒤늦게 도착해 새 상태에 잘못 덮어써질 수 있다.
+        analysisJob?.cancel()
         loadJob = viewModelScope.launch {
             try {
                 val chartValues = chartValuesFor(category, current.selectedPeriod)
@@ -269,6 +276,7 @@ class AdminDataViewModel(
     private fun handlePeriodClick(period: AdminDataUiState.Period) {
         val current = navigationManager.uiState.value as? AdminDataUiState.Data ?: return
         loadJob?.cancel()
+        analysisJob?.cancel()
         loadJob = viewModelScope.launch {
             try {
                 val chartValues = chartValuesFor(current.selectedCategory, period)
@@ -301,8 +309,8 @@ class AdminDataViewModel(
         if (current.isAnalysisLoading || current.analysisText != null) return
         if (current.chartValues.size < MIN_ANALYSIS_DATA_COUNT) return
 
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
+        analysisJob?.cancel()
+        analysisJob = viewModelScope.launch {
             navigationManager.updateCurrentState { state ->
                 if (state is AdminDataUiState.Data) state.copy(isAnalysisLoading = true) else state
             }
@@ -427,10 +435,12 @@ class AdminDataViewModel(
         return getSensorAggregateUseCase(params).first()
     }
 
+    // Gemini 호출 실패는 여기서 문구로 삼키지 않고 그대로 던진다 - revealAnalysis()의 catch가
+    // analysisText를 null로 유지하고 에러 스낵바를 띄워야 사용자가 블러 카드를 다시 탭해
+    // 재시도할 수 있다(CodeRabbit 리뷰) - 삼키면 실패 문구가 "AI로 생성된 문구"로 굳어버린다.
     private suspend fun fetchAnalysisText(category: AdminDataUiState.Category): String {
         val deviceId = resolveDeviceId() ?: return "아직 등록된 기기가 없어 분석할 수 없습니다."
-        return runCatching { getAnalysisTextUseCase(GetAnalysisTextParams(deviceId, category.name)).first() }
-            .getOrElse { "지금은 분석을 불러올 수 없습니다. 잠시 후 다시 시도해주세요." }
+        return getAnalysisTextUseCase(GetAnalysisTextParams(deviceId, category.name)).first()
     }
 
     private fun exportToGoogleSheets() {

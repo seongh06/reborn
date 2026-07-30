@@ -67,7 +67,7 @@ flowchart TD
         FCM["Firebase<br>(Cloud Messaging)"]:::external
         S3["AWS S3"]:::external
         Slack["Slack Webhook"]:::external
-        Gemini["Gemini API<br>(피드백 분석·추천, 음성 인식)"]:::external
+        Gemini["Gemini API<br>(피드백 분석·추천, 음성 인식, 데이터 화면 AI 리포트)"]:::external
         SmartThings["SmartThings Cloud API<br>(IoT 기기 제어 + 온습도 폴링)"]:::external
         Sheets["Google Sheets API<br>(데이터 내보내기)"]:::external
     end
@@ -142,7 +142,7 @@ sequenceDiagram
 
 | 기능 | 설명 |
 |------|------|
-| **실시간 환경 모니터링** | Arduino/SmartThings 센서로 온도·습도·조도·재실 인원 수집 및 앱 대시보드 표시, 불쾌지수 자동 계산 |
+| **실시간 환경 모니터링** | Arduino(온습도) · SmartThings(온습도, Arduino 미보유 장소) · 공기계 앱(조도·재실 인원)이 각자 수집한 데이터를 앱 대시보드에 통합 표시, 불쾌지수 자동 계산 |
 | **QR 피드백 시스템** | 방문자가 QR 스캔만으로 현재 환경 확인 및 불편 사항 피드백 제출 (세션당 1회 제한) |
 | **AI 스피커 음성 피드백** | QR 없이 음성으로도 피드백 제출, Gemini가 음성 인식·응답 |
 | **FCM 푸시 알림** | 피드백 도착 시 관리자 앱으로 실시간 Push 알림 발송 |
@@ -178,8 +178,10 @@ sequenceDiagram
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry_Pi-A22846?style=flat-square&logo=raspberrypi&logoColor=white)
 
-> 홈서버는 Raspberry Pi 5에서 Docker Compose로 운영합니다. self-hosted GitHub Actions 러너를 파이 위에
-> 직접 띄워, dev 브랜치 푸시마다 백엔드/APK가 자동 빌드·배포됩니다.
+> 홈서버는 Raspberry Pi 5에서 Docker Compose로 운영합니다. `dev` 브랜치 push마다 백엔드는
+> 파이 위에 띄운 self-hosted 러너에서 직접 빌드·배포되고, APK는 GitHub 호스팅 러너에서
+> 빌드됩니다(파이는 배포 대상일 뿐 APK 빌드에는 관여하지 않음). PR이 아닌 `dev` push에만
+> 반응하므로 병합 전 코드가 권한 있는 러너에서 실행되지 않습니다.
 
 ### 외부 연동 · AI
 ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat-square&logo=firebase&logoColor=white)

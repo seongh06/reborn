@@ -96,8 +96,7 @@ fun AdminDataScreen(
             onTabSelected = onCategoryClick,
             getDisplayName = { it.label }
         )
-        Column(
-        ) {
+        Column {
             DataLineChartSection(
                 labels = state.chartLabels,
                 values = state.chartValues,

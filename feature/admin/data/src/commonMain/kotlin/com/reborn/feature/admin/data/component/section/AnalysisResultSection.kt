@@ -89,7 +89,7 @@ fun AnalysisResultSection(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (isLoading) "분석 중...." else "탭해서 분석 결과 보기",
+                        text = if (isLoading) "분석 중..." else "탭해서 분석 결과 보기",
                         style = RebornTheme.typography.titleSmall,
                         color = RebornTheme.color.grayScale900
                     )

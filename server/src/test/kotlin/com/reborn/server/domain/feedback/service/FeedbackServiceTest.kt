@@ -25,7 +25,9 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.InjectMocks
@@ -91,7 +93,9 @@ class FeedbackServiceTest {
             content = "너무 더워요",
             sessionToken = "sess-1",
         )
-        val saved = Feedback(device = device, content = "너무 더워요", sessionToken = "sess-1", id = 100).apply { prePersist() }
+        val saved =
+            Feedback(device = device, place = place, content = "너무 더워요", sessionToken = "sess-1", id = 100)
+                .apply { prePersist() }
 
         given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
         given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
@@ -109,7 +113,9 @@ class FeedbackServiceTest {
         val admin = User(email = "admin@reborn.com", name = "관리자", provider = OAuthProvider.GOOGLE, providerId = "google-2", fcmToken = "fcm-token-1", id = 2)
         val mapping = UserPlaceMapping(user = admin, place = place, accessLevel = AccessLevel.ADMIN)
         val request = FeedbackDto.SubmitRequest(qrCode = "qr-uuid", deviceId = "arduino_room_01", content = "덥다", sessionToken = "sess-1")
-        val saved = Feedback(device = device, content = "덥다", sessionToken = "sess-1", id = 100).apply { prePersist() }
+        val saved =
+            Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+                .apply { prePersist() }
 
         given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
         given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
@@ -138,7 +144,9 @@ class FeedbackServiceTest {
             content = "너무 더워요",
             sessionToken = "sess-1",
         )
-        val saved = Feedback(device = null, content = "너무 더워요", sessionToken = "sess-1", id = 100).apply { prePersist() }
+        val saved =
+            Feedback(device = null, place = place, content = "너무 더워요", sessionToken = "sess-1", id = 100)
+                .apply { prePersist() }
 
         given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
         given(feedbackRepository.existsBySessionToken("sess-1")).willReturn(false)
@@ -147,7 +155,13 @@ class FeedbackServiceTest {
         val response = feedbackService.submit(request, "Mozilla/5.0")
 
         assertThat(response.feedbackId).isEqualTo(100L)
+        verify(deviceRepository, never()).findById(anyLong())
         verify(deviceRepository, never()).findByDeviceKey(anyString())
+
+        val savedCaptor = ArgumentCaptor.forClass(Feedback::class.java)
+        verify(feedbackRepository).save(savedCaptor.capture())
+        assertThat(savedCaptor.value.device).isNull()
+        assertThat(savedCaptor.value.place).isEqualTo(place)
     }
 
     @Test
@@ -202,13 +216,15 @@ class FeedbackServiceTest {
 
     @Test
     fun `getList - ADMIN이면 장소 기준으로 조회한다`() {
-        val feedback = Feedback(device = device, content = "덥다", sessionToken = "sess-1", id = 100).apply { prePersist() }
+        val feedback =
+            Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+                .apply { prePersist() }
         val page = PageImpl(listOf(feedback))
         val pageable = PageRequest.of(0, 20)
 
         given(placeRepository.existsById(501L)).willReturn(true)
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
-        given(feedbackRepository.findAllByDevice_PlaceId(501L, pageable)).willReturn(page)
+        given(feedbackRepository.findAllByPlaceId(501L, pageable)).willReturn(page)
 
         val response = feedbackService.getList(1L, 501L, null, null, pageable)
 
@@ -245,10 +261,10 @@ class FeedbackServiceTest {
     fun `getCount - ADMIN이면 상태별 개수를 집계한다`() {
         given(placeRepository.existsById(501L)).willReturn(true)
         given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
-        given(feedbackRepository.countByDevice_PlaceId(501L)).willReturn(5L)
-        given(feedbackRepository.countByDevice_PlaceIdAndStatus(501L, FeedbackStatus.PENDING)).willReturn(2L)
-        given(feedbackRepository.countByDevice_PlaceIdAndStatus(501L, FeedbackStatus.APPROVED)).willReturn(2L)
-        given(feedbackRepository.countByDevice_PlaceIdAndStatus(501L, FeedbackStatus.REJECTED)).willReturn(1L)
+        given(feedbackRepository.countByPlaceId(501L)).willReturn(5L)
+        given(feedbackRepository.countByPlaceIdAndStatus(501L, FeedbackStatus.PENDING)).willReturn(2L)
+        given(feedbackRepository.countByPlaceIdAndStatus(501L, FeedbackStatus.APPROVED)).willReturn(2L)
+        given(feedbackRepository.countByPlaceIdAndStatus(501L, FeedbackStatus.REJECTED)).willReturn(1L)
 
         val response = feedbackService.getCount(1L, 501L)
 
@@ -260,7 +276,7 @@ class FeedbackServiceTest {
 
     @Test
     fun `updateStatus - PENDING 상태면 APPROVED로 변경한다`() {
-        val feedback = Feedback(device = device, content = "덥다", sessionToken = "sess-1", id = 100)
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
         val request = FeedbackDto.StatusUpdateRequest(status = "APPROVED")
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
@@ -274,7 +290,10 @@ class FeedbackServiceTest {
 
     @Test
     fun `updateStatus - 이미 처리된 피드백이면 예외가 발생한다`() {
-        val feedback = Feedback(device = device, content = "덥다", sessionToken = "sess-1", status = FeedbackStatus.APPROVED, id = 100)
+        val feedback = Feedback(
+            device = device, place = place, content = "덥다", sessionToken = "sess-1",
+            status = FeedbackStatus.APPROVED, id = 100,
+        )
         val request = FeedbackDto.StatusUpdateRequest(status = "REJECTED")
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
@@ -300,7 +319,7 @@ class FeedbackServiceTest {
 
     @Test
     fun `updateStatus - 잘못된 status 값이면 예외가 발생한다`() {
-        val feedback = Feedback(device = device, content = "덥다", sessionToken = "sess-1", id = 100)
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
         val request = FeedbackDto.StatusUpdateRequest(status = "PENDING")
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))

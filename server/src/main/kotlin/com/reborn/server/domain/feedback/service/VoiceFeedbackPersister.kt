@@ -37,7 +37,7 @@ class VoiceFeedbackPersister(
         }
 
         val feedback = feedbackRepository.save(
-            Feedback(device = device, content = content, source = FeedbackSource.VOICE),
+            Feedback(device = device, place = device.place, content = content, source = FeedbackSource.VOICE),
         )
 
         val deviceName = feedback.device?.name ?: device.place.name

@@ -85,7 +85,7 @@ class FeedbackService(
         }
 
         val feedback = feedbackRepository.save(
-            Feedback(device = device, content = content, sessionToken = sessionToken, userAgent = userAgent),
+            Feedback(device = device, place = place, content = content, sessionToken = sessionToken, userAgent = userAgent),
         )
 
         notifyAdmins(place, feedback)
@@ -194,9 +194,9 @@ class FeedbackService(
             }
         } else {
             if (statusFilter != null) {
-                feedbackRepository.findAllByDevice_PlaceIdAndStatus(placeId, statusFilter, pageable)
+                feedbackRepository.findAllByPlaceIdAndStatus(placeId, statusFilter, pageable)
             } else {
-                feedbackRepository.findAllByDevice_PlaceId(placeId, pageable)
+                feedbackRepository.findAllByPlaceId(placeId, pageable)
             }
         }
 
@@ -206,10 +206,10 @@ class FeedbackService(
     fun getCount(userId: Long, placeId: Long): FeedbackDto.CountResponse {
         requireAdmin(userId, placeId)
 
-        val total = feedbackRepository.countByDevice_PlaceId(placeId)
-        val pending = feedbackRepository.countByDevice_PlaceIdAndStatus(placeId, FeedbackStatus.PENDING)
-        val approved = feedbackRepository.countByDevice_PlaceIdAndStatus(placeId, FeedbackStatus.APPROVED)
-        val rejected = feedbackRepository.countByDevice_PlaceIdAndStatus(placeId, FeedbackStatus.REJECTED)
+        val total = feedbackRepository.countByPlaceId(placeId)
+        val pending = feedbackRepository.countByPlaceIdAndStatus(placeId, FeedbackStatus.PENDING)
+        val approved = feedbackRepository.countByPlaceIdAndStatus(placeId, FeedbackStatus.APPROVED)
+        val rejected = feedbackRepository.countByPlaceIdAndStatus(placeId, FeedbackStatus.REJECTED)
 
         return FeedbackConverter.toCountResponse(total, pending, approved, rejected)
     }
@@ -219,9 +219,7 @@ class FeedbackService(
         val feedback = feedbackRepository.findById(feedbackId).orElseThrow {
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 피드백입니다.")
         }
-        val placeId = feedback.device?.place?.id
-            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 피드백입니다.")
-        requireAdmin(userId, placeId)
+        requireAdmin(userId, feedback.place.id)
 
         if (feedback.status != FeedbackStatus.PENDING) {
             throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "이미 처리된 피드백입니다.")
