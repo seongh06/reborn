@@ -17,6 +17,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +35,7 @@ import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.Dashboard
 import com.reborn.core.ui.component.FeedbackStatusSection
-import com.reborn.core.ui.component.TutorialSpotlightOverlay
+import com.reborn.core.ui.component.TutorialHighlightOverlay
 import com.reborn.core.ui.component.tutorialTarget
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.home.component.FeedbackListSection
@@ -43,6 +44,11 @@ import com.reborn.feature.admin.home.model.AdminHomeIntent
 import com.reborn.feature.admin.home.model.AdminHomeUiState
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
+
+// SmartThings 연결 하이라이트(#240 1단계)의 설명 문구 - 바텀 네비 자리에 대신 뜨는
+// TutorialHintCard(App.kt)에서 쓴다.
+private const val SMART_THINGS_TUTORIAL_HINT =
+    "아직 연결된 기기가 없네요. SmartThings 계정을 연동하면 에어컨 등 기기를 바로 제어할 수 있어요. 여기를 눌러서 시작해보세요!"
 
 @Composable
 fun AdminHomeRoute(
@@ -54,13 +60,30 @@ fun AdminHomeRoute(
     onNavigateToDeviceList: () -> Unit = {},
     onNavigateToDeviceDetail: (String) -> Unit = {},
     onNavigateToAddSmartThingsDevice: () -> Unit = {},
-    onBottomBarVisibilityChange: (Boolean) -> Unit = {}
+    onBottomBarVisibilityChange: (Boolean) -> Unit = {},
+    onTutorialHintChange: (String?) -> Unit = {}
 ){
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // IoT 기기가 하나도 없으면 다른 탭(예: Data)으로 가도 보여줄 값이 없어서 바텀 네비 자체를
+    // 숨긴다 - 튜토리얼 카드는 App.kt에서 이 값과 별개로(먼저) 처리되어 계속 뜬다.
     LaunchedEffect(uiState) {
-        onBottomBarVisibilityChange(uiState !is AdminHomeUiState.Alarm)
+        val visible = when (val state = uiState) {
+            is AdminHomeUiState.Home -> state.hasDevices
+            is AdminHomeUiState.Alarm -> false
+            is AdminHomeUiState.Loading -> false
+        }
+        onBottomBarVisibilityChange(visible)
+    }
+
+    // 튜토리얼이 떠 있는 동안엔 바텀 네비 자리를 설명 카드가 대신한다(#240) - 화면이 바뀌거나
+    // 튜토리얼이 꺼지면 null을 흘려보내 원래 바텀 네비로 되돌아가게 함.
+    SideEffect {
+        val state = uiState
+        onTutorialHintChange(
+            if (state is AdminHomeUiState.Home && state.showTutorialHint) SMART_THINGS_TUTORIAL_HINT else null
+        )
     }
 
     LaunchedEffect(Unit) {
@@ -164,22 +187,23 @@ fun AdminHomeScreen(
                          textDecoration = TextDecoration.Underline,
                          modifier = Modifier
                              .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                             .tutorialTarget { smartThingsHintRect = it }
                              .clickable(
                                  role = Role.Button,
                                  onClickLabel = "SmartThings 연결",
                                  onClick = onAddSmartThingsClick
                              )
                              .padding(8.dp)
+                             // 실제 눈에 보이는 텍스트+여백 전체(패딩 포함)를 그대로 하이라이트
+                             // 영역으로 써야 잘려 보이지 않는다 - 체인 맨 끝(가장 바깥)에 둔다.
+                             .tutorialTarget { smartThingsHintRect = it }
                      )
                  }
              }
 
              // 최초 접속 튜토리얼(#240) 1단계 - 신규 사용자에게 SmartThings 연결 진입점을 강조.
              if (state.showTutorialHint) {
-                 TutorialSpotlightOverlay(
+                 TutorialHighlightOverlay(
                      highlightRect = smartThingsHintRect,
-                     explanation = "아직 연결된 기기가 없네요. SmartThings 계정을 연동하면 에어컨 등 기기를 바로 제어할 수 있어요. 여기를 눌러서 시작해보세요!",
                      onDismiss = onDismissTutorial
                  )
              }

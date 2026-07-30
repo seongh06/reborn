@@ -46,6 +46,7 @@ import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.reborn.core.designsystem.theme.RebornTheme
+import com.reborn.core.ui.component.TutorialHintCard
 import io.ktor.client.HttpClient
 import com.reborn.core.navigation.MainTab
 import com.reborn.core.navigation.Route
@@ -86,6 +87,8 @@ fun App(initialFeedbackId: Int? = null) {
 
             var isAdminHomeBottomBarVisible by remember { mutableStateOf(true) }
             var introSkipToSignup by remember { mutableStateOf(false) }
+            // 최초 접속 튜토리얼(#240)이 떠 있는 동안엔 바텀 네비 자리에 이 문구 카드가 대신 뜬다.
+            var tutorialHintText by remember { mutableStateOf<String?>(null) }
 
             val surfaceColor = RebornTheme.color.grayScale100
             val scrimColor = RebornTheme.color.grayScale200
@@ -130,7 +133,14 @@ fun App(initialFeedbackId: Int? = null) {
                         isAdminFeedback || isTerms
                     val isHomeLikeTabHidden = (isAdminHome || isAdminAdjust) &&
                         !isAdminHomeBottomBarVisible
-                    if (!isSubScreenWithoutBottomBar && !isHomeLikeTabHidden) {
+                    // 최초 접속 튜토리얼(#240)이 떠 있는 동안엔 바텀 네비 대신 이 자리에 설명
+                    // 카드를 보여준다 - 튜토리얼 중엔 다른 탭으로 이동할 수 없게 해서 집중시킴.
+                    if (tutorialHintText != null) {
+                        TutorialHintCard(
+                            text = tutorialHintText.orEmpty(),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                    } else if (!isSubScreenWithoutBottomBar && !isHomeLikeTabHidden) {
                         // Figma BottomNavSection(595:5074) 스펙: 위쪽 투명 -> 아래쪽 불투명 그라데이션
                         // 스크림 위에, 캡슐형(pill) 네비가 가운데 떠 있는 구조.
                         Box(
@@ -310,6 +320,9 @@ fun App(initialFeedbackId: Int? = null) {
                         },
                         onBottomBarVisibilityChange = { visible ->
                             isAdminHomeBottomBarVisible = visible
+                        },
+                        onTutorialHintChange = { text ->
+                            tutorialHintText = text
                         }
                     )
                     adminIotDeviceListNavGraph(

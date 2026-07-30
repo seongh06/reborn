@@ -23,7 +23,8 @@ fun NavGraphBuilder.adminHomeNavGraph(
     onNavigateToDeviceList: () -> Unit = {},
     onNavigateToDeviceDetail: (String) -> Unit = {},
     onNavigateToAddSmartThingsDevice: () -> Unit = {},
-    onBottomBarVisibilityChange: (Boolean) -> Unit = {}
+    onBottomBarVisibilityChange: (Boolean) -> Unit = {},
+    onTutorialHintChange: (String?) -> Unit = {}
 ) {
     composable<Route.Admin.Home> {
         AdminHomeRoute(
@@ -34,7 +35,8 @@ fun NavGraphBuilder.adminHomeNavGraph(
             onNavigateToDeviceList = onNavigateToDeviceList,
             onNavigateToDeviceDetail = onNavigateToDeviceDetail,
             onNavigateToAddSmartThingsDevice = onNavigateToAddSmartThingsDevice,
-            onBottomBarVisibilityChange = onBottomBarVisibilityChange
+            onBottomBarVisibilityChange = onBottomBarVisibilityChange,
+            onTutorialHintChange = onTutorialHintChange
         )
     }
 }
