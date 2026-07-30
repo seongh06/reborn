@@ -43,7 +43,8 @@ fun AdminAlarmScreen(
     state: AdminHomeUiState.Alarm,
     onBackClick: () -> Unit,
     onFilterClick: (AdminHomeUiState.AlarmFilter) -> Unit,
-    onAlarmDelete: (Int) -> Unit
+    onAlarmDelete: (Int) -> Unit,
+    onAlarmClick: (Int) -> Unit = {}
 ) {
     val groupedAlarms = state.filteredGroupedAlarms()
 
@@ -101,7 +102,8 @@ fun AdminAlarmScreen(
                     items(items = items, key = { it.id }) { alarm ->
                         SwipeToDeleteAlarmItem(
                             alarm = alarm,
-                            onDelete = { onAlarmDelete(alarm.id) }
+                            onDelete = { onAlarmDelete(alarm.id) },
+                            onClick = { onAlarmClick(alarm.id) }
                         )
                     }
                 }
@@ -141,7 +143,8 @@ private fun AlarmFilterChip(
 @Composable
 private fun SwipeToDeleteAlarmItem(
     alarm: AdminHomeUiState.AlarmItem,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onClick: () -> Unit = {}
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -180,16 +183,19 @@ private fun SwipeToDeleteAlarmItem(
             }
         }
     ) {
-        AlarmItemRow(alarm = alarm)
+        AlarmItemRow(alarm = alarm, onClick = onClick)
     }
 }
 
 @Composable
-private fun AlarmItemRow(alarm: AdminHomeUiState.AlarmItem) {
+private fun AlarmItemRow(alarm: AdminHomeUiState.AlarmItem, onClick: () -> Unit = {}) {
+    // 피드백 알림만 상세 화면이 있음 - 결산(SETTLEMENT) 타입은 아직 이동할 대상이 없어 클릭 비활성.
+    val isClickable = alarm.category == AdminHomeUiState.AlarmFilter.FEEDBACK
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
+            .then(if (isClickable) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top
