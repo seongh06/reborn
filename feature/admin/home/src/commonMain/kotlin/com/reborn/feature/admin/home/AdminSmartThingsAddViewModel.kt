@@ -2,6 +2,7 @@ package com.reborn.feature.admin.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reborn.core.common.SmartThingsCallbackSignal
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsDeviceListUseCase
@@ -44,6 +45,23 @@ class AdminSmartThingsAddViewModel(
 
     private val _event = MutableSharedFlow<AdminSmartThingsAddEvent>()
     val event = _event.asSharedFlow()
+
+    init {
+        // SmartThings 동의 완료 후 서버 콜백 페이지가 딥링크로 앱을 다시 열면(#239) 사람이
+        // "돌아와서 눌러주세요" 버튼을 누르지 않아도 자동으로 연동된 기기 목록을 불러온다.
+        // 이 화면이 AwaitingConsent 상태로 대기 중일 때만 반응 - 다른 단계(기기 이름 입력 중 등)에서
+        // 뒤늦게 신호가 와도 사용자가 입력하던 걸 덮어쓰지 않게 한다.
+        viewModelScope.launch {
+            SmartThingsCallbackSignal.events.collect { success ->
+                if (_uiState.value != AdminSmartThingsAddUiState.AwaitingConsent) return@collect
+                if (success) {
+                    loadDevices()
+                } else {
+                    _event.emit(AdminSmartThingsAddEvent.ShowErrorSnackbar(IllegalStateException("SmartThings 연동에 실패했습니다.")))
+                }
+            }
+        }
+    }
 
     // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
     // 다중 장소를 관리하는 관리자가 늘어나면 장소 선택 UI를 별도로 추가해야 함.
