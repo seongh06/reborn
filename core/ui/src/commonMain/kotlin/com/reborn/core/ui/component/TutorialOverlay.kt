@@ -22,7 +22,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.translate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -95,8 +94,8 @@ fun TutorialHighlightOverlay(
     }
 }
 
-// 튜토리얼 설명 문구 카드 - 바텀 네비게이션 자리(App.kt)에 대신 뜬다. 하얀 배경 + 큰 라운드로
-// 눈에 띄게, 글자는 titleSmall로 충분히 크게.
+// 튜토리얼 설명 문구 카드 - 바텀 네비게이션 자리(App.kt)에 대신 뜬다. grayScale100 배경 + 큰
+// 라운드로 눈에 띄게, 글자는 titleSmall로 충분히 크게.
 @Composable
 fun TutorialHintCard(
     text: String,
@@ -109,7 +108,7 @@ fun TutorialHintCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(Color.White)
+            .background(RebornTheme.color.grayScale100)
             .padding(horizontal = 20.dp, vertical = 18.dp)
     )
 }
