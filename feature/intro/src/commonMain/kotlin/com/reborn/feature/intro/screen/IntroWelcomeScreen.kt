@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -89,9 +90,8 @@ private fun IntroWelcomeContent(
             style = RebornTheme.typography.bodyLarge,
             color = RebornTheme.color.grayScale700,
             textDecoration = TextDecoration.Underline,
-            textAlign = TextAlign.End,
             modifier = Modifier
-                .fillMaxWidth()
+                .align(Alignment.End)
                 .clickable(onClick = onAerometerClick)
                 .padding(16.dp, 8.dp)
         )
@@ -146,7 +146,7 @@ private fun IntroWelcomeContent(
                 },
                 style = RebornTheme.typography.labelLarge,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(16.dp, 8.dp)
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
             )
         }
     }
