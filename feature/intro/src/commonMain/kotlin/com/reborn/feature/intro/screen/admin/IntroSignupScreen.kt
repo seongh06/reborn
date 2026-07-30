@@ -3,6 +3,7 @@ package com.reborn.feature.intro.screen.admin
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -14,13 +15,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.reborn.core.designsystem.Res as DesignSystemRes
 import com.reborn.core.designsystem.component.RebornButton
+import com.reborn.core.designsystem.component.RebornIcon
 import com.reborn.core.designsystem.component.RebornTextField
-import com.reborn.core.designsystem.component.RebornTopAppBar
+import com.reborn.core.designsystem.ic_back
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.ext.rebornDefault
@@ -69,23 +73,31 @@ fun IntroSignupScreen(
     Column(
         modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
     ) {
-        RebornTopAppBar(onBackClick = { onBackClick() })
-
-        Column(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+        // 뒤로가기와 "초대 코드 입력하기"를 같은 줄에 - 뒤로가기는 왼쪽, 초대 코드는 오른쪽 끝
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(4.dp, 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            RebornIcon(
+                icon = DesignSystemRes.drawable.ic_back,
+                onClick = onBackClick
+            )
             Text(
                 text = "초대 코드 입력하기",
                 style = RebornTheme.typography.bodyLarge,
                 color = RebornTheme.color.grayScale700,
                 textDecoration = TextDecoration.Underline,
-                textAlign = TextAlign.End,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .clickable(onClick = onInviteCodeClick)
-                    .padding(16.dp, 8.dp)
+                    .padding(16.dp, 8.dp),
+                textAlign = TextAlign.End
             )
+        }
 
+        Column(
+            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+        ) {
             Text(
                 text = "장소 이름",
                 style = RebornTheme.typography.titleSmall,
