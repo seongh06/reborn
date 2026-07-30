@@ -17,4 +17,6 @@ interface PlaceRepository {
     suspend fun getWifi(placeId: Long): Result<PlaceWifi>
     suspend fun updateWifi(placeId: Long, ssid: String, password: String): Result<PlaceWifi>
     suspend fun delete(placeId: Long): Result<Unit>
+    suspend fun leave(placeId: Long): Result<Unit>
+    suspend fun transferOwner(placeId: Long, newOwnerUserId: Long): Result<Unit>
 }

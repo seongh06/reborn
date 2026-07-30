@@ -8,8 +8,10 @@ import com.reborn.core.domain.usecase.GetPlaceAdminsUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
+import com.reborn.core.domain.usecase.LeavePlaceUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
+import com.reborn.core.domain.usecase.TransferPlaceOwnerUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileImageUseCase
 import com.reborn.core.domain.usecase.UpdateUserProfileUseCase
 import com.reborn.core.domain.usecase.WithdrawUseCase
@@ -41,6 +43,8 @@ class AdminSettingViewModel(
     private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getPlaceAdminsUseCase: GetPlaceAdminsUseCase,
     private val deletePlaceUseCase: DeletePlaceUseCase,
+    private val leavePlaceUseCase: LeavePlaceUseCase,
+    private val transferPlaceOwnerUseCase: TransferPlaceOwnerUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateUserProfileUseCase: UpdateUserProfileUseCase,
     private val updateUserProfileImageUseCase: UpdateUserProfileImageUseCase,
@@ -71,6 +75,8 @@ class AdminSettingViewModel(
             is AdminSettingIntent.LoadInitial -> checkInitialState()
             is AdminSettingIntent.NavigateBack -> navigationManager.navigateBack()
             is AdminSettingIntent.DeleteRoom -> deleteRoom(intent.placeId)
+            is AdminSettingIntent.LeaveRoom -> leaveRoom(intent.placeId)
+            is AdminSettingIntent.TransferOwner -> transferOwner(intent.placeId, intent.newOwnerUserId)
             is AdminSettingIntent.ClickAddAdmin ->
                 navigationManager.emitEvent(AdminSettingEvent.NavigateToInviteCode(intent.placeId))
             is AdminSettingIntent.ClickAddDevice ->
@@ -176,8 +182,9 @@ class AdminSettingViewModel(
                                     // Route 인자(Route.Admin.InviteCode/AddDevice)가 Int라 기존 관례를 따라 Int로 보관
                                     placeId = place.placeId.toInt(),
                                     roomName = place.name,
+                                    isOwner = place.isOwner,
                                     admins = admins.orEmpty().map {
-                                        AdminSettingUiState.AdminProfile(it.userId, it.name, it.profileImage)
+                                        AdminSettingUiState.AdminProfile(it.userId, it.name, it.profileImage, it.isOwner)
                                     },
                                 )
                             }
@@ -209,6 +216,51 @@ class AdminSettingViewModel(
                             ?.copy(rooms = state.rooms.filterNot { it.placeId == placeId })
                             ?: state
                     }
+                }
+                .onFailure {
+                    navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
+
+    // 방장이 아닌 관리자가 장소에서 스스로 빠진다 - 장소 자체는 유지되고 내 카드만 목록에서 사라진다.
+    private fun leaveRoom(placeId: Int) {
+        viewModelScope.launch {
+            leavePlaceUseCase(placeId.toLong())
+                .onSuccess {
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminSettingUiState.Setting)
+                            ?.copy(rooms = state.rooms.filterNot { it.placeId == placeId })
+                            ?: state
+                    }
+                }
+                .onFailure {
+                    navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
+
+    // 방장 위임 - 성공하면 해당 room의 isOwner/admins를 로컬에서 바로 갱신해 재조회 없이 반영한다.
+    private fun transferOwner(placeId: Int, newOwnerUserId: Long) {
+        viewModelScope.launch {
+            transferPlaceOwnerUseCase(placeId.toLong(), newOwnerUserId)
+                .onSuccess {
+                    navigationManager.updateCurrentState { state ->
+                        (state as? AdminSettingUiState.Setting)
+                            ?.copy(
+                                rooms = state.rooms.map { room ->
+                                    if (room.placeId != placeId) return@map room
+                                    room.copy(
+                                        isOwner = false,
+                                        admins = room.admins.map { admin ->
+                                            admin.copy(isOwner = admin.userId == newOwnerUserId)
+                                        },
+                                    )
+                                },
+                            )
+                            ?: state
+                    }
+                    navigationManager.emitEvent(AdminSettingEvent.ShowSnackbar("방장을 위임했습니다."))
                 }
                 .onFailure {
                     navigationManager.emitEvent(AdminSettingEvent.ShowErrorSnackbar(it))

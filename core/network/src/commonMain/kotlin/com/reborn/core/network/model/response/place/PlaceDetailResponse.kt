@@ -8,6 +8,7 @@ data class PlaceDetailResponse(
     val name: String,
     val type: String,
     val accessLevel: String,
+    val isOwner: Boolean = false,
     val deviceCount: Int,
     val adminCount: Int,
     val qrCode: String,

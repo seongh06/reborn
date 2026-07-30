@@ -5,6 +5,8 @@ data class Place(
     val name: String,
     val type: String,
     val accessLevel: String,
+    // 방장 여부(#추가 API) - 장소 하드 삭제/방장 위임은 방장만 가능, 그 외 관리자는 나가기만 가능
+    val isOwner: Boolean = false,
     val createdAt: String,
 )
 
@@ -13,6 +15,7 @@ data class PlaceDetail(
     val name: String,
     val type: String,
     val accessLevel: String,
+    val isOwner: Boolean = false,
     val deviceCount: Int,
     val adminCount: Int,
     val qrCode: String,
@@ -37,6 +40,7 @@ data class PlaceAdmin(
     val userId: Long,
     val name: String,
     val profileImage: String?,
+    val isOwner: Boolean = false,
 )
 
 data class PlaceWifi(

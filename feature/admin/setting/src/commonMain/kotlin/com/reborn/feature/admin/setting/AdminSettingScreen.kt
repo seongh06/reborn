@@ -124,6 +124,10 @@ fun AdminSettingRoute(
                 state = state,
                 onBackClick = onBackClick,
                 onDeleteRoomClick = { placeId -> viewModel.onIntent(AdminSettingIntent.DeleteRoom(placeId)) },
+                onLeaveRoomClick = { placeId -> viewModel.onIntent(AdminSettingIntent.LeaveRoom(placeId)) },
+                onTransferOwnerClick = { placeId, newOwnerUserId ->
+                    viewModel.onIntent(AdminSettingIntent.TransferOwner(placeId, newOwnerUserId))
+                },
                 onAddAdminClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAdmin(placeId)) },
                 onAddDeviceClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddDevice(placeId)) },
                 onAddArduinoClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddArduino(placeId)) },
@@ -152,6 +156,8 @@ fun AdminSettingScreen(
     state: AdminSettingUiState.Setting,
     onBackClick: () -> Unit,
     onDeleteRoomClick: (Int) -> Unit,
+    onLeaveRoomClick: (Int) -> Unit = {},
+    onTransferOwnerClick: (Int, Long) -> Unit = { _, _ -> },
     onAddAdminClick: (Int) -> Unit,
     onAddDeviceClick: (Int) -> Unit,
     onAddArduinoClick: (Int) -> Unit,
@@ -182,7 +188,8 @@ fun AdminSettingScreen(
             },
             text = {
                 Text(
-                    "탈퇴하면 계정 정보가 삭제되고 되돌릴 수 없어요. 유일한 관리자로 등록된 장소가 있으면 탈퇴가 제한돼요.",
+                    "탈퇴하면 계정 정보가 삭제되고 되돌릴 수 없어요. 유일한 관리자로 등록된 장소가 있다면 " +
+                        "그 장소도 함께 완전히 삭제돼요.",
                     style = RebornTheme.typography.bodyMedium,
                     color = RebornTheme.color.grayScale700
                 )
@@ -242,8 +249,11 @@ fun AdminSettingScreen(
                 RoomListItem(
                     placeId = room.placeId,
                     roomName = room.roomName,
+                    isOwner = room.isOwner,
                     admins = room.admins,
                     onDeleteClick = { onDeleteRoomClick(room.placeId) },
+                    onLeaveClick = { onLeaveRoomClick(room.placeId) },
+                    onTransferOwnerClick = { newOwnerUserId -> onTransferOwnerClick(room.placeId, newOwnerUserId) },
                     onAddAdminClick = { onAddAdminClick(room.placeId) },
                     onAddDeviceClick = { onAddDeviceClick(room.placeId) },
                     onAddArduinoClick = { onAddArduinoClick(room.placeId) },

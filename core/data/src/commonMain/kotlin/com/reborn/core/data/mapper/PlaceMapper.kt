@@ -15,11 +15,11 @@ import com.reborn.core.network.model.response.place.PlaceItemResponse
 import com.reborn.core.network.model.response.place.PlaceResponse
 import com.reborn.core.network.model.response.place.PlaceWifiResponse
 
-fun PlaceResponse.toPlace(accessLevel: String = "ADMIN"): Place =
-    Place(placeId = placeId, name = name, type = type, accessLevel = accessLevel, createdAt = createdAt)
+fun PlaceResponse.toPlace(accessLevel: String = "ADMIN", isOwner: Boolean = true): Place =
+    Place(placeId = placeId, name = name, type = type, accessLevel = accessLevel, isOwner = isOwner, createdAt = createdAt)
 
 fun PlaceItemResponse.toPlace(): Place =
-    Place(placeId = placeId, name = name, type = type, accessLevel = accessLevel, createdAt = createdAt)
+    Place(placeId = placeId, name = name, type = type, accessLevel = accessLevel, isOwner = isOwner, createdAt = createdAt)
 
 fun PlaceDetailResponse.toPlaceDetail(): PlaceDetail =
     PlaceDetail(
@@ -27,6 +27,7 @@ fun PlaceDetailResponse.toPlaceDetail(): PlaceDetail =
         name = name,
         type = type,
         accessLevel = accessLevel,
+        isOwner = isOwner,
         deviceCount = deviceCount,
         adminCount = adminCount,
         qrCode = qrCode,
@@ -41,7 +42,7 @@ fun AdminInviteResponse.toPlaceMembership(): PlaceMembership =
     PlaceMembership(placeId = placeId, placeName = placeName, accessLevel = accessLevel)
 
 fun PlaceAdminItemResponse.toPlaceAdmin(): PlaceAdmin =
-    PlaceAdmin(userId = userId, name = name, profileImage = profileImage)
+    PlaceAdmin(userId = userId, name = name, profileImage = profileImage, isOwner = isOwner)
 
 fun PlaceWifiResponse.toPlaceWifi(): PlaceWifi =
     PlaceWifi(ssid = ssid, password = password)

@@ -17,6 +17,7 @@ import com.reborn.core.model.PlaceWifi
 import com.reborn.core.network.datasource.PlaceDataSource
 import com.reborn.core.network.model.request.place.AdminInviteRequest
 import com.reborn.core.network.model.request.place.RegisterPlaceRequest
+import com.reborn.core.network.model.request.place.TransferOwnerRequest
 import com.reborn.core.network.model.request.place.UpdatePlaceWifiRequest
 
 class PlaceRepositoryImpl(
@@ -57,5 +58,13 @@ class PlaceRepositoryImpl(
 
     override suspend fun delete(placeId: Long): Result<Unit> =
         remote.delete(placeId)
+            .toResult { }
+
+    override suspend fun leave(placeId: Long): Result<Unit> =
+        remote.leave(placeId)
+            .toResult { }
+
+    override suspend fun transferOwner(placeId: Long, newOwnerUserId: Long): Result<Unit> =
+        remote.transferOwner(placeId, TransferOwnerRequest(newOwnerUserId))
             .toResult { }
 }
