@@ -12,4 +12,7 @@ data class AuthTokens(
     // 이 앱 인스턴스가 공기계로 페어링됐는지 여부 - 공기계는 로그인을 하지 않으므로(#113) JWT
     // 인터셉터(#121)가 accessToken 유무로 유추하지 않고 이 플래그를 먼저 명시적으로 확인한다.
     val isAerometer: Boolean = false,
+    // 최초 접속 튜토리얼(#240)을 끝까지 봤는지 - false인 동안은 Home/Setting/Adjust/Data
+    // ViewModel들이 실 API 대신 목데이터를 써서 빈 상태 없이 튜토리얼을 보여준다.
+    val tutorialCompleted: Boolean = false,
 )

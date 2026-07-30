@@ -9,6 +9,7 @@ import com.reborn.core.network.datasource.AuthDataSource
 import com.reborn.core.network.model.request.auth.FcmTokenUpdateRequest
 import com.reborn.core.network.model.request.auth.LoginRequest
 import com.reborn.core.network.model.request.auth.UpdateProfileRequest
+import kotlinx.coroutines.flow.Flow
 
 class AuthRepositoryImpl(
     private val remote: AuthDataSource,
@@ -56,4 +57,9 @@ class AuthRepositoryImpl(
         remote.withdraw()
             .toResult()
             .mapCatching { local.clearTokens() }
+
+    override fun getTutorialCompleted(): Flow<Boolean> = local.tutorialCompleted
+
+    override suspend fun setTutorialCompleted(completed: Boolean): Result<Unit> =
+        runCatching { local.setTutorialCompleted(completed) }
 }
