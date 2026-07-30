@@ -75,7 +75,7 @@ class AdminAdjustViewModel(
     fun onIntent(intent: AdminAdjustIntent) {
         when (intent) {
             is AdminAdjustIntent.LoadInitial -> checkInitialState(intent.deviceId)
-            is AdminAdjustIntent.NavigateBack -> navController.navigateBack()
+            is AdminAdjustIntent.NavigateBack -> navigateBack()
             is AdminAdjustIntent.NavigateToAddDevice -> navController.navigateTo(AdminAdjustUiState.AddDevice)
             is AdminAdjustIntent.NavigateToDeviceDetail -> navigateToDeviceDetail(intent)
             is AdminAdjustIntent.TogglePower -> togglePower(intent.deviceId)
@@ -120,6 +120,17 @@ class AdminAdjustViewModel(
                     navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it))
                     navController.clearAndReset(AdminAdjustUiState.Adjust(emptyList()))
                 }
+        }
+    }
+
+    // IoT 기기 상세에서 뒤로가기는 내부적으로 쌓인 목록 화면을 거치지 않고 항상 바로 HomeScreen으로
+    // 나가야 한다(#235) - 목록 화면(Adjust)으로 한 단계만 돌아가면 사용자가 요청하지 않은 중간
+    // 화면을 거치게 되므로, DeviceDetail에서는 내부 스택을 건너뛰고 바로 Exit을 emit한다.
+    private fun navigateBack() {
+        if (navController.uiState.value is AdminAdjustUiState.DeviceDetail) {
+            navController.emitEvent(AdminAdjustEvent.Exit)
+        } else {
+            navController.navigateBack()
         }
     }
 
