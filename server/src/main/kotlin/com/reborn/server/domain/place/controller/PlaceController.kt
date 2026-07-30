@@ -178,12 +178,12 @@ class PlaceController(
 
     @Operation(
         summary = "장소 삭제",
-        description = "등록된 장소를 삭제합니다. 삭제 시 기기·사용자 매핑 정보가 CASCADE로 함께 삭제됩니다. (ADMIN 권한 필요)",
+        description = "등록된 장소를 하드 삭제합니다. 삭제 시 기기·사용자 매핑 정보가 CASCADE로 함께 삭제됩니다. (방장 권한 필요)",
     )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "삭제 성공"),
         SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
-        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "403", description = "방장 권한 없음"),
         SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
     )
     @SecurityRequirement(name = "bearerAuth")
@@ -195,6 +195,46 @@ class PlaceController(
         placeService.deletePlace(extractUserId(authentication), placeId)
         return ApiResponse.success("장소가 삭제되었습니다.")
     }
+
+    @Operation(
+        summary = "장소 나가기",
+        description = "장소에서 스스로 나갑니다(내 관리자/사용자 매핑만 제거, 장소 자체는 유지). 방장은 나갈 수 없고 먼저 위임하거나 삭제해야 합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "나가기 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "404", description = "해당 장소에 속해있지 않음"),
+        SwaggerApiResponse(responseCode = "409", description = "방장은 나갈 수 없음"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/{placeId}/leave")
+    fun leave(
+        @PathVariable placeId: Long,
+        authentication: Authentication,
+    ): ApiResponse<Nothing> {
+        placeService.leavePlace(extractUserId(authentication), placeId)
+        return ApiResponse.success("장소에서 나갔습니다.")
+    }
+
+    @Operation(
+        summary = "방장 위임",
+        description = "현재 방장이 같은 장소의 다른 관리자(ADMIN)에게 방장 권한을 위임합니다. 방장 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "위임 성공"),
+        SwaggerApiResponse(responseCode = "400", description = "대상이 해당 장소의 관리자가 아니거나, 본인을 지정함"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "방장 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 장소"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/{placeId}/owner")
+    fun transferOwner(
+        @PathVariable placeId: Long,
+        @RequestBody request: PlaceDto.TransferOwnerRequest,
+        authentication: Authentication,
+    ): ApiResponse<PlaceDto.TransferOwnerResponse> =
+        ApiResponse.success(placeService.transferOwner(extractUserId(authentication), placeId, request))
 
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long

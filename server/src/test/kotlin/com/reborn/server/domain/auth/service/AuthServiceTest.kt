@@ -7,6 +7,11 @@ import com.reborn.server.domain.auth.client.GoogleAuthClient
 import com.reborn.server.domain.auth.client.KakaoAuthClient
 import com.reborn.server.domain.auth.client.SocialUserInfo
 import com.reborn.server.domain.auth.dto.AuthDto
+import com.reborn.server.domain.place.AccessLevel
+import com.reborn.server.domain.place.Place
+import com.reborn.server.domain.place.PlaceRepository
+import com.reborn.server.domain.place.PlaceType
+import com.reborn.server.domain.place.UserPlaceMapping
 import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
@@ -54,6 +59,9 @@ class AuthServiceTest {
 
     @Mock
     private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
+
+    @Mock
+    private lateinit var placeRepository: PlaceRepository
 
     @Mock
     private lateinit var localFileStorage: LocalFileStorage
@@ -371,6 +379,45 @@ class AuthServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `withdraw - 유일한 관리자였던 장소는 hard delete된다`() {
+        val user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
+        val place = Place(name = "우리집", qrCode = "qr-uuid", type = PlaceType.HOME, id = 501)
+        val mapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
+
+        given(userPlaceMappingRepository.findAllByUserIdAndAccessLevel(1L, AccessLevel.ADMIN)).willReturn(listOf(mapping))
+        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN)).willReturn(listOf(mapping))
+        given(userPlaceMappingRepository.findAllByUserId(1L)).willReturn(listOf(mapping))
+        given(userRepository.findById(1L)).willReturn(Optional.of(user))
+
+        authService.withdraw(1L)
+
+        verify(placeRepository).deleteByIdInBulk(501L)
+        verify(userRepository).delete(user)
+        verify(redisUtil).delete("refresh:1")
+    }
+
+    @Test
+    fun `withdraw - 다른 관리자가 남아있는 장소에서 방장이었다면 다음 관리자에게 위임하고 장소는 유지된다`() {
+        val user = User(email = "test@reborn.com", name = "테스트", provider = OAuthProvider.GOOGLE, providerId = "google-1", id = 1)
+        val otherAdmin = User(email = "other@reborn.com", name = "다른관리자", provider = OAuthProvider.GOOGLE, providerId = "google-3", id = 3)
+        val place = Place(name = "우리집", qrCode = "qr-uuid", type = PlaceType.HOME, id = 501)
+        val ownerMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
+        val successorMapping = UserPlaceMapping(user = otherAdmin, place = place, accessLevel = AccessLevel.ADMIN, isOwner = false)
+
+        given(userPlaceMappingRepository.findAllByUserIdAndAccessLevel(1L, AccessLevel.ADMIN)).willReturn(listOf(ownerMapping))
+        given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN))
+            .willReturn(listOf(ownerMapping, successorMapping))
+        given(userPlaceMappingRepository.findAllByUserId(1L)).willReturn(listOf(ownerMapping))
+        given(userRepository.findById(1L)).willReturn(Optional.of(user))
+
+        authService.withdraw(1L)
+
+        assertThat(successorMapping.isOwner).isTrue()
+        verify(placeRepository, never()).deleteByIdInBulk(501L)
+        verify(userRepository).delete(user)
     }
 
     companion object {

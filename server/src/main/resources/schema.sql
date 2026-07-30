@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS `user_place_mapping`
     `user_id`      BIGINT      NOT NULL COMMENT '사용자 FK',
     `place_id`     BIGINT      NOT NULL COMMENT '장소 FK',
     `access_level` VARCHAR(10) NOT NULL COMMENT '권한 (ADMIN / USER)',
+    `is_owner`     TINYINT(1)  NOT NULL DEFAULT 0 COMMENT '방장 여부 - 장소당 1명, 하드 삭제/방장 위임 권한',
     `created_at`   DATETIME(6) NOT NULL COMMENT '매핑일시',
     `updated_at`   DATETIME(6) NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),

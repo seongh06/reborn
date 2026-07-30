@@ -1,6 +1,5 @@
 package com.reborn.server.domain.place.converter
 
-import com.reborn.server.domain.auth.User
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.UserPlaceMapping
@@ -23,6 +22,7 @@ object PlaceConverter {
             name = place.name,
             type = place.type.name,
             accessLevel = mapping.accessLevel.name,
+            isOwner = mapping.isOwner,
             createdAt = requireNotNull(place.createdAt),
         )
     }
@@ -30,6 +30,7 @@ object PlaceConverter {
     fun toDetailResponse(
         entity: Place,
         accessLevel: AccessLevel,
+        isOwner: Boolean,
         deviceCount: Int,
         adminCount: Int,
     ): PlaceDto.DetailResponse =
@@ -38,16 +39,18 @@ object PlaceConverter {
             name = entity.name,
             type = entity.type.name,
             accessLevel = accessLevel.name,
+            isOwner = isOwner,
             deviceCount = deviceCount,
             adminCount = adminCount,
             qrCode = entity.qrCode,
             createdAt = requireNotNull(entity.createdAt),
         )
 
-    fun toAdminItem(user: User): PlaceDto.AdminItem =
+    fun toAdminItem(mapping: UserPlaceMapping): PlaceDto.AdminItem =
         PlaceDto.AdminItem(
-            userId = user.id,
-            name = user.name,
-            profileImage = user.profileImage,
+            userId = mapping.user.id,
+            name = mapping.user.name,
+            profileImage = mapping.user.profileImage,
+            isOwner = mapping.isOwner,
         )
 }

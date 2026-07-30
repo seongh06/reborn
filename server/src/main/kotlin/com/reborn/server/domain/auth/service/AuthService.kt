@@ -9,6 +9,7 @@ import com.reborn.server.domain.auth.client.SocialUserInfo
 import com.reborn.server.domain.auth.converter.AuthConverter
 import com.reborn.server.domain.auth.dto.AuthDto
 import com.reborn.server.domain.place.AccessLevel
+import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
@@ -34,6 +35,7 @@ class AuthService(
     private val jwtProvider: JwtProvider,
     private val redisUtil: RedisUtil,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
+    private val placeRepository: PlaceRepository,
     private val localFileStorage: LocalFileStorage,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -171,27 +173,32 @@ class AuthService(
         user.updateFcmToken(fcmToken)
     }
 
-    // 탈퇴 시 이 사용자가 유일한 ADMIN인 장소가 있으면 그 장소의 관리 주체가 사라지므로 차단한다 -
-    // cascade 삭제(장소/기기까지 함께 삭제)는 다른 관리자/사용자의 데이터까지 날리는 위험한 작업이라
-    // 채택하지 않고, 사용자가 먼저 다른 관리자를 초대하거나 장소를 정리하도록 안내한다.
+    // 탈퇴는 항상 허용한다. 이 사용자가 유일한 ADMIN이던 장소는 관리 주체가 사라지므로 통째로
+    // hard delete(기기·피드백 등 CASCADE)하고, 다른 관리자가 남아있는 장소에서 방장이었다면
+    // 남은 관리자 중 한 명(가장 먼저 합류한 사람)에게 방장을 자동으로 넘긴 뒤 탈퇴를 진행한다.
     @Transactional
     fun withdraw(userId: Long) {
         val adminMappings = userPlaceMappingRepository.findAllByUserIdAndAccessLevel(userId, AccessLevel.ADMIN)
-        val soleAdminPlaceNames = adminMappings
-            .filter { mapping ->
-                val otherAdmins = userPlaceMappingRepository
-                    .findAllByPlaceIdAndAccessLevel(mapping.place.id, AccessLevel.ADMIN)
-                otherAdmins.none { it.user.id != userId }
-            }
-            .map { it.place.name }
 
-        if (soleAdminPlaceNames.isNotEmpty()) {
-            throw BusinessAlertException(
-                CommonErrorCode.CONFLICT,
-                "${soleAdminPlaceNames.joinToString(", ")} 장소의 유일한 관리자입니다. " +
-                    "다른 관리자를 먼저 초대하거나 장소를 삭제한 뒤 탈퇴할 수 있습니다.",
-            )
+        val (soleAdminMappings, sharedAdminMappings) = adminMappings.partition { mapping ->
+            val otherAdmins = userPlaceMappingRepository
+                .findAllByPlaceIdAndAccessLevel(mapping.place.id, AccessLevel.ADMIN)
+            otherAdmins.none { it.user.id != userId }
         }
+
+        // 다른 관리자가 남아있는 장소에서 방장이었다면, 탈퇴로 장소가 방장 없는 상태가 되지
+        // 않도록 남은 관리자 중 한 명에게 방장을 넘겨준다.
+        sharedAdminMappings
+            .filter { it.isOwner }
+            .forEach { mapping ->
+                val successor = userPlaceMappingRepository
+                    .findAllByPlaceIdAndAccessLevel(mapping.place.id, AccessLevel.ADMIN)
+                    .filter { it.user.id != userId }
+                    .minByOrNull { it.id }
+                successor?.assignOwner()
+            }
+
+        soleAdminMappings.forEach { mapping -> placeRepository.deleteByIdInBulk(mapping.place.id) }
 
         userPlaceMappingRepository.deleteAll(userPlaceMappingRepository.findAllByUserId(userId))
         val user = userRepository.findById(userId).orElseThrow {

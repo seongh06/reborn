@@ -88,6 +88,7 @@ class PlaceServiceTest {
         val mappingCaptor = ArgumentCaptor.forClass(UserPlaceMapping::class.java)
         verify(userPlaceMappingRepository).save(mappingCaptor.capture())
         assertThat(mappingCaptor.value.accessLevel).isEqualTo(AccessLevel.ADMIN)
+        assertThat(mappingCaptor.value.isOwner).isTrue()
         assertThat(mappingCaptor.value.user).isEqualTo(user)
         assertThat(mappingCaptor.value.place).isEqualTo(savedPlace)
     }
@@ -204,6 +205,7 @@ class PlaceServiceTest {
         given(placeRepository.findById(501L)).willReturn(Optional.of(place))
         given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
             .willReturn(AccessLevel.USER)
+        given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(false)
         given(deviceRepository.countByPlaceId(501L)).willReturn(3L)
         given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN))
             .willReturn(listOf(admin1, admin2))
@@ -212,6 +214,7 @@ class PlaceServiceTest {
 
         assertThat(response.placeId).isEqualTo(501L)
         assertThat(response.accessLevel).isEqualTo("USER")
+        assertThat(response.isOwner).isFalse()
         assertThat(response.deviceCount).isEqualTo(3)
         assertThat(response.adminCount).isEqualTo(2)
         assertThat(response.qrCode).isEqualTo("qr-uuid")
@@ -353,10 +356,9 @@ class PlaceServiceTest {
     }
 
     @Test
-    fun `deletePlace - ADMIN이면 장소를 삭제한다`() {
-        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
-        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
-            .willReturn(AccessLevel.ADMIN)
+    fun `deletePlace - 방장이면 장소를 삭제한다`() {
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(true)
 
         placeService.deletePlace(1L, 501L)
 
@@ -365,7 +367,7 @@ class PlaceServiceTest {
 
     @Test
     fun `deletePlace - 존재하지 않는 장소면 예외가 발생한다`() {
-        given(placeRepository.findById(501L)).willReturn(Optional.empty())
+        given(placeRepository.existsById(501L)).willReturn(false)
 
         assertThatThrownBy { placeService.deletePlace(1L, 501L) }
             .isInstanceOf(BusinessAlertException::class.java)
@@ -374,14 +376,88 @@ class PlaceServiceTest {
     }
 
     @Test
-    fun `deletePlace - ADMIN 권한이 없으면 예외가 발생한다`() {
-        given(placeRepository.findById(501L)).willReturn(Optional.of(place))
-        given(userPlaceMappingRepository.findAccessLevelByUserIdAndPlaceId(1L, 501L))
-            .willReturn(AccessLevel.USER)
+    fun `deletePlace - 방장이 아니면 예외가 발생한다`() {
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(false)
 
         assertThatThrownBy { placeService.deletePlace(1L, 501L) }
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `leavePlace - 방장이 아니면 내 매핑만 삭제한다`() {
+        val mapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = false)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(mapping)
+
+        placeService.leavePlace(1L, 501L)
+
+        verify(userPlaceMappingRepository).deleteByUserIdAndPlaceId(1L, 501L)
+    }
+
+    @Test
+    fun `leavePlace - 방장이면 예외가 발생한다`() {
+        val mapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(mapping)
+
+        assertThatThrownBy { placeService.leavePlace(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.CONFLICT)
+    }
+
+    @Test
+    fun `leavePlace - 해당 장소에 속해있지 않으면 예외가 발생한다`() {
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(null)
+
+        assertThatThrownBy { placeService.leavePlace(1L, 501L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `transferOwner - 방장이면 같은 장소의 다른 관리자에게 위임한다`() {
+        val currentOwnerMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
+        val otherUser = User(email = "other@reborn.com", name = "다른관리자", provider = OAuthProvider.GOOGLE, providerId = "google-3", id = 3)
+        val newOwnerMapping = UserPlaceMapping(user = otherUser, place = place, accessLevel = AccessLevel.ADMIN, isOwner = false)
+        val request = PlaceDto.TransferOwnerRequest(newOwnerUserId = 3L)
+
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(true)
+        given(userPlaceMappingRepository.findByPlaceIdAndIsOwnerTrue(501L)).willReturn(currentOwnerMapping)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(3L, 501L)).willReturn(newOwnerMapping)
+
+        val response = placeService.transferOwner(1L, 501L, request)
+
+        assertThat(response.newOwnerUserId).isEqualTo(3L)
+        assertThat(currentOwnerMapping.isOwner).isFalse()
+        assertThat(newOwnerMapping.isOwner).isTrue()
+    }
+
+    @Test
+    fun `transferOwner - 방장이 아니면 예외가 발생한다`() {
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(false)
+
+        assertThatThrownBy { placeService.transferOwner(1L, 501L, PlaceDto.TransferOwnerRequest(newOwnerUserId = 3L)) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
+
+    @Test
+    fun `transferOwner - 대상이 해당 장소의 관리자가 아니면 예외가 발생한다`() {
+        val currentOwnerMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN, isOwner = true)
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(userPlaceMappingRepository.findIsOwnerByUserIdAndPlaceId(1L, 501L)).willReturn(true)
+        given(userPlaceMappingRepository.findByPlaceIdAndIsOwnerTrue(501L)).willReturn(currentOwnerMapping)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(3L, 501L)).willReturn(null)
+
+        assertThatThrownBy { placeService.transferOwner(1L, 501L, PlaceDto.TransferOwnerRequest(newOwnerUserId = 3L)) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
     }
 }
