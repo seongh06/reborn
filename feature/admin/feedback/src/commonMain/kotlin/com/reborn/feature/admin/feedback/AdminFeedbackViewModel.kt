@@ -53,6 +53,13 @@ class AdminFeedbackViewModel(
         return resolved
     }
 
+    // 캐시해둔 placeId가 가리키는 장소가 그 사이 삭제되는 등으로 이 값을 쓰는 호출이 실패하면
+    // 캐시를 지워서 다음 진입 시 장소 목록을 다시 조회하게 한다 - 캐시가 죽은 채로 남아있으면
+    // 장소가 삭제된 뒤에도 이 화면 전체가 계속 실패한다(#232).
+    private fun invalidatePlaceId() {
+        resolvedPlaceId = null
+    }
+
     fun onIntent(intent: AdminFeedbackIntent) {
         when (intent) {
             is AdminFeedbackIntent.LoadInitial -> checkInitialState(intent.feedbackId)
@@ -103,6 +110,7 @@ class AdminFeedbackViewModel(
                     }
                 }
                 .onFailure {
+                    invalidatePlaceId()
                     navigationManager.emitEvent(AdminFeedbackEvent.ShowErrorSnackbar(it))
                     navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(emptyList()))
                 }
@@ -128,6 +136,7 @@ class AdminFeedbackViewModel(
                     }
                 }
                 .onFailure {
+                    invalidatePlaceId()
                     navigationManager.emitEvent(AdminFeedbackEvent.ShowErrorSnackbar(it))
                     navigationManager.updateCurrentState { state ->
                         (state as? AdminFeedbackUiState.FeedbackQR)?.copy(failed = true) ?: state

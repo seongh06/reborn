@@ -46,6 +46,13 @@ class AdminIotDeviceListViewModel(
         return resolved
     }
 
+    // 캐시해둔 placeId가 가리키는 장소가 그 사이 삭제되는 등으로 이 값을 쓰는 호출이 실패하면
+    // 캐시를 지워서 다음 진입 시 장소 목록을 다시 조회하게 한다 - 캐시가 죽은 채로 남아있으면
+    // 장소가 삭제된 뒤에도 이 화면 전체가 계속 실패한다(#232).
+    private fun invalidatePlaceId() {
+        placeId = null
+    }
+
     fun loadDevices() {
         viewModelScope.launch {
             _uiState.value = AdminIotDeviceListUiState.Loading
@@ -71,6 +78,7 @@ class AdminIotDeviceListViewModel(
                     _uiState.value = AdminIotDeviceListUiState.Loaded(devices)
                 }
                 .onFailure {
+                    invalidatePlaceId()
                     _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(it))
                     _uiState.value = AdminIotDeviceListUiState.Loaded(emptyList())
                 }
