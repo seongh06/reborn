@@ -52,6 +52,8 @@ val networkModule = module {
     single(named("auth")) {
         createAuthHttpClient(get(), get(), get())
     }
+
+    single { AuthTokenCacheInvalidator(get(named("auth"))) }
 }
 
 

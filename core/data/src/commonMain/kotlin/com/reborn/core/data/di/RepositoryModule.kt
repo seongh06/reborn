@@ -29,7 +29,7 @@ val repositoryModule = module {
 
     single<AuthLocalDataSource> { AuthLocalDataSourceImpl(get()) }
     single<DeviceLocalDataSource> { DeviceLocalDataSourceImpl(get()) }
-    single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
     single<PlaceRepository> { PlaceRepositoryImpl(get()) }
     single<DeviceRepository> { DeviceRepositoryImpl(get(), get()) }
     single<SmartThingsRepository> { SmartThingsRepositoryImpl(get()) }
