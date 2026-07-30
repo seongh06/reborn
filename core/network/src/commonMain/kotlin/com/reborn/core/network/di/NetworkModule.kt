@@ -8,6 +8,7 @@ import com.reborn.core.network.model.response.auth.RefreshResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngineFactory
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
@@ -62,6 +63,13 @@ fun Scope.createHttpClient(
         requestTimeoutMillis = 30_000L
         connectTimeoutMillis = 15_000L
         socketTimeoutMillis = 30_000L
+    }
+
+    // 타임아웃/연결 실패 시 바로 에러를 보여주지 않고 1회 재시도한다 - 일시적인 네트워크
+    // 흔들림에도 즉시 오류 문구가 뜬다는 피드백(#233) 대응.
+    install(HttpRequestRetry) {
+        retryOnExceptionOrServerErrors(maxRetries = 1)
+        exponentialDelay()
     }
 
     install(ContentNegotiation) {

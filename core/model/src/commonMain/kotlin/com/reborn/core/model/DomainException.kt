@@ -42,7 +42,7 @@ enum class DomainErrorCode(
     SERVER_ERROR(9000L, "서버 오류가 발생했습니다."),
     INVALID_INPUT(9001L, "잘못된 입력 값입니다."),
 
-    NETWORK_ERROR(-1L, "네트워크 환경을 확인해주세요."),
+    NETWORK_ERROR(-1L, "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
     UNKNOWN_ERROR(-2L, "알 수 없는 오류가 발생했습니다.");
 }
 
