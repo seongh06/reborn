@@ -45,7 +45,6 @@ import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
-import com.reborn.core.model.TutorialStep
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.SettingItem
 import com.reborn.core.ui.ext.rebornDefault
@@ -128,8 +127,7 @@ fun AdminSettingRoute(
                 onProfileImagePickError = { throwable ->
                     scope.launch { snackbarHostState.showSnackbar(throwable.message ?: "이미지를 선택할 수 없습니다.") }
                 },
-                onTermsClick = onNavigateToTerms,
-                onDismissTutorial = { stepId -> viewModel.onIntent(AdminSettingIntent.DismissTutorial(stepId)) }
+                onTermsClick = onNavigateToTerms
             )
         }
     }
@@ -153,9 +151,7 @@ fun AdminSettingScreen(
     onProfileNameChange: (String) -> Unit = {},
     onProfileImagePicked: (PickedImage) -> Unit = {},
     onProfileImagePickError: (Throwable) -> Unit = {},
-    onTermsClick: () -> Unit = {},
-    onDismissTutorial: (String) -> Unit = {}
-
+    onTermsClick: () -> Unit = {}
 ) {
     var showWithdrawConfirm by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
@@ -241,9 +237,7 @@ fun AdminSettingScreen(
                     onAddDeviceClick = { onAddDeviceClick(room.placeId) },
                     onAddArduinoClick = { onAddArduinoClick(room.placeId) },
                     onAddAiSpeakerClick = { onAddAiSpeakerClick(room.placeId) },
-                    onFeedbackQrClick = onFeedbackQrClick,
-                    showAddDeviceHint = state.showAddDeviceHint,
-                    onDismissAddDeviceHint = { onDismissTutorial(TutorialStep.SETTING_ADD_DEVICE) }
+                    onFeedbackQrClick = onFeedbackQrClick
                 )
             }
             RebornButton(

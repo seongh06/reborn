@@ -5,7 +5,6 @@ package com.reborn.core.model
 object TutorialStep {
     const val HOME_SMART_THINGS = "home_smart_things"
     const val HOME_FIRST_FEEDBACK = "home_first_feedback"
-    const val SETTING_ADD_DEVICE = "setting_add_device"
     const val ADJUST_REMOTE_TAB = "adjust_remote_tab"
     const val ADJUST_AUTO_TAB = "adjust_auto_tab"
 }

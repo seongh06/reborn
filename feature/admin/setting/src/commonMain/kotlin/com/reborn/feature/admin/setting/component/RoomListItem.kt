@@ -32,15 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.reborn.core.designsystem.theme.RebornTheme
-import com.reborn.core.ui.component.TutorialHighlightOverlay
-import com.reborn.core.ui.component.TutorialHintCard
-import com.reborn.core.ui.component.tutorialTarget
 import com.reborn.feature.admin.setting.Res
 import com.reborn.feature.admin.setting.ic_more_vert
 import com.reborn.feature.admin.setting.ic_person
@@ -65,9 +61,7 @@ fun RoomListItem(
     onAddDeviceClick: () -> Unit,
     onAddArduinoClick: () -> Unit,
     onAddAiSpeakerClick: () -> Unit,
-    onFeedbackQrClick: () -> Unit = {},
-    showAddDeviceHint: Boolean = false,
-    onDismissAddDeviceHint: () -> Unit = {}
+    onFeedbackQrClick: () -> Unit = {}
 ){
     var showAddSheet by remember { mutableStateOf(false) }
     var showAdminsSheet by remember { mutableStateOf(false) }
@@ -130,9 +124,7 @@ fun RoomListItem(
             onFeedbackQrClick = onFeedbackQrClick,
             onDeleteClick = onDeleteClick,
             onLeaveClick = onLeaveClick,
-            onOpenTransferOwnerSheet = { showTransferOwnerSheet = true },
-            showAddDeviceHint = showAddDeviceHint,
-            onDismissAddDeviceHint = onDismissAddDeviceHint
+            onOpenTransferOwnerSheet = { showTransferOwnerSheet = true }
         )
     }
 
@@ -260,17 +252,12 @@ private fun AddSheet(
     onFeedbackQrClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onLeaveClick: () -> Unit,
-    onOpenTransferOwnerSheet: () -> Unit,
-    showAddDeviceHint: Boolean = false,
-    onDismissAddDeviceHint: () -> Unit = {}
+    onOpenTransferOwnerSheet: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
-    // 최초 접속 튜토리얼(#240) - 바텀시트는 별도 Popup 레이어라 하이라이트 오버레이/설명 카드를
-    // App.kt 바텀 네비 대신 이 시트 안에서 자체적으로 그린다.
-    var addDeviceHintRect by remember { mutableStateOf<Rect?>(null) }
 
     fun selectAndDismiss(onClick: () -> Unit) {
         scope.launch {
@@ -290,51 +277,32 @@ private fun AddSheet(
         sheetState = sheetState,
         containerColor = RebornTheme.color.grayScale100
     ) {
-        Box {
-            Column(
-                modifier = Modifier.padding(bottom = 24.dp)
-            ) {
-                // 최초 접속 튜토리얼(#240) - "장소 삭제/나가기" 등 항목이 시트 하단에 고정돼
-                // 있어서 설명 카드를 목록 중간에 끼워 넣으면 겹쳐 보일 수 있다 - 항상 맨 위에 둔다.
-                if (showAddDeviceHint) {
-                    TutorialHintCard(
-                        text = "여기서 아두이노나 AI 스피커를 등록할 수 있어요.",
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                    )
-                }
-                AddSheetItem(text = "관리자 초대", onClick = { selectAndDismiss(onAddAdminClick) })
-                Column(modifier = Modifier.tutorialTarget { addDeviceHintRect = it }) {
-                    AddSheetItem(text = "아두이노 추가", onClick = { selectAndDismiss(onAddArduinoClick) })
-                    AddSheetItem(text = "AI 스피커 추가", onClick = { selectAndDismiss(onAddAiSpeakerClick) })
-                }
-                AddSheetItem(text = "공기계 추가", onClick = { selectAndDismiss(onAddDeviceClick) })
-                AddSheetItem(text = "피드백 QR", onClick = { selectAndDismiss(onFeedbackQrClick) })
-                if (isOwner && otherAdmins.isNotEmpty()) {
-                    AddSheetItem(
-                        text = "방장 위임",
-                        onClick = { selectAndDismiss(onOpenTransferOwnerSheet) }
-                    )
-                }
-                HorizontalDivider(color = RebornTheme.color.grayScale300)
-                if (isOwner) {
-                    AddSheetItem(
-                        text = "장소 삭제",
-                        textColor = RebornTheme.color.reject,
-                        onClick = { showDeleteConfirm = true }
-                    )
-                } else {
-                    AddSheetItem(
-                        text = "장소 나가기",
-                        textColor = RebornTheme.color.reject,
-                        onClick = { showLeaveConfirm = true }
-                    )
-                }
+        Column(
+            modifier = Modifier.padding(bottom = 24.dp)
+        ) {
+            AddSheetItem(text = "관리자 초대", onClick = { selectAndDismiss(onAddAdminClick) })
+            AddSheetItem(text = "아두이노 추가", onClick = { selectAndDismiss(onAddArduinoClick) })
+            AddSheetItem(text = "AI 스피커 추가", onClick = { selectAndDismiss(onAddAiSpeakerClick) })
+            AddSheetItem(text = "공기계 추가", onClick = { selectAndDismiss(onAddDeviceClick) })
+            AddSheetItem(text = "피드백 QR", onClick = { selectAndDismiss(onFeedbackQrClick) })
+            if (isOwner && otherAdmins.isNotEmpty()) {
+                AddSheetItem(
+                    text = "방장 위임",
+                    onClick = { selectAndDismiss(onOpenTransferOwnerSheet) }
+                )
             }
-
-            if (showAddDeviceHint) {
-                TutorialHighlightOverlay(
-                    highlightRect = addDeviceHintRect,
-                    onDismiss = onDismissAddDeviceHint
+            HorizontalDivider(color = RebornTheme.color.grayScale300)
+            if (isOwner) {
+                AddSheetItem(
+                    text = "장소 삭제",
+                    textColor = RebornTheme.color.reject,
+                    onClick = { showDeleteConfirm = true }
+                )
+            } else {
+                AddSheetItem(
+                    text = "장소 나가기",
+                    textColor = RebornTheme.color.reject,
+                    onClick = { showLeaveConfirm = true }
                 )
             }
         }
