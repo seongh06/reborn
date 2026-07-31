@@ -27,6 +27,4 @@ interface FeedbackRepository : JpaRepository<Feedback, Long> {
     fun findAllByDeviceIsNull(pageable: Pageable): Page<Feedback>
 
     fun countByDeviceIsNull(): Long
-
-    fun existsBySessionToken(sessionToken: String): Boolean
 }

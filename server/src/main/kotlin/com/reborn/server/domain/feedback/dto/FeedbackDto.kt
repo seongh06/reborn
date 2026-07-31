@@ -11,7 +11,10 @@ class FeedbackDto {
         // feedback.html은 selectedDeviceId가 null이어도 제출 버튼을 막지 않는다.
         val deviceId: String? = null,
         @field:NotBlank val content: String? = null,
-        @field:NotBlank val sessionToken: String? = null,
+        // 더 이상 중복 제출 방지에 쓰이지 않는다(#261) - QR 페이지가
+        // localStorage에 영구 저장해 재전송하던 옛 방식은 그 브라우저에서 영원히 재제출을
+        // 막아버렸다. 지금은 상관관계 추적용 참고값일 뿐이라 완전히 optional.
+        val sessionToken: String? = null,
     )
 
     data class SubmitResponse(

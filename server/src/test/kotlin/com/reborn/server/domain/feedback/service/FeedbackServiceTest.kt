@@ -21,6 +21,7 @@ import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
 import com.reborn.server.global.fcm.FcmClient
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
+import com.reborn.server.global.redis.RedisUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -39,6 +40,7 @@ import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import java.time.Duration
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -74,6 +76,9 @@ class FeedbackServiceTest {
     @Mock
     private lateinit var smartThingsDeviceService: SmartThingsDeviceService
 
+    @Mock
+    private lateinit var redisUtil: RedisUtil
+
     @InjectMocks
     private lateinit var feedbackService: FeedbackService
 
@@ -90,6 +95,10 @@ class FeedbackServiceTest {
         adminMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.ADMIN)
     }
 
+    // FeedbackService.submit()의 dedupKey 생성식과 항상 동일하게 유지해야 함
+    private fun dedupKey(qrCode: String, deviceId: String?, content: String): String =
+        "feedback:dedup:$qrCode:${deviceId ?: "none"}:${content.hashCode()}"
+
     @Test
     fun `submit - 정상 요청이면 피드백을 저장한다`() {
         val request = FeedbackDto.SubmitRequest(
@@ -104,7 +113,8 @@ class FeedbackServiceTest {
 
         given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
         given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
-        given(feedbackRepository.existsBySessionToken("sess-1")).willReturn(false)
+        given(redisUtil.setIfAbsent(dedupKey("qr-uuid", "arduino_room_01", "너무 더워요"), "1", Duration.ofSeconds(10)))
+            .willReturn(true)
         given(feedbackRepository.save(any())).willReturn(saved)
 
         val response = feedbackService.submit(request, "Mozilla/5.0")
@@ -124,7 +134,8 @@ class FeedbackServiceTest {
 
         given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
         given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
-        given(feedbackRepository.existsBySessionToken("sess-1")).willReturn(false)
+        given(redisUtil.setIfAbsent(dedupKey("qr-uuid", "arduino_room_01", "덥다"), "1", Duration.ofSeconds(10)))
+            .willReturn(true)
         given(feedbackRepository.save(any())).willReturn(saved)
         given(userPlaceMappingRepository.findAllByPlaceIdAndAccessLevel(501L, AccessLevel.ADMIN)).willReturn(listOf(mapping))
 
@@ -154,7 +165,8 @@ class FeedbackServiceTest {
                 .apply { prePersist() }
 
         given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
-        given(feedbackRepository.existsBySessionToken("sess-1")).willReturn(false)
+        given(redisUtil.setIfAbsent(dedupKey("qr-uuid", null, "너무 더워요"), "1", Duration.ofSeconds(10)))
+            .willReturn(true)
         given(feedbackRepository.save(any())).willReturn(saved)
 
         val response = feedbackService.submit(request, "Mozilla/5.0")
@@ -206,17 +218,37 @@ class FeedbackServiceTest {
     }
 
     @Test
-    fun `submit - 동일 세션으로 중복 제출하면 예외가 발생한다`() {
+    fun `submit - 짧은 시간 내 동일한 장소·기기·내용으로 재전송하면 예외가 발생한다`() {
         val request = FeedbackDto.SubmitRequest(qrCode = "qr-uuid", deviceId = "arduino_room_01", content = "덥다", sessionToken = "sess-1")
 
         given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
         given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
-        given(feedbackRepository.existsBySessionToken("sess-1")).willReturn(true)
+        given(redisUtil.setIfAbsent(dedupKey("qr-uuid", "arduino_room_01", "덥다"), "1", Duration.ofSeconds(10)))
+            .willReturn(false)
 
         assertThatThrownBy { feedbackService.submit(request, null) }
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.TOO_MANY_REQUESTS)
+    }
+
+    @Test
+    fun `submit - sessionToken 없이도 피드백을 저장한다`() {
+        // #261 - sessionToken은 더 이상 중복 방지에 쓰이지 않는 참고용 optional 값이라
+        // 없어도 제출이 거부되면 안 된다는 회귀 방지 테스트.
+        val request = FeedbackDto.SubmitRequest(qrCode = "qr-uuid", deviceId = "arduino_room_01", content = "덥다", sessionToken = null)
+        val saved = Feedback(device = device, place = place, content = "덥다", sessionToken = null, id = 100)
+            .apply { prePersist() }
+
+        given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
+        given(deviceRepository.findByDeviceKey("arduino_room_01")).willReturn(device)
+        given(redisUtil.setIfAbsent(dedupKey("qr-uuid", "arduino_room_01", "덥다"), "1", Duration.ofSeconds(10)))
+            .willReturn(true)
+        given(feedbackRepository.save(any())).willReturn(saved)
+
+        val response = feedbackService.submit(request, null)
+
+        assertThat(response.feedbackId).isEqualTo(100L)
     }
 
     @Test

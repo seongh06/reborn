@@ -19,6 +19,7 @@ import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
 import com.reborn.server.global.fcm.FcmClient
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
+import com.reborn.server.global.redis.RedisUtil
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
+import java.time.Duration
 import kotlin.math.roundToInt
 
 data class VoiceFeedbackResult(
@@ -48,6 +50,7 @@ class FeedbackService(
     private val voiceFeedbackPersister: VoiceFeedbackPersister,
     private val feedbackAiRecommendationService: FeedbackAiRecommendationService,
     private val smartThingsDeviceService: SmartThingsDeviceService,
+    private val redisUtil: RedisUtil,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -59,6 +62,10 @@ class FeedbackService(
         // 10분(16kHz*16bit mono)치 WAV보다 넉넉한 상한 — Gemini 호출을 트리거하기 전에
         // 대용량 페이로드를 걸러 비용/메모리 남용을 줄인다(CodeRabbit 리뷰, PR #144).
         private const val MAX_VOICE_AUDIO_BYTES = 10 * 1024 * 1024
+
+        // 중복 클릭/새로고침 재전송만 막을 정도의 짧은 창(#261) - sessionToken 영구 유니크
+        // 방식은 같은 브라우저가 그 장소에 영원히 재제출 못 하는 버그였다.
+        private val DUPLICATE_SUBMIT_WINDOW = Duration.ofSeconds(10)
     }
 
     @Transactional
@@ -69,7 +76,6 @@ class FeedbackService(
         val content = request.content?.takeIf { it.isNotBlank() }
             ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "피드백 내용은 필수입니다.")
         val sessionToken = request.sessionToken?.takeIf { it.isNotBlank() }
-            ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "sessionToken은 필수입니다.")
 
         val place = placeRepository.findByQrCode(qrCode)
             ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
@@ -86,7 +92,12 @@ class FeedbackService(
                 ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 또는 기기입니다.")
         }
 
-        if (feedbackRepository.existsBySessionToken(sessionToken)) {
+        // sessionToken 영구 유니크 제약(#261)을 대체 - QR 페이지가 브라우저
+        // localStorage에 토큰을 영구 저장/재사용해서, 한 번 제출하면 그 브라우저에서 같은 장소에
+        // 영원히 다시 못 보내는 버그가 있었다. 대신 (장소+기기+내용) 조합으로 짧은 시간(중복
+        // 클릭/새로고침 재전송 방지 목적)만 막고, 그 시간이 지나거나 내용이 다르면 항상 제출 가능.
+        val dedupKey = "feedback:dedup:$qrCode:${deviceId ?: "none"}:${content.hashCode()}"
+        if (!redisUtil.setIfAbsent(dedupKey, "1", DUPLICATE_SUBMIT_WINDOW)) {
             throw BusinessAlertException(CommonErrorCode.TOO_MANY_REQUESTS, "이미 피드백을 제출하셨습니다. 잠시 후 다시 시도해주세요.")
         }
 

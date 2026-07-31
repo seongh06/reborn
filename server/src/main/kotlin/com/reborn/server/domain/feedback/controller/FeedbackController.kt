@@ -37,7 +37,8 @@ class FeedbackController(
 
     @Operation(
         summary = "피드백 보내기",
-        description = "QR 웹페이지에서 방문자가 피드백을 제출합니다. 인증이 필요 없으며, sessionToken으로 중복 제출을 방지합니다.",
+        description = "QR 웹페이지에서 방문자가 피드백을 제출합니다. 인증이 필요 없으며, 짧은 시간(10초) 내 동일한 " +
+            "(장소·기기·내용) 조합의 재전송만 막습니다(중복 클릭/새로고침 방지 목적, #261).",
     )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "제출 성공 — feedbackId, status(PENDING), createdAt 반환"),
