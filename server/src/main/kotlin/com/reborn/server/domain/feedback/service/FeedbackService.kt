@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
+import java.io.File
 import java.time.Duration
 import kotlin.math.roundToInt
 
@@ -56,7 +57,7 @@ class FeedbackService(
 
     companion object {
         // AI 스피커(#142) 응답 고정 문구 — 2종뿐이라 VoiceTtsCache가 최초 생성 후 재사용한다.
-        private const val VOICE_SUCCESS_MESSAGE = "소중한 의견 감사합니다. 잘 전달했어요."
+        private const val VOICE_SUCCESS_MESSAGE = "피드백이 접수되었습니다. 소중한 의견 감사합니다."
         private const val VOICE_RETRY_MESSAGE = "죄송해요, 잘 듣지 못했어요. 버튼을 다시 누르고 말씀해 주세요."
 
         // 10분(16kHz*16bit mono)치 WAV보다 넉넉한 상한 — Gemini 호출을 트리거하기 전에
@@ -146,6 +147,16 @@ class FeedbackService(
         val device = deviceRepository.findByDeviceKey(deviceId)
             ?.takeIf { it.deviceType == DeviceType.AI_SPEAKER }
             ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "등록되지 않은 AI 스피커 기기입니다.")
+
+        // 임시 디버그용 - 실기기 테스트하면서 실제로 어떤 오디오가 녹음/전송되는지 확인하려고
+        // 컨테이너 내부(퍼블릭 서빙 경로 아님, 재배포 전까지만 유지됨)에 원본을 저장한다.
+        // 디버깅 끝나면 제거할 것.
+        runCatching {
+            val debugDir = File("/tmp/voice-debug").apply { mkdirs() }
+            val fileName = "${System.currentTimeMillis()}_${deviceId}.wav"
+            File(debugDir, fileName).writeBytes(audioBytes)
+            log.info("음성 피드백 디버그 저장: /tmp/voice-debug/{}", fileName)
+        }.onFailure { log.warn("음성 피드백 디버그 저장 실패: {}", it.message) }
 
         val analysis = geminiClient.analyzeAudio(audioBytes, mimeType)
 

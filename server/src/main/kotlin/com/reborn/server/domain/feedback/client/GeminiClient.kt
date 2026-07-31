@@ -34,7 +34,7 @@ class GeminiClient(
     private val objectMapper: ObjectMapper,
     @param:Value("\${gemini.api-key:}") private val apiKey: String,
     @param:Value("\${gemini.base-url:https://generativelanguage.googleapis.com/v1beta}") private val baseUrl: String,
-    @param:Value("\${gemini.model:gemini-2.0-flash-lite}") private val model: String,
+    @param:Value("\${gemini.model:gemini-flash-lite-latest}") private val model: String,
     @param:Value("\${gemini.tts-model:gemini-2.5-flash-preview-tts}") private val ttsModel: String,
 ) {
 

@@ -33,12 +33,14 @@ smartthings:
 
 # Gemini API(#142, AI 스피커 음성 피드백 분석/TTS). 미설정 시 GeminiClient가 fail-closed로 처리한다.
 # 모델은 비용 최소화 목적으로 flash-lite 계열 사용(오디오 이해는 텍스트 대비 토큰 단가가 더 높음에 유의).
-# gemini-2.5-flash-lite는 신규 사용자에게 더 이상 제공되지 않아(Google API 404) gemini-2.0-flash-lite로
-# 교체함(2026-08-01) - 모델 목록은 GET https://generativelanguage.googleapis.com/v1beta/models로 확인 가능.
+# gemini-2.5-flash-lite에 이어 gemini-2.0-flash-lite도 신규 사용자 제공이 중단돼(Google API 404)
+# 특정 버전을 못박는 대신 Google이 제공하는 "latest" 별칭(gemini-flash-lite-latest)으로 교체함
+# (2026-08-01) - 이후 또 특정 버전이 단종돼도 별칭이 자동으로 살아있는 모델을 가리켜 이 문제가
+# 재발하지 않는다. 모델 목록은 GET https://generativelanguage.googleapis.com/v1beta/models로 확인 가능.
 gemini:
   api-key: ${GEMINI_API_KEY:}
   base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
-  model: ${GEMINI_MODEL:gemini-2.0-flash-lite}
+  model: ${GEMINI_MODEL:gemini-flash-lite-latest}
   tts-model: ${GEMINI_TTS_MODEL:gemini-2.5-flash-preview-tts}
 
 # 판매용 기기(Arduino/AI 스피커) 시리얼 배치 발급(#147) 전용 운영자 키 — 장소/ADMIN과 무관하게
