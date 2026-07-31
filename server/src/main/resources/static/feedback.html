@@ -399,14 +399,12 @@
     });
   }
 
-  function sessionTokenFor(qrCode) {
-    var key = 'reborn_feedback_session_' + qrCode;
-    var token = window.localStorage.getItem(key);
-    if (!token) {
-      token = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : String(Date.now()) + Math.random();
-      window.localStorage.setItem(key, token);
-    }
-    return token;
+  // localStorage에 영구 저장하지 않는다(#261) - 예전엔 한 번 생성한 토큰을 영원히 재사용해서
+  // 서버의 영구 유니크 체크와 합쳐져 같은 브라우저가 그 장소에 다시는 피드백을 못 보내는
+  // 버그였다. 지금은 페이지 로드마다 새로 생성하는 참고용 값일 뿐, 중복 방지는 서버가
+  // (장소+기기+내용) 조합으로 짧은 시간만 막는다.
+  function sessionTokenFor() {
+    return (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : String(Date.now()) + Math.random();
   }
 
   function submit() {
@@ -419,7 +417,7 @@
         qrCode: qrCode,
         deviceId: selectedDeviceId,
         content: contentEl.value.trim(),
-        sessionToken: sessionTokenFor(qrCode)
+        sessionToken: sessionTokenFor()
       })
     }).then(function (res) {
       if (res.status === 429) {
