@@ -83,6 +83,16 @@ class FeedbackController(
         return builder.body(result.audio.audioBytes)
     }
 
+    // 임시 디버그용(#276) - 실기기 스피커 볼륨(SPEAKER_GAIN) 조정 테스트 전용. 녹음/분석 없이
+    // 고정 문구("안녕하세요.") TTS만 바로 반환한다. 디버깅 끝나면 제거할 것.
+    @GetMapping("/voice/test-tts")
+    fun getTestTts(): ResponseEntity<ByteArray> {
+        val audio = feedbackService.getTestTts()
+        return ResponseEntity.ok()
+            .contentType(resolveAudioMediaType(audio.mimeType))
+            .body(audio.audioBytes)
+    }
+
     private fun resolveAudioMediaType(mimeType: String): MediaType =
         runCatching { MediaType.parseMediaType(mimeType) }.getOrDefault(MediaType.parseMediaType("audio/wav"))
 

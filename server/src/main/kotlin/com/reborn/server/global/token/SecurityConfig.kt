@@ -81,6 +81,10 @@ class SecurityConfig(
                     // permitAll은 하위 경로("/voice")에 매칭되지 않아 누락돼 있었음.
                     .requestMatchers(HttpMethod.POST, "/api/feedback/voice").permitAll()
 
+                    // 임시 디버그용(#276) - 스피커 볼륨 테스트 전용 엔드포인트, 실기기가 인증 없이
+                    // 호출. 디버깅 끝나면 이 줄도 같이 제거할 것.
+                    .requestMatchers(HttpMethod.GET, "/api/feedback/voice/test-tts").permitAll()
+
                     // 판매용 기기 시리얼 배치 발급(#147) 및 발급+장소 등록 동시 처리(#150) — 장소/ADMIN과
                     // 무관, X-Operator-Key로 자체 인가. 정확한 경로만 매칭되므로 두 경로 모두 명시해야 함.
                     .requestMatchers(HttpMethod.POST, "/api/device/serials").permitAll()
