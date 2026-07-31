@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 data class FeedbackStatusUpdateResponse(
     val feedbackId: Long,
     val status: String,
+    val controlSent: Boolean = false,
 )

@@ -5,7 +5,10 @@ import com.reborn.core.network.model.ApiResponse
 import com.reborn.core.network.model.SensorHistoryResponse
 import com.reborn.core.network.model.response.metric.MetricAggregateBucket
 import com.reborn.core.network.model.response.metric.MetricHistoryItem
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 // 최근 조회 페이지(size)만큼의 로그를 날짜(yyyyMMdd)+시간(0~23)별로 묶어 시간당 평균값으로 변환.
 // 서버 히스토리 API는 날짜 범위 필터가 없어 "최근 N건"으로만 근사 - 수집 주기가 촘촘한 기기는
@@ -23,12 +26,18 @@ class SensorHistoryApiImpl(
             is ApiResponse.Failure.UnknownApiError -> throw IllegalStateException(response.message)
         }
 
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val todayKey = "${now.year}${now.monthNumber.pad2()}${now.dayOfMonth.pad2()}"
+
         val extractor = fieldExtractorFor(sensorType)
         val dailyData = logs
             .mapNotNull { item -> extractor(item)?.let { value -> item.dateKey() to (item.hour() to value) } }
             .groupBy({ it.first }, { it.second })
-            .mapValues { (_, hourValues) ->
-                (0..23).map { hour ->
+            .mapValues { (dateKey, hourValues) ->
+                // 오늘은 아직 지나지 않은 미래 시간대가 있어 0으로 채우면 그래프 끝이 밤(23시)까지
+                // 억지로 이어지며 뚝 떨어져 보인다 - 오늘 하루만 현재 시각까지만 채운다.
+                val lastHour = if (dateKey == todayKey) now.hour else 23
+                (0..lastHour).map { hour ->
                     hourValues.filter { it.first == hour }.map { it.second }
                         .let { values -> if (values.isEmpty()) 0.0 else values.average() }
                 }

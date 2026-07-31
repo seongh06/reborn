@@ -162,13 +162,16 @@ class AdminFeedbackViewModel(
 
         viewModelScope.launch {
             updateFeedbackStatusUseCase(feedbackId.toLong(), statusParam)
-                .onSuccess {
+                .onSuccess { controlSent ->
                     feedbacks = feedbacks.map { item ->
                         if (item.id == feedbackId) item.copy(state = nextState) else item
                     }
                     navigationManager.navigateBack()
                     navigationManager.updateCurrentState { state ->
                         (state as? AdminFeedbackUiState.Feedback)?.copy(feedbacks = feedbacks) ?: state
+                    }
+                    if (approve && controlSent) {
+                        navigationManager.emitEvent(AdminFeedbackEvent.ShowSnackbar("승인 완료 — 기기에 전송했어요."))
                     }
                 }
                 .onFailure {

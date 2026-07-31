@@ -551,29 +551,65 @@ bool isButtonJustPressed() {
 void setup() {
   Serial.begin(115200);
   delay(300);
+  Serial.println("[DEBUG 1] Serial.begin 완료");
+  Serial.flush();
 
   pinMode(BUTTON_PIN, INPUT);
-  pixel.begin();
-  setLed(0, 0, 0);
+  Serial.println("[DEBUG 2] pinMode 완료");
+  Serial.flush();
 
+  pixel.begin();
+  Serial.println("[DEBUG 3] pixel.begin 완료");
+  Serial.flush();
+
+  setLed(0, 0, 0);
+  Serial.println("[DEBUG 4] setLed 완료");
+  Serial.flush();
+
+  // isResetHeldAtBoot()가 버튼을 3초간 폴링하는 3초 측정 창보다 먼저 실행되어야 한다 -
+  // 이 블록을 앞에 두면(CodeRabbit 리뷰) 깜빡임 1.2초만큼 측정 시작이 밀려 리셋 홀드
+  // 판정이 부정확해질 수 있다.
   if (isResetHeldAtBoot()) {
     Serial.println("버튼 3초 이상 감지 — 저장된 설정 초기화 후 프로비저닝 포털 진입");
     clearProvisioning();
   }
+  Serial.println("[DEBUG 5] isResetHeldAtBoot 완료");
+  Serial.flush();
 
-  if (!loadProvisioning()) {
+  // 업로드/부팅 확인용 임시 마커 — 흰색 3회 깜빡임(디버깅 끝나면 제거)
+  for (int i = 0; i < 3; i++) {
+    setLed(30, 30, 30);
+    delay(200);
+    setLed(0, 0, 0);
+    delay(200);
+  }
+
+  bool provisioned = loadProvisioning();
+  Serial.printf("[DEBUG 6] loadProvisioning 완료: provisioned=%d ssid=%s deviceId=%s\n",
+                provisioned, g_wifiSsid.c_str(), g_deviceId.c_str());
+  Serial.flush();
+
+  if (!provisioned) {
     Serial.println("저장된 WiFi/기기 설정 없음 — 프로비저닝 포털 시작");
+    Serial.flush();
     runProvisioningPortal(); // 저장 완료 시 내부에서 재부팅되어 반환하지 않음
   }
 
   i2sInstall();
+  Serial.println("[DEBUG 7] i2sInstall 완료");
+  Serial.flush();
+
   if (!connectWiFi(20000UL)) {
     Serial.println("WiFi 연결 실패 — 저장된 자격 증명이 잘못됐을 수 있어 프로비저닝 포털로 폴백");
+    Serial.flush();
     runProvisioningPortal(); // 저장 완료 시 내부에서 재부팅되어 반환하지 않음
   }
+  Serial.println("[DEBUG 8] connectWiFi 완료");
+  Serial.flush();
 
   setLed(0, 0, 0); // 대기 = LED 꺼짐
   Serial.println("대기 중 — 버튼을 눌러 피드백을 남겨주세요");
+  Serial.flush();
 }
 
 void loop() {

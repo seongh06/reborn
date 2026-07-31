@@ -24,8 +24,8 @@ object FeedbackConverter {
     fun toCountResponse(total: Long, pending: Long, approved: Long, rejected: Long): FeedbackDto.CountResponse =
         FeedbackDto.CountResponse(total = total, pending = pending, approved = approved, rejected = rejected)
 
-    fun toStatusUpdateResponse(entity: Feedback): FeedbackDto.StatusUpdateResponse =
-        FeedbackDto.StatusUpdateResponse(feedbackId = entity.id, status = entity.status.name)
+    fun toStatusUpdateResponse(entity: Feedback, controlSent: Boolean = false): FeedbackDto.StatusUpdateResponse =
+        FeedbackDto.StatusUpdateResponse(feedbackId = entity.id, status = entity.status.name, controlSent = controlSent)
 
     // deviceId에 deviceKey를 그대로 노출하면 안 됨 - deviceKey는 Arduino/AI 스피커가 자체 인증에
     // 쓰는 비밀값(X-Device-Id 헤더, POST /api/metric/collect 등)이라 비로그인 공개 API로 유출되면

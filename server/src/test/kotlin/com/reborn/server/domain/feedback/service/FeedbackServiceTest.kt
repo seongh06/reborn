@@ -17,6 +17,7 @@ import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.PlaceType
 import com.reborn.server.domain.place.UserPlaceMapping
 import com.reborn.server.domain.place.UserPlaceMappingRepository
+import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
 import com.reborn.server.global.fcm.FcmClient
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
@@ -34,6 +35,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -68,6 +70,9 @@ class FeedbackServiceTest {
 
     @Mock
     private lateinit var feedbackAiRecommendationService: FeedbackAiRecommendationService
+
+    @Mock
+    private lateinit var smartThingsDeviceService: SmartThingsDeviceService
 
     @InjectMocks
     private lateinit var feedbackService: FeedbackService
@@ -286,6 +291,112 @@ class FeedbackServiceTest {
         val response = feedbackService.updateStatus(1L, 100L, request)
 
         assertThat(response.status).isEqualTo("APPROVED")
+    }
+
+    @Test
+    fun `updateStatus - 승인 시 추천 온도와 SmartThings 기기가 있으면 제어 명령을 전송한다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+        feedback.applyAiRecommendation(
+            snapshotTemperature = 28.0, snapshotHumidity = 60.0, snapshotIlluminance = null, snapshotPeopleCount = null,
+            recommendedTemperatureBefore = 28.0, recommendedTemperatureAfter = 24.6,
+        )
+        val smartThingsDevice = Device(
+            place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-1", name = "에어컨", id = 20,
+        )
+        val request = FeedbackDto.StatusUpdateRequest(status = "APPROVED")
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(deviceRepository.findAllByPlaceIdAndDeviceType(501L, DeviceType.SMART_THINGS)).willReturn(listOf(smartThingsDevice))
+
+        val response = feedbackService.updateStatus(1L, 100L, request)
+
+        assertThat(response.controlSent).isTrue()
+        verify(smartThingsDeviceService).controlInternal(
+            smartThingsDevice,
+            com.reborn.server.domain.device.dto.DeviceDto.ControlRequest(temperature = 25),
+        )
+    }
+
+    @Test
+    fun `updateStatus - SmartThings 기기가 여러 대면 대상을 특정할 수 없어 제어를 건너뛴다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+        feedback.applyAiRecommendation(
+            snapshotTemperature = 28.0, snapshotHumidity = 60.0, snapshotIlluminance = null, snapshotPeopleCount = null,
+            recommendedTemperatureBefore = 28.0, recommendedTemperatureAfter = 24.6,
+        )
+        val smartThingsDevice1 = Device(
+            place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-1", name = "에어컨", id = 20,
+        )
+        val smartThingsDevice2 = Device(
+            place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-2", name = "거실 에어컨", id = 21,
+        )
+        val request = FeedbackDto.StatusUpdateRequest(status = "APPROVED")
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(deviceRepository.findAllByPlaceIdAndDeviceType(501L, DeviceType.SMART_THINGS))
+            .willReturn(listOf(smartThingsDevice1, smartThingsDevice2))
+
+        val response = feedbackService.updateStatus(1L, 100L, request)
+
+        assertThat(response.controlSent).isFalse()
+        verifyNoInteractions(smartThingsDeviceService)
+    }
+
+    @Test
+    fun `updateStatus - 승인해도 SmartThings 기기가 없으면 제어를 건너뛴다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+        feedback.applyAiRecommendation(
+            snapshotTemperature = 28.0, snapshotHumidity = 60.0, snapshotIlluminance = null, snapshotPeopleCount = null,
+            recommendedTemperatureBefore = 28.0, recommendedTemperatureAfter = 24.6,
+        )
+        val request = FeedbackDto.StatusUpdateRequest(status = "APPROVED")
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(deviceRepository.findAllByPlaceIdAndDeviceType(501L, DeviceType.SMART_THINGS)).willReturn(emptyList())
+
+        val response = feedbackService.updateStatus(1L, 100L, request)
+
+        assertThat(response.controlSent).isFalse()
+    }
+
+    @Test
+    fun `updateStatus - 추천 온도가 없으면 SmartThings 기기 조회 없이 건너뛴다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+        val request = FeedbackDto.StatusUpdateRequest(status = "APPROVED")
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+
+        val response = feedbackService.updateStatus(1L, 100L, request)
+
+        assertThat(response.controlSent).isFalse()
+        verifyNoInteractions(deviceRepository)
+    }
+
+    @Test
+    fun `updateStatus - 거절 시에는 제어를 시도하지 않는다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+        feedback.applyAiRecommendation(
+            snapshotTemperature = 28.0, snapshotHumidity = 60.0, snapshotIlluminance = null, snapshotPeopleCount = null,
+            recommendedTemperatureBefore = 28.0, recommendedTemperatureAfter = 24.6,
+        )
+        val request = FeedbackDto.StatusUpdateRequest(status = "REJECTED")
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+
+        val response = feedbackService.updateStatus(1L, 100L, request)
+
+        assertThat(response.controlSent).isFalse()
+        verifyNoInteractions(deviceRepository)
     }
 
     @Test

@@ -5,6 +5,6 @@ import com.reborn.core.domain.repository.FeedbackRepository
 class UpdateFeedbackStatusUseCase(
     private val feedbackRepository: FeedbackRepository
 ) {
-    suspend operator fun invoke(feedbackId: Long, status: String): Result<Unit> =
+    suspend operator fun invoke(feedbackId: Long, status: String): Result<Boolean> =
         feedbackRepository.updateStatus(feedbackId, status)
 }

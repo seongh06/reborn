@@ -343,26 +343,43 @@ void readAndSend() {
 void setup() {
   Serial.begin(115200);
   delay(1000);
+  Serial.println("[DEBUG 1] Serial.begin 완료");
+  Serial.flush();
 
   dht.begin();
+  Serial.println("[DEBUG 2] dht.begin 완료");
+  Serial.flush();
 
-  if (!loadProvisioning()) {
+  bool provisioned = loadProvisioning();
+  Serial.printf("[DEBUG 3] loadProvisioning 완료: provisioned=%d ssid=%s deviceId=%s\n",
+                provisioned, g_wifiSsid.c_str(), g_deviceId.c_str());
+  Serial.flush();
+
+  if (!provisioned) {
     Serial.println("저장된 WiFi/기기 설정 없음 — 프로비저닝 포털 시작");
+    Serial.flush();
     runProvisioningPortal(); // 저장 완료 시 내부에서 재부팅되어 반환하지 않음
   }
 
   if (!connectWiFi(20000UL)) {
     Serial.println("WiFi 연결 실패 — 저장된 자격 증명이 잘못됐을 수 있어 프로비저닝 포털로 폴백");
+    Serial.flush();
     runProvisioningPortal(); // 저장 완료 시 내부에서 재부팅되어 반환하지 않음
   }
+  Serial.println("[DEBUG 4] connectWiFi 완료");
+  Serial.flush();
 
   readAndSend(); // 부팅 직후 1회 즉시 전송(대기 없이 바로 확인 가능하도록)
+  Serial.println("[DEBUG 5] readAndSend 완료(부팅 직후 1회)");
+  Serial.flush();
   lastSendAt = millis();
 }
 
 void loop() {
   if (millis() - lastSendAt >= SEND_INTERVAL_MS) {
     lastSendAt = millis();
+    Serial.println("[DEBUG loop] 주기 도달 — readAndSend 호출");
+    Serial.flush();
     readAndSend();
   }
 }

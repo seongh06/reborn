@@ -58,11 +58,24 @@ fun DeviceListItem(
     onPowerToggle: () -> Unit,
     onClick: () -> Unit
 ) {
+    // 배경이 isPowerOn 기준으로 어둡게/밝게 반전되므로(#235 CodeRabbit 리뷰), 아이콘/이름
+    // 색상도 같은 기준으로 반전해야 켜짐(어두운 배경) 상태에서 글자가 묻히지 않는다.
+    val foregroundColor = when {
+        !isOnline -> RebornTheme.color.grayScale400
+        isPowerOn -> RebornTheme.color.grayScale100
+        else -> RebornTheme.color.grayScale900
+    }
+    val subtitleColor = when {
+        !isOnline -> RebornTheme.color.reject
+        isPowerOn -> RebornTheme.color.grayScale300
+        else -> RebornTheme.color.grayScale700
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (isPowerOn) RebornTheme.color.grayScale200 else RebornTheme.color.grayScale500)
+            .background(if (isPowerOn) RebornTheme.color.grayScale500 else RebornTheme.color.grayScale200)
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -76,7 +89,7 @@ fun DeviceListItem(
                 painter = painterResource(deviceType.icon),
                 modifier = Modifier.size(32.dp),
                 contentDescription = null,
-                tint = if (isOnline) RebornTheme.color.grayScale900 else RebornTheme.color.grayScale400
+                tint = foregroundColor
             )
             DeviceOnOffButton(
                 isPowerOn = isPowerOn,
@@ -90,14 +103,14 @@ fun DeviceListItem(
             Text(
                 text = name,
                 style = RebornTheme.typography.titleMedium,
-                color = RebornTheme.color.grayScale900,
+                color = foregroundColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = "$place · ${if (isOnline) "온라인" else "오프라인"}",
                 style = RebornTheme.typography.caption,
-                color = if (isOnline) RebornTheme.color.grayScale700 else RebornTheme.color.reject
+                color = subtitleColor
             )
         }
     }
@@ -123,7 +136,14 @@ fun DeviceOnOffButton(
             painter = painterResource(Res.drawable.ic_power),
             contentDescription = null,
             modifier = Modifier.size(14.dp),
-            tint = if (isPowerOn && isOnline) RebornTheme.color.grayScale900 else RebornTheme.color.grayScale500
+            // 카드 배경(위에서 isPowerOn 기준으로 어둡게/밝게 반전)과 항상 반대색이어야 아이콘이
+            // 배경에 묻히지 않는다 - 꺼짐/오프라인일 땐 밝은 배경 위 어두운 아이콘, 켜짐일 땐
+            // 어두운 배경 위 밝은 아이콘.
+            tint = when {
+                !isOnline -> RebornTheme.color.grayScale400
+                isPowerOn -> RebornTheme.color.grayScale100
+                else -> RebornTheme.color.grayScale700
+            }
         )
     }
 }
