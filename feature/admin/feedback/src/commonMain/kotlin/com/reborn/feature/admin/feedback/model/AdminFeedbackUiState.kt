@@ -67,7 +67,8 @@ fun AdminFeedbackUiState.Feedback.filteredFeedbacks(): List<AdminFeedbackUiState
 
 sealed interface AdminFeedbackIntent{
     // feedbackId가 있으면 목록 로드 후 바로 해당 상세로 이동(Home 딥링크, #177)
-    data class LoadInitial(val feedbackId: Int? = null) : AdminFeedbackIntent
+    // openQr이 true면 목록 로드 후 바로 QR 화면으로 이동(Setting place 더보기 딥링크)
+    data class LoadInitial(val feedbackId: Int? = null, val openQr: Boolean = false) : AdminFeedbackIntent
     data object NavigateBack : AdminFeedbackIntent
     data object NavigateToQR : AdminFeedbackIntent
     data class NavigateToFeedbackDetail(val feedbackId : Int) : AdminFeedbackIntent

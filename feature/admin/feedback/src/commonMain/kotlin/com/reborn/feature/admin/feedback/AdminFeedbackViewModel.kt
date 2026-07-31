@@ -62,7 +62,7 @@ class AdminFeedbackViewModel(
 
     fun onIntent(intent: AdminFeedbackIntent) {
         when (intent) {
-            is AdminFeedbackIntent.LoadInitial -> checkInitialState(intent.feedbackId)
+            is AdminFeedbackIntent.LoadInitial -> checkInitialState(intent.feedbackId, intent.openQr)
             is AdminFeedbackIntent.NavigateBack -> navigationManager.navigateBack()
             is AdminFeedbackIntent.NavigateToFeedbackDetail -> navigateToFeedbackDetail(intent)
             is AdminFeedbackIntent.NavigateToQR -> navigateToQR()
@@ -90,7 +90,7 @@ class AdminFeedbackViewModel(
         }
     }
 
-    private fun checkInitialState(feedbackId: Int? = null) {
+    private fun checkInitialState(feedbackId: Int? = null, openQr: Boolean = false) {
         navigationManager.clearAndReset(AdminFeedbackUiState.Loading)
         viewModelScope.launch {
             val placeId = resolvePlaceId()
@@ -107,6 +107,8 @@ class AdminFeedbackViewModel(
                     navigationManager.clearAndReset(AdminFeedbackUiState.Feedback(feedbacks))
                     if (feedbackId != null) {
                         navigateToFeedbackDetail(AdminFeedbackIntent.NavigateToFeedbackDetail(feedbackId))
+                    } else if (openQr) {
+                        navigateToQR()
                     }
                 }
                 .onFailure {

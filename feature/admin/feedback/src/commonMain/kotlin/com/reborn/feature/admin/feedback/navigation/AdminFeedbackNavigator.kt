@@ -20,6 +20,7 @@ fun NavGraphBuilder.adminFeedbackNavGraph(
         val route = backStackEntry.toRoute<Route.Admin.Feedback>()
         AdminFeedbackRoute(
             initialFeedbackId = route.feedbackId,
+            initialOpenQr = route.openQr,
             onBackClick = onBackClick,
             onBottomBarVisibilityChange = onBottomBarVisibilityChange
         )

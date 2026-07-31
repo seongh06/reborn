@@ -65,6 +65,7 @@ fun RoomListItem(
     onAddDeviceClick: () -> Unit,
     onAddArduinoClick: () -> Unit,
     onAddAiSpeakerClick: () -> Unit,
+    onFeedbackQrClick: () -> Unit = {},
     showAddDeviceHint: Boolean = false,
     onDismissAddDeviceHint: () -> Unit = {}
 ){
@@ -126,6 +127,7 @@ fun RoomListItem(
             onAddArduinoClick = onAddArduinoClick,
             onAddAiSpeakerClick = onAddAiSpeakerClick,
             onAddDeviceClick = onAddDeviceClick,
+            onFeedbackQrClick = onFeedbackQrClick,
             onDeleteClick = onDeleteClick,
             onLeaveClick = onLeaveClick,
             onOpenTransferOwnerSheet = { showTransferOwnerSheet = true },
@@ -255,6 +257,7 @@ private fun AddSheet(
     onAddArduinoClick: () -> Unit,
     onAddAiSpeakerClick: () -> Unit,
     onAddDeviceClick: () -> Unit,
+    onFeedbackQrClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onLeaveClick: () -> Unit,
     onOpenTransferOwnerSheet: () -> Unit,
@@ -305,6 +308,7 @@ private fun AddSheet(
                     AddSheetItem(text = "AI 스피커 추가", onClick = { selectAndDismiss(onAddAiSpeakerClick) })
                 }
                 AddSheetItem(text = "공기계 추가", onClick = { selectAndDismiss(onAddDeviceClick) })
+                AddSheetItem(text = "피드백 QR", onClick = { selectAndDismiss(onFeedbackQrClick) })
                 if (isOwner && otherAdmins.isNotEmpty()) {
                     AddSheetItem(
                         text = "방장 위임",
