@@ -458,6 +458,26 @@ vepuoxtGzi4CZ68zJpiq1UvSqTbFJjtbD4seiMHl
 -----END CERTIFICATE-----
 )CERT";
 
+// ===== 온라인 하트비트(#276) =====
+// WiFi 연결 성공 직후 1회 호출 - 관리자 앱이 "등록만 되고 실제로 한 번도 연결에 성공한 적
+// 없는 기기"를 구분해서 보여줄 수 있도록 서버에 알린다. 응답은 확인하지 않는다(fire-and-forget) -
+// 이게 실패해도 음성 피드백을 한 번이라도 성공하면 서버가 그때도 온라인 처리해준다.
+void notifyOnline() {
+  WiFiClientSecure client;
+  client.setCACert(SERVER_ROOT_CA_PEM);
+  if (!client.connect(SERVER_HOST, SERVER_PORT)) {
+    Serial.println("온라인 알림 실패 - 서버 연결 안 됨");
+    return;
+  }
+  client.print("POST /api/device/online HTTP/1.1\r\n");
+  client.printf("Host: %s\r\n", SERVER_HOST);
+  client.printf("X-Device-Id: %s\r\n", g_deviceId.c_str());
+  client.print("Content-Length: 0\r\n");
+  client.print("Connection: close\r\n\r\n");
+  client.stop();
+  Serial.println("온라인 알림 전송 완료");
+}
+
 // ===== 녹음 → 스트리밍 업로드 → 응답 재생 (한 사이클) =====
 // 반환값: 인식 성공 여부. 네트워크 오류 시 false.
 bool recordUploadAndPlay(unsigned long recordWindowMs) {
@@ -606,6 +626,8 @@ void setup() {
   }
   Serial.println("[DEBUG 8] connectWiFi 완료");
   Serial.flush();
+
+  notifyOnline();
 
   setLed(0, 0, 0); // 대기 = LED 꺼짐
   Serial.println("대기 중 — 버튼을 눌러 피드백을 남겨주세요");

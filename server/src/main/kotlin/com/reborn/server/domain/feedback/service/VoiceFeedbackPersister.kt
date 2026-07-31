@@ -35,6 +35,9 @@ class VoiceFeedbackPersister(
         val device = deviceRepository.findById(deviceId).orElseThrow {
             BusinessAlertException(CommonErrorCode.NOT_FOUND, "등록되지 않은 AI 스피커 기기입니다.")
         }
+        // 온라인 하트비트(#276)가 부팅 시점에 실패했더라도, 실제로 음성 피드백을 성공적으로
+        // 보냈다면 이 기기는 확실히 온라인 상태였다는 뜻이라 여기서도 한 번 더 표시해둔다.
+        device.updateOnlineStatus(true)
 
         val feedback = feedbackRepository.save(
             Feedback(device = device, place = device.place, content = content, source = FeedbackSource.VOICE),
