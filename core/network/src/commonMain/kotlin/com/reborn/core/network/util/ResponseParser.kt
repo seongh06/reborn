@@ -16,7 +16,7 @@ internal suspend inline fun <reified T> Result<HttpResponse>.asApiResponse(): Ap
         return when (exception) {
             is ConnectTimeoutException ->
                 ApiResponse.Failure.NetworkError(
-                    message = "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                    message = "서버 연결이 지연되고 있습니다. 잠시 후 다시 시도해주세요.",
                     throwable = "TIMEOUT"
                 )
             // exception.message는 OkHttp/Ktor 원시 예외 메시지(영어, 기술 용어)라 사용자에게 그대로
@@ -24,7 +24,7 @@ internal suspend inline fun <reified T> Result<HttpResponse>.asApiResponse(): Ap
             // 로깅 용도로만 보관, UI에서 소비하지 않음)에 남긴다.
             else ->
                 ApiResponse.Failure.NetworkError(
-                    message = "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                    message = "서버 연결이 지연되고 있습니다. 잠시 후 다시 시도해주세요.",
                     throwable = exception.toString()
                 )
         }
