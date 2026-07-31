@@ -392,6 +392,9 @@ fun App(initialFeedbackId: Int? = null) {
                         onNavigateToTerms = {
                             navController.navigate(Route.Terms())
                         },
+                        onNavigateToFeedbackQr = {
+                            navController.navigate(Route.Admin.Feedback(openQr = true))
+                        },
                         onLoggedOut = {
                             introSkipToSignup = false
                             navController.navigate(Route.Intro) {

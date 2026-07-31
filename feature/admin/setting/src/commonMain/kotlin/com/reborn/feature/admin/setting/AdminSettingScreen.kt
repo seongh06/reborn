@@ -67,6 +67,7 @@ fun AdminSettingRoute(
     onNavigateToAddAiSpeaker: (Int) -> Unit = {},
     onNavigateToAddPlace: () -> Unit = {},
     onNavigateToTerms: () -> Unit = {},
+    onNavigateToFeedbackQr: () -> Unit = {},
     onLoggedOut: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -114,6 +115,7 @@ fun AdminSettingRoute(
                 onAddDeviceClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddDevice(placeId)) },
                 onAddArduinoClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddArduino(placeId)) },
                 onAddAiSpeakerClick = { placeId -> viewModel.onIntent(AdminSettingIntent.ClickAddAiSpeaker(placeId)) },
+                onFeedbackQrClick = onNavigateToFeedbackQr,
                 onAddPlaceClick = { viewModel.onIntent(AdminSettingIntent.ClickAddPlace) },
                 onLogoutClick = { viewModel.onIntent(AdminSettingIntent.ClickLogout) },
                 onWithdrawClick = { viewModel.onIntent(AdminSettingIntent.ClickWithdraw) },
@@ -144,6 +146,7 @@ fun AdminSettingScreen(
     onAddDeviceClick: (Int) -> Unit,
     onAddArduinoClick: (Int) -> Unit,
     onAddAiSpeakerClick: (Int) -> Unit,
+    onFeedbackQrClick: () -> Unit = {},
     onAddPlaceClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onWithdrawClick: () -> Unit = {},
@@ -238,6 +241,7 @@ fun AdminSettingScreen(
                     onAddDeviceClick = { onAddDeviceClick(room.placeId) },
                     onAddArduinoClick = { onAddArduinoClick(room.placeId) },
                     onAddAiSpeakerClick = { onAddAiSpeakerClick(room.placeId) },
+                    onFeedbackQrClick = onFeedbackQrClick,
                     showAddDeviceHint = state.showAddDeviceHint,
                     onDismissAddDeviceHint = { onDismissTutorial(TutorialStep.SETTING_ADD_DEVICE) }
                 )
