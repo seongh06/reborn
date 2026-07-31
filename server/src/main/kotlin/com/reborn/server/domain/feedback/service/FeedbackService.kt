@@ -177,6 +177,10 @@ class FeedbackService(
         )
     }
 
+    // 임시 디버그용 - 실기기 스피커 볼륨(SPEAKER_GAIN) 조정할 때, 녹음→분석 전체 흐름 없이
+    // 고정 문구 TTS만 빠르게 반복 재생해서 테스트할 수 있게 한다. 디버깅 끝나면 제거할 것.
+    fun getTestTts(): GeminiSpeechResult = voiceTtsCache.get("안녕하세요.")
+
     // QR 웹페이지(#163)가 진입 시 장소명 + 제출 대상 기기 목록을 미리 조회한다. SMART_THINGS는
     // 방문자가 직접 지목할 물리 기기가 아니라 클라우드로 제어하는 가전이라 선택지에서 제외한다.
     fun getSubmissionContext(qrCode: String): FeedbackDto.ContextResponse {
