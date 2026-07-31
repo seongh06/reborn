@@ -17,7 +17,7 @@ val autoNamespace = "com.reborn.${project.path.removePrefix(":").replace(":", ".
 extensions.configure<KotlinMultiplatformExtension> {
     android {
         compileSdk = 37
-        minSdk = 28
+        minSdk = 27
         namespace = autoNamespace
     }
 }
