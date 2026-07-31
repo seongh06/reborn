@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -143,7 +144,20 @@ fun AdminDeviceDetailScreen(
     Column(
         modifier = Modifier.rebornDefault(Color.White)
     ) {
-        RebornTopAppBar(title = "IoT 기기 상세", onBackClick = onBackClick)
+        Box(modifier = Modifier.fillMaxWidth()) {
+            RebornTopAppBar(title = "IoT 기기 상세", onBackClick = onBackClick)
+            // 기기 해제는 뒤로가기와 같은 상단 바 줄, 우측 끝에 배치한다.
+            Text(
+                "기기 해제",
+                style = RebornTheme.typography.labelLarge,
+                color = RebornTheme.color.reject,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(horizontal = 16.dp)
+                    .clickable { showDeleteConfirm = true }
+            )
+        }
         DeviceSection(
             Device(
                 id = state.device.id.toString(),
@@ -153,15 +167,6 @@ fun AdminDeviceDetailScreen(
                 isPowerOn = state.device.isPowerOn,
                 deviceType = state.device.deviceType
             )
-        )
-        Text(
-            "기기 해제",
-            style = RebornTheme.typography.labelLarge,
-            color = RebornTheme.color.reject,
-            textDecoration = TextDecoration.Underline,
-            modifier = Modifier
-                .padding(12.dp, 4.dp)
-                .clickable { showDeleteConfirm = true }
         )
         Column(
             modifier = Modifier.padding(12.dp, 8.dp),

@@ -62,7 +62,7 @@ fun DeviceListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (isPowerOn) RebornTheme.color.grayScale200 else RebornTheme.color.grayScale500)
+            .background(if (isPowerOn) RebornTheme.color.grayScale500 else RebornTheme.color.grayScale200)
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -123,7 +123,14 @@ fun DeviceOnOffButton(
             painter = painterResource(Res.drawable.ic_power),
             contentDescription = null,
             modifier = Modifier.size(14.dp),
-            tint = if (isPowerOn && isOnline) RebornTheme.color.grayScale900 else RebornTheme.color.grayScale500
+            // 카드 배경(위에서 isPowerOn 기준으로 어둡게/밝게 반전)과 항상 반대색이어야 아이콘이
+            // 배경에 묻히지 않는다 - 꺼짐/오프라인일 땐 밝은 배경 위 어두운 아이콘, 켜짐일 땐
+            // 어두운 배경 위 밝은 아이콘.
+            tint = when {
+                !isOnline -> RebornTheme.color.grayScale400
+                isPowerOn -> RebornTheme.color.grayScale100
+                else -> RebornTheme.color.grayScale700
+            }
         )
     }
 }
