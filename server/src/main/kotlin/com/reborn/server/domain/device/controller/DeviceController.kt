@@ -138,6 +138,22 @@ class DeviceController(
         ApiResponse.success(deviceService.pairDevice(request))
 
     @Operation(
+        summary = "기기 온라인 알림 (아두이노/AI 스피커 전용)",
+        description = "기기가 실제로 WiFi 연결에 성공한 직후 스스로 호출하는 하트비트(#276). " +
+            "관리자 앱이 '등록만 되고 한 번도 연결에 성공한 적 없는 기기'를 구분해서 보여줄 수 있게 " +
+            "isOnline을 true로 표시한다. X-Device-Id로만 인증한다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "처리 성공"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기"),
+    )
+    @PostMapping("/online")
+    fun markOnline(@RequestHeader("X-Device-Id") deviceId: String): ApiResponse<Nothing> {
+        deviceService.markOnline(deviceId)
+        return ApiResponse.success(null)
+    }
+
+    @Operation(
         summary = "기기 목록 조회",
         description = "특정 장소에 등록된 기기(ARDUINO/AEROMETER) 목록을 조회합니다. 해당 장소의 ADMIN 권한이 필요합니다.",
     )

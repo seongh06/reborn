@@ -140,7 +140,10 @@ class AdminHomeViewModel(
             navController.clearAndReset(
                 AdminHomeUiState.Home(
                     hasDevices = serverDevices.isNotEmpty(),
-                    devices = devices,
+                    // 등록만 되고 WiFi 연결에 한 번도 성공한 적 없는 기기는 홈 카드에서 숨긴다(#276) -
+                    // 등록 자체는 됐으므로 hasDevices/튜토리얼 판단은 그대로 serverDevices 기준을 쓰고,
+                    // 전체 기기 목록(설정 화면)에서는 계속 보여서 삭제/재시도가 가능하게 한다.
+                    devices = devices.filter { it.isOnline },
                     metric = metric,
                     feedbackTotalCount = feedbacks.size,
                     feedbackWaitingCount = feedbacks.count { it.status == "PENDING" },
@@ -172,7 +175,7 @@ class AdminHomeViewModel(
             if (device.id == deviceId) device.copy(isPowerOn = nextPowerOn) else device
         }
         navController.updateCurrentState { state ->
-            (state as? AdminHomeUiState.Home)?.copy(devices = devices) ?: state
+            (state as? AdminHomeUiState.Home)?.copy(devices = devices.filter { it.isOnline }) ?: state
         }
 
         viewModelScope.launch {
@@ -182,7 +185,7 @@ class AdminHomeViewModel(
                         if (device.id == deviceId) device.copy(isPowerOn = target.isPowerOn) else device
                     }
                     navController.updateCurrentState { state ->
-                        (state as? AdminHomeUiState.Home)?.copy(devices = devices) ?: state
+                        (state as? AdminHomeUiState.Home)?.copy(devices = devices.filter { it.isOnline }) ?: state
                     }
                     navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it))
                 }

@@ -190,6 +190,19 @@ class DeviceService(
         return DeviceDto.ListResponse(devices = devices)
     }
 
+    // 기기(아두이노/AI 스피커)가 실제로 WiFi 연결에 성공한 직후 스스로 호출하는 하트비트(#276).
+    // 인증 없이 deviceKey만으로 신뢰한다 - X-Device-Id 기반 다른 하드웨어 엔드포인트와 동일한
+    // 인증 모델(DeviceType.kt 주석 참고). 등록만 되고 실제로 한 번도 연결에 성공한 적 없는
+    // 기기를 앱이 구분해서 보여줄 수 있게 하는 게 목적 - isOnline은 한 번 true가 되면 다시
+    // false로 돌아가지 않으므로("연결된 적 있음" 마커로 재사용) 기기가 재부팅될 때마다 계속
+    // 호출해도 무해하다.
+    @Transactional
+    fun markOnline(deviceKey: String) {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        device.updateOnlineStatus(true)
+    }
+
     @Transactional
     fun delete(userId: Long, deviceKey: String) {
         val device = deviceRepository.findByDeviceKey(deviceKey)

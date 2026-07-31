@@ -67,6 +67,10 @@ class SecurityConfig(
                     // Arduino 기기 인증 (Device Key 헤더) — JWT 불필요
                     .requestMatchers("/api/metric/collect", "/api/metric/current").permitAll()
 
+                    // 아두이노/AI 스피커가 WiFi 연결 성공 직후 스스로 호출하는 온라인 하트비트(#276) -
+                    // X-Device-Id로만 인증하는 다른 하드웨어 엔드포인트와 동일한 모델
+                    .requestMatchers(HttpMethod.POST, "/api/device/online").permitAll()
+
                     // 공기계 앱은 별도 로그인을 하지 않음 — 페어링 코드 자체가 유일한 인가 수단(JWT 불필요)
                     .requestMatchers(HttpMethod.POST, "/api/device/pairing").permitAll()
 

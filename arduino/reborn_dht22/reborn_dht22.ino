@@ -322,6 +322,21 @@ void sendMetric(float temperature, float humidity) {
   Serial.println(response);
 }
 
+// ===== 온라인 하트비트(#276) =====
+// WiFi 연결 성공 직후 1회 호출 - 관리자 앱이 "등록만 되고 실제로 한 번도 연결에 성공한 적
+// 없는 기기"를 구분해서 보여줄 수 있도록 서버에 알린다. 응답은 확인하지 않는다(fire-and-forget) -
+// 이게 실패해도 60초 주기 온습도 전송이 한 번이라도 성공하면 서버가 그때도 온라인 처리해준다.
+void notifyOnline() {
+  httpClient.beginRequest();
+  httpClient.post("/api/device/online");
+  httpClient.sendHeader("X-Device-Id", g_deviceId.c_str());
+  httpClient.sendHeader("Content-Length", 0);
+  httpClient.endRequest();
+  httpClient.responseStatusCode();
+  httpClient.responseBody();
+  Serial.println("온라인 알림 전송 완료");
+}
+
 void readAndSend() {
   float humidity = dht.readHumidity();
   float temperature = dht.readTemperature();
@@ -368,6 +383,8 @@ void setup() {
   }
   Serial.println("[DEBUG 4] connectWiFi 완료");
   Serial.flush();
+
+  notifyOnline();
 
   readAndSend(); // 부팅 직후 1회 즉시 전송(대기 없이 바로 확인 가능하도록)
   Serial.println("[DEBUG 5] readAndSend 완료(부팅 직후 1회)");

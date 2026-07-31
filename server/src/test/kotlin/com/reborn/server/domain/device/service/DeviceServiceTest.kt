@@ -400,6 +400,26 @@ class DeviceServiceTest {
     }
 
     @Test
+    fun `markOnline - 존재하는 기기면 isOnline을 true로 바꾼다`() {
+        val device = Device(place = place, deviceType = DeviceType.AI_SPEAKER, deviceKey = "AI7K2P9M", id = 10)
+        given(deviceRepository.findByDeviceKey("AI7K2P9M")).willReturn(device)
+
+        deviceService.markOnline("AI7K2P9M")
+
+        assertThat(device.isOnline).isTrue()
+    }
+
+    @Test
+    fun `markOnline - 존재하지 않는 기기면 예외가 발생한다`() {
+        given(deviceRepository.findByDeviceKey("UNKNOWN")).willReturn(null)
+
+        assertThatThrownBy { deviceService.markOnline("UNKNOWN") }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
     fun `delete - ADMIN이면 기기를 삭제한다`() {
         val device = Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = "AR7K2P9M", id = 10)
         given(deviceRepository.findByDeviceKey("AR7K2P9M")).willReturn(device)
