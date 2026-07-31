@@ -10,9 +10,6 @@ sealed interface AdminSettingUiState {
         val profileName: String? = null,
         // 서버에 프로필 이미지 조회 API(#155)는 있으나 로그인 이후 이미지가 없는 유저(카카오 미동의 등)는 null일 수 있음
         val profileImageUrl: String? = null,
-        // 최초 접속 튜토리얼(#240) - 점3개 바텀시트를 열었을 때 "아두이노 추가"/"AI 스피커 추가"
-        // 항목을 하이라이트한다. 바텀시트는 별도 Popup 레이어라 시트 내부에서 자체적으로 그린다.
-        val showAddDeviceHint: Boolean = false,
     ) : AdminSettingUiState
 
     data class RoomItem(
@@ -49,5 +46,4 @@ sealed interface AdminSettingIntent {
     data object ClickWithdraw : AdminSettingIntent
     data class UpdateProfileName(val name: String) : AdminSettingIntent
     data class UpdateProfileImage(val bytes: ByteArray, val fileName: String, val mimeType: String) : AdminSettingIntent
-    data class DismissTutorial(val stepId: String) : AdminSettingIntent
 }
