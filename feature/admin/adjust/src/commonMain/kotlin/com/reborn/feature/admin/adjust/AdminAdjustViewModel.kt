@@ -348,7 +348,10 @@ class AdminAdjustViewModel(
             deleteDeviceUseCase(deviceId)
                 .onSuccess {
                     devices = devices.filterNot { it.id == deviceId }
-                    navController.navigateBack()
+                    // navController.navigateBack()을 직접 부르면 내부 목록 화면(Adjust)을 거치게
+                    // 된다 - 기기 상세에서 나갈 때는 항상 Home으로 바로 나가야 하므로(#235) 그
+                    // 규칙이 이미 구현된 private navigateBack()을 대신 호출한다.
+                    navigateBack()
                     navController.updateCurrentState { state ->
                         (state as? AdminAdjustUiState.Adjust)?.copy(devices = devices) ?: state
                     }

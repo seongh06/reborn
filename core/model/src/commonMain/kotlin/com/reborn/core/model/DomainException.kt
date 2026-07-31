@@ -42,14 +42,19 @@ enum class DomainErrorCode(
     SERVER_ERROR(9000L, "서버 오류가 발생했습니다."),
     INVALID_INPUT(9001L, "잘못된 입력 값입니다."),
 
-    NETWORK_ERROR(-1L, "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
+    NETWORK_ERROR(-1L, "서버 연결이 지연되고 있습니다. 잠시 후 다시 시도해주세요."),
     UNKNOWN_ERROR(-2L, "알 수 없는 오류가 발생했습니다.");
 }
 
 sealed class DomainException(
     override val cause: Throwable? = null,
-    override val errorCode: ErrorCode
-) : ApplicationException(cause?.message ?: errorCode.message, cause, errorCode) {
+    override val errorCode: ErrorCode,
+    // HttpError 계열(서버가 직접 만든 한국어 메시지, 예: "존재하지 않는 회원 정보입니다.")은
+    // cause.message를 그대로 보여주는 게 맞지만, NetworkException/UnknownException의 cause는
+    // ResponseParser가 로깅용으로만 채워둔 원시 예외 문자열(예: "ConnectException: ...:443")이라
+    // 절대 화면에 노출되면 안 된다 - 그 둘만 false로 넘겨 errorCode.message를 강제한다.
+    useCauseMessage: Boolean = true,
+) : ApplicationException(if (useCauseMessage) cause?.message ?: errorCode.message else errorCode.message, cause, errorCode) {
 
     data class InvalidOAuthTokenException(override val cause: Throwable? = null) : DomainException(cause, DomainErrorCode.INVALID_OAUTH_TOKEN)
     data class UnsupportedSocialProviderException(override val cause: Throwable? = null) : DomainException(cause, DomainErrorCode.UNSUPPORTED_SOCIAL_PROVIDER)
@@ -69,6 +74,8 @@ sealed class DomainException(
 
     data class ServerErrorException(override val cause: Throwable? = null) : DomainException(cause, DomainErrorCode.SERVER_ERROR)
     data class InvalidInputException(override val cause: Throwable? = null) : DomainException(cause, DomainErrorCode.INVALID_INPUT)
-    data class NetworkException(override val cause: Throwable? = null) : DomainException(cause, DomainErrorCode.NETWORK_ERROR)
-    data class UnknownException(override val cause: Throwable? = null) : DomainException(cause, DomainErrorCode.UNKNOWN_ERROR)
+    data class NetworkException(override val cause: Throwable? = null) :
+        DomainException(cause, DomainErrorCode.NETWORK_ERROR, useCauseMessage = false)
+    data class UnknownException(override val cause: Throwable? = null) :
+        DomainException(cause, DomainErrorCode.UNKNOWN_ERROR, useCauseMessage = false)
 }
