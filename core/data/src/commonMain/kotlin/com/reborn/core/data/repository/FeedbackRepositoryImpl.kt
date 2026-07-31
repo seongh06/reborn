@@ -15,7 +15,7 @@ class FeedbackRepositoryImpl(
         remote.getList(placeId)
             .toResult { response -> response.feedbacks.map { it.toFeedback() } }
 
-    override suspend fun updateStatus(feedbackId: Long, status: String): Result<Unit> =
+    override suspend fun updateStatus(feedbackId: Long, status: String): Result<Boolean> =
         remote.updateStatus(feedbackId, FeedbackStatusUpdateRequest(status))
-            .toResult { }
+            .toResult { response -> response.controlSent }
 }

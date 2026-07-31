@@ -10,13 +10,16 @@ import com.reborn.server.domain.feedback.client.GeminiSpeechResult
 import com.reborn.server.domain.feedback.client.VoiceTtsCache
 import com.reborn.server.domain.feedback.converter.FeedbackConverter
 import com.reborn.server.domain.feedback.dto.FeedbackDto
+import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.UserPlaceMappingRepository
+import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
 import com.reborn.server.global.fcm.FcmClient
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
+import kotlin.math.roundToInt
 
 data class VoiceFeedbackResult(
     val recognized: Boolean,
@@ -43,7 +47,9 @@ class FeedbackService(
     private val voiceTtsCache: VoiceTtsCache,
     private val voiceFeedbackPersister: VoiceFeedbackPersister,
     private val feedbackAiRecommendationService: FeedbackAiRecommendationService,
+    private val smartThingsDeviceService: SmartThingsDeviceService,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
         // AI 스피커(#142) 응답 고정 문구 — 2종뿐이라 VoiceTtsCache가 최초 생성 후 재사용한다.
@@ -227,7 +233,36 @@ class FeedbackService(
         val newStatus = parseTargetStatus(request.status)
         feedback.updateStatus(newStatus)
 
-        return FeedbackConverter.toStatusUpdateResponse(feedback)
+        val controlSent = if (newStatus == FeedbackStatus.APPROVED) {
+            sendApprovedTemperatureControl(feedback)
+        } else {
+            false
+        }
+
+        return FeedbackConverter.toStatusUpdateResponse(feedback, controlSent)
+    }
+
+    // 승인 시 "AI 맞춤 피드백"의 추천 희망 온도를 이 장소의 SmartThings 기기로 즉시 전송한다.
+    // 장소에 SmartThings 기기가 없거나 추천값 자체가 없으면(Gemini 미설정/실패 등) 조용히
+    // 건너뛴다 - 이건 정상적인 상태고 승인 자체를 막을 이유가 아니다. 반면 기기는 있는데
+    // 실제 전송이 실패하면(SmartThings 토큰 만료 등) 예외를 그대로 던져 트랜잭션을 롤백한다 -
+    // "승인을 누르면 바로 전송됩니다"라는 화면 문구를 실제로 지키려면 전송 실패 시 승인
+    // 자체도 실패해야 관리자가 다시 시도할 수 있다.
+    private fun sendApprovedTemperatureControl(feedback: Feedback): Boolean {
+        val recommendedTemperature = feedback.recommendedTemperatureAfter ?: return false
+        val targetDevice = deviceRepository
+            .findAllByPlaceIdAndDeviceType(feedback.place.id, DeviceType.SMART_THINGS)
+            .firstOrNull() ?: return false
+
+        smartThingsDeviceService.controlInternal(
+            targetDevice,
+            DeviceDto.ControlRequest(temperature = recommendedTemperature.roundToInt()),
+        )
+        log.info(
+            "피드백 승인 - SmartThings 제어 전송: feedbackId={}, deviceId={}, temperature={}",
+            feedback.id, targetDevice.deviceKey, recommendedTemperature,
+        )
+        return true
     }
 
     private fun requireAdmin(userId: Long, placeId: Long) {

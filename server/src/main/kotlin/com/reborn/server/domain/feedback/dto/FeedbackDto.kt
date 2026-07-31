@@ -56,6 +56,9 @@ class FeedbackDto {
     data class StatusUpdateResponse(
         val feedbackId: Long,
         val status: String,
+        // 승인 시 이 피드백의 AI 추천 온도를 장소의 SmartThings 기기로 실제로 전송했는지 여부 -
+        // 거절이거나, 추천값/SmartThings 기기가 없으면 false(정상 상태, 오류 아님)
+        val controlSent: Boolean = false,
     )
 
     // QR 웹페이지(#163) 진입 시 장소명 + 제출 대상 기기 목록을 미리 조회하기 위한 응답
