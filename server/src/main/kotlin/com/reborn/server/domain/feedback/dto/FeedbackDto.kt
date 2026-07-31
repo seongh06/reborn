@@ -68,6 +68,10 @@ class FeedbackDto {
     data class ContextResponse(
         val placeName: String,
         val devices: List<DeviceOption>,
+        // 이 장소에 SmartThings로 제어 가능한 기기가 있는지 - AI 추천 온도 자동 제어는 SmartThings
+        // 기기가 있어야만 의미가 있어서(#271), 없는 장소에서는 QR 페이지가 "더워요/추워요" 빠른
+        // 선택을 숨긴다.
+        val hasControllableDevice: Boolean = false,
     )
 
     data class DeviceOption(

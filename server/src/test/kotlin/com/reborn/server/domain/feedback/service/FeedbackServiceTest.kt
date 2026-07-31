@@ -203,6 +203,29 @@ class FeedbackServiceTest {
     }
 
     @Test
+    fun `getSubmissionContext - SmartThings 기기가 있으면 hasControllableDevice가 true다`() {
+        val smartThingsDevice = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-1", name = "에어컨", id = 20)
+        given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
+        given(deviceRepository.findAllByPlaceId(501L)).willReturn(listOf(device, smartThingsDevice))
+
+        val response = feedbackService.getSubmissionContext("qr-uuid")
+
+        assertThat(response.hasControllableDevice).isTrue()
+        // SmartThings는 방문자가 직접 지목할 대상이 아니라 목록에서 제외됨(기존 동작)
+        assertThat(response.devices).extracting("deviceId").containsExactly(device.id.toString())
+    }
+
+    @Test
+    fun `getSubmissionContext - SmartThings 기기가 없으면 hasControllableDevice가 false다`() {
+        given(placeRepository.findByQrCode("qr-uuid")).willReturn(place)
+        given(deviceRepository.findAllByPlaceId(501L)).willReturn(listOf(device))
+
+        val response = feedbackService.getSubmissionContext("qr-uuid")
+
+        assertThat(response.hasControllableDevice).isFalse()
+    }
+
+    @Test
     fun `submit - 기기가 다른 장소 소속이면 예외가 발생한다`() {
         val otherPlace = Place(name = "다른집", qrCode = "qr-other", type = PlaceType.HOME, id = 999)
         val otherDevice = Device(place = otherPlace, deviceType = DeviceType.ARDUINO, deviceKey = "arduino_room_01", name = "거실", id = 11)

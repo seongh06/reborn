@@ -51,7 +51,7 @@ class FeedbackAiRecommendationServiceTest {
         val latestMetric = MetricLog(device = device, temperature = 28.0, humidity = 60.0, illuminance = 300, occupancy = 2, id = 1)
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
-        given(metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(10L)).willReturn(latestMetric)
+        given(metricLogRepository.findTopByDevice_PlaceIdOrderByCreatedAtDesc(501L)).willReturn(latestMetric)
         given(geminiClient.recommendTemperatureAdjustment("너무 더워요", 28.0, 60.0)).willReturn(25.0)
 
         service.generateAndSave(100L)
@@ -69,7 +69,7 @@ class FeedbackAiRecommendationServiceTest {
     fun `generateAndSave - 최신 메트릭이 없으면 아무 것도 하지 않는다`() {
         val feedback = Feedback(device = device, place = place, content = "너무 더워요", sessionToken = "sess-1", id = 100)
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
-        given(metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(10L)).willReturn(null)
+        given(metricLogRepository.findTopByDevice_PlaceIdOrderByCreatedAtDesc(501L)).willReturn(null)
 
         service.generateAndSave(100L)
 
@@ -83,13 +83,26 @@ class FeedbackAiRecommendationServiceTest {
         val latestMetric = MetricLog(device = device, temperature = 28.0, humidity = 60.0, id = 1)
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
-        given(metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(10L)).willReturn(latestMetric)
+        given(metricLogRepository.findTopByDevice_PlaceIdOrderByCreatedAtDesc(501L)).willReturn(latestMetric)
         given(geminiClient.recommendTemperatureAdjustment("너무 더워요", 28.0, 60.0)).willReturn(null)
 
         service.generateAndSave(100L)
 
         assertThat(feedback.recommendedTemperatureAfter).isNull()
         verify(feedbackRepository, never()).save(feedback)
+    }
+
+    @Test
+    fun `generateAndSave - 온도 관련 내용이 아니면 시도하지 않는다`() {
+        // 조명/냄새 등은 자동 제어가 구현돼있지 않아 온도 추천 자체를 시도하면 안 됨(#271) -
+        // 승인 시 엉뚱한 SmartThings 명령이 나가는 걸 막기 위한 회귀 방지 테스트.
+        val feedback = Feedback(device = device, place = place, content = "불이 너무 밝아요.", sessionToken = "sess-1", id = 100)
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+
+        service.generateAndSave(100L)
+
+        assertThat(feedback.recommendedTemperatureAfter).isNull()
+        verifyNoInteractions(metricLogRepository, geminiClient)
     }
 
     @Test
@@ -107,7 +120,7 @@ class FeedbackAiRecommendationServiceTest {
         val latestMetric = MetricLog(device = device, temperature = 28.0, humidity = 60.0, id = 1)
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
-        given(metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(10L)).willReturn(latestMetric)
+        given(metricLogRepository.findTopByDevice_PlaceIdOrderByCreatedAtDesc(501L)).willReturn(latestMetric)
         given(geminiClient.recommendTemperatureAdjustment("너무 더워요", 28.0, 60.0))
             .willThrow(RuntimeException("Gemini 오류"))
 

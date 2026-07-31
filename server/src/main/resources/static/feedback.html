@@ -291,8 +291,12 @@
 <script>
 (function () {
   var FEEDBACK_TYPES = [
-    { label: '더워요', color: '#BF4040', text: '너무 더워요.' },
-    { label: '추워요', color: '#40BFBF', text: '너무 추워요.' },
+    // needsControl: true인 항목은 AI가 추천 온도를 계산해서 관리자가 승인하면 SmartThings 기기로
+    // 자동 전송된다(#271) - 이 장소에 그 기기가 없으면(hasControllableDevice=false) 눌러봤자
+    // 아무것도 해결되지 않으므로 애초에 선택지에서 숨긴다. 나머지(조명/냄새 등)는 자동 제어가
+    // 구현돼있지 않아 기기 유무와 무관하게 항상 보여준다 - 관리자가 읽는 정보용 피드백이다.
+    { label: '더워요', color: '#BF4040', text: '너무 더워요.', needsControl: true },
+    { label: '추워요', color: '#40BFBF', text: '너무 추워요.', needsControl: true },
     { label: '바람이 강해요', color: '#406ABF', text: '바람이 너무 강해요.' },
     { label: '불이 밝아요', color: '#BFBF40', text: '불이 너무 밝아요.' },
     { label: '어두워요', color: '#808080', text: '너무 어두워요.' },
@@ -368,8 +372,11 @@
     });
   }
 
-  function renderTypes() {
-    FEEDBACK_TYPES.forEach(function (type, index) {
+  function renderTypes(hasControllableDevice) {
+    var visibleTypes = FEEDBACK_TYPES.filter(function (type) {
+      return !type.needsControl || hasControllableDevice;
+    });
+    visibleTypes.forEach(function (type, index) {
       var chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'type-chip';
@@ -440,7 +447,6 @@
     return;
   }
 
-  renderTypes();
   contentEl.addEventListener('input', updateSubmitState);
   submitButton.addEventListener('click', submit);
 
@@ -458,6 +464,7 @@
       var data = body.data || body;
       placeNameEl.textContent = data.placeName;
       renderDevices(data.devices || []);
+      renderTypes(!!data.hasControllableDevice);
       updateSubmitState();
       showOnly(formState);
     })

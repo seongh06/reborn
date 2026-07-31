@@ -30,12 +30,13 @@ object FeedbackConverter {
     // deviceId에 deviceKey를 그대로 노출하면 안 됨 - deviceKey는 Arduino/AI 스피커가 자체 인증에
     // 쓰는 비밀값(X-Device-Id 헤더, POST /api/metric/collect 등)이라 비로그인 공개 API로 유출되면
     // 그 값으로 다른 기기 API를 흉내낼 수 있음. DB 내부 id를 대신 공개 식별자로 사용(CodeRabbit 리뷰)
-    fun toContextResponse(place: Place, devices: List<Device>): FeedbackDto.ContextResponse =
+    fun toContextResponse(place: Place, devices: List<Device>, hasControllableDevice: Boolean): FeedbackDto.ContextResponse =
         FeedbackDto.ContextResponse(
             placeName = place.name,
             devices = devices.map {
                 FeedbackDto.DeviceOption(deviceId = it.id.toString(), name = it.name ?: it.deviceType.name)
             },
+            hasControllableDevice = hasControllableDevice,
         )
 
     private fun toFeedbackItem(entity: Feedback): FeedbackDto.FeedbackItem =

@@ -11,6 +11,12 @@ interface MetricLogRepository : JpaRepository<MetricLog, Long> {
 
     fun findTopByDeviceIdOrderByCreatedAtDesc(deviceId: Long): MetricLog?
 
+    // 피드백 AI 추천(#269)용 - 피드백이 지목한 기기(AI 스피커 등 센서 없는 기기일 수 있음)가 아니라
+    // 그 장소 전체에서 가장 최근 센서값을 찾는다. MetricLog.device가 nullable이라 프로퍼티 경로가
+    // 암묵적 INNER JOIN이 되지만, 여기서는 device가 없는(고아) 로그를 애초에 제외하고 싶은 게
+    // 맞는 동작이라 문제되지 않는다(Feedback.place 직접 FK를 쓴 것과는 다른 케이스).
+    fun findTopByDevice_PlaceIdOrderByCreatedAtDesc(placeId: Long): MetricLog?
+
     fun findAllByDeviceId(deviceId: Long, pageable: Pageable): Page<MetricLog>
 
     @Query(

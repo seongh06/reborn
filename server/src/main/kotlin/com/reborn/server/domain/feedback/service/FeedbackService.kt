@@ -182,9 +182,10 @@ class FeedbackService(
     fun getSubmissionContext(qrCode: String): FeedbackDto.ContextResponse {
         val place = placeRepository.findByQrCode(qrCode)
             ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")
-        val devices = deviceRepository.findAllByPlaceId(place.id)
-            .filter { it.deviceType != DeviceType.SMART_THINGS }
-        return FeedbackConverter.toContextResponse(place, devices)
+        val allDevices = deviceRepository.findAllByPlaceId(place.id)
+        val devices = allDevices.filter { it.deviceType != DeviceType.SMART_THINGS }
+        val hasControllableDevice = allDevices.any { it.deviceType == DeviceType.SMART_THINGS }
+        return FeedbackConverter.toContextResponse(place, devices, hasControllableDevice)
     }
 
     private fun notifyAdmins(place: Place, feedback: Feedback) {
