@@ -26,8 +26,25 @@ class FeedbackAiRecommendationService(
     fun generateAndSave(feedbackId: Long) {
         runCatching {
             val feedback = feedbackRepository.findById(feedbackId).orElse(null) ?: return@runCatching
-            val device = feedback.device ?: return@runCatching
-            val latestMetric = metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(device.id) ?: return@runCatching
+
+            // 지금 자동 제어가 실제로 구현된 건 온도(SmartThings 냉난방)뿐이다(#271). "불이 밝아요",
+            // "냄새가 나요" 같은 무관한 피드백까지 온도 추천을 계산해서 승인 시 엉뚱한 기기 명령이
+            // 나가는 걸 막기 위해, 온도/추위 관련 내용이 아니면 애초에 시도하지 않는다. 조명 등
+            // 다른 카테고리는 사람이 읽는 정보용으로만 남고, 해당 제어가 구현되면 그때 확장한다.
+            if (!isTemperatureRelated(feedback.content)) {
+                log.info("피드백 AI 추천 스킵 - 온도 관련 내용 아님: feedbackId={}", feedbackId)
+                return@runCatching
+            }
+
+            // feedback.device(피드백이 지목한 기기)가 아니라 feedback.place 기준으로 찾는다 -
+            // AI 스피커처럼 온습도 센서가 없는 기기가 지목되면 예전엔 그 기기 단독 기준으로 찾다가
+            // 항상 데이터가 없어 조용히 스킵됐다(#269). 장소 안의 다른 기기(SmartThings/아두이노)
+            // 센서값을 대신 참고한다.
+            val latestMetric = metricLogRepository.findTopByDevice_PlaceIdOrderByCreatedAtDesc(feedback.place.id)
+                ?: run {
+                    log.info("피드백 AI 추천 스킵 - 장소에 센서 데이터 없음: feedbackId={}, placeId={}", feedbackId, feedback.place.id)
+                    return@runCatching
+                }
             val temperature = latestMetric.temperature ?: return@runCatching
 
             val recommended = geminiClient.recommendTemperatureAdjustment(
@@ -47,4 +64,9 @@ class FeedbackAiRecommendationService(
             feedbackRepository.save(feedback)
         }.onFailure { e -> log.warn("피드백 AI 추천 생성 실패: feedbackId={}, error={}", feedbackId, e.message) }
     }
+
+    // core:ui의 classifyFeedbackType()과 동일한 키워드 기준(더워요/추워요 계열만) - 서버는 Compose
+    // 모듈을 의존할 수 없어 판정 로직만 최소한으로 복제. 두 곳 중 하나를 바꾸면 다른 쪽도 확인할 것.
+    private fun isTemperatureRelated(content: String): Boolean =
+        content.contains("덥") || content.contains("더워") || content.contains("춥") || content.contains("추워")
 }
