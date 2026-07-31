@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -146,17 +147,24 @@ fun AdminDeviceDetailScreen(
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             RebornTopAppBar(title = "IoT 기기 상세", onBackClick = onBackClick)
-            // 기기 해제는 뒤로가기와 같은 상단 바 줄, 우측 끝에 배치한다.
-            Text(
-                "기기 해제",
-                style = RebornTheme.typography.labelLarge,
-                color = RebornTheme.color.reject,
-                textDecoration = TextDecoration.Underline,
+            // 기기 해제는 뒤로가기와 같은 상단 바 줄, 우측 끝에 배치한다. 이 화면은
+            // RebornTopAppBar의 onNavigate* 트레일링 아이콘을 하나도 쓰지 않으므로(CodeRabbit
+            // 리뷰 지적한 겹침 우려는 현재 이 화면 한정으로는 해당 없음) 겹칠 대상이 없다.
+            Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
+                    .heightIn(min = 48.dp)
                     .padding(horizontal = 16.dp)
-                    .clickable { showDeleteConfirm = true }
-            )
+                    .clickable { showDeleteConfirm = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "기기 해제",
+                    style = RebornTheme.typography.labelLarge,
+                    color = RebornTheme.color.reject,
+                    textDecoration = TextDecoration.Underline
+                )
+            }
         }
         DeviceSection(
             Device(

@@ -250,17 +250,29 @@ class FeedbackService(
     // 자체도 실패해야 관리자가 다시 시도할 수 있다.
     private fun sendApprovedTemperatureControl(feedback: Feedback): Boolean {
         val recommendedTemperature = feedback.recommendedTemperatureAfter ?: return false
-        val targetDevice = deviceRepository
+        val smartThingsDevices = deviceRepository
             .findAllByPlaceIdAndDeviceType(feedback.place.id, DeviceType.SMART_THINGS)
-            .firstOrNull() ?: return false
+
+        // 장소에 SmartThings 기기가 2개 이상이면 "어느 기기가 온도 조절 대상인지" 알 방법이
+        // 현재 없다(장소당 1개의 에어컨을 가정한 설계) - 임의로 하나를 골라 엉뚱한 기기에 명령을
+        // 보내는 대신 건너뛴다(CodeRabbit 리뷰). 여러 대를 구분해서 제어하려면 추천 대상 기기를
+        // Feedback에 명시적으로 저장하는 구조 변경이 필요함 - 향후 과제.
+        if (smartThingsDevices.size > 1) {
+            log.warn(
+                "피드백 승인 - SmartThings 기기가 여러 대라 대상을 특정할 수 없어 제어를 건너뜀: feedbackId={}, placeId={}, deviceCount={}",
+                feedback.id, feedback.place.id, smartThingsDevices.size,
+            )
+            return false
+        }
+        val targetDevice = smartThingsDevices.firstOrNull() ?: return false
 
         smartThingsDeviceService.controlInternal(
             targetDevice,
             DeviceDto.ControlRequest(temperature = recommendedTemperature.roundToInt()),
         )
         log.info(
-            "피드백 승인 - SmartThings 제어 전송: feedbackId={}, deviceId={}, temperature={}",
-            feedback.id, targetDevice.deviceKey, recommendedTemperature,
+            "피드백 승인 - SmartThings 제어 전송: feedbackId={}, targetDeviceId={}, temperature={}",
+            feedback.id, targetDevice.id, recommendedTemperature,
         )
         return true
     }

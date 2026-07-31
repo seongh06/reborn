@@ -40,8 +40,10 @@ private val today: MockDate = Clock.System.todayIn(TimeZone.currentSystemDefault
 
 // 오늘 몫 HOUR 라벨을 현재 시각까지만 만들기 위한 기준 - 미래 시간대까지 라벨을 만들면
 // 실제 값(SensorHistoryApiImpl에서도 동일하게 현재 시각까지만 채움)과 어긋나 그래프 끝이
-// 밤(23시)까지 억지로 이어지며 0으로 뚝 떨어져 보인다.
-private val currentHour: Int = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour
+// 밤(23시)까지 억지로 이어지며 0으로 뚝 떨어져 보인다. 파일 로드 시점에 한 번만 계산되는
+// val이면 앱을 오래 켜둔 채 시간이 흘러도 갱신되지 않으므로(CodeRabbit 리뷰) 호출마다
+// 새로 계산하는 함수로 둔다.
+private fun currentHour(): Int = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour
 
 // TODO: 실제 기기 등록/센서 수집 시작일 연동 전까지의 목업 (Phase 1 MVP 시작 시점인 06.01 기준)
 private val dataCollectionStartDate = MockDate(2026, 6, 1)
@@ -370,7 +372,7 @@ class AdminDataViewModel(
             // 1시간 간격 · 목업이 딱 2일치(어제/오늘)라 그 2일을 이어서 표시. 자정(0시)엔 "HH:00" 대신 그날 날짜(ex. "3일")로 표시해 날짜가 바뀌었음을 알림
             AdminDataUiState.Period.HOUR -> (MOCK_HISTORY_DAY_COUNT - 1 downTo 0).flatMap { daysAgo ->
                 val date = today.minusDays(daysAgo)
-                val lastHour = if (daysAgo == 0) currentHour else 23
+                val lastHour = if (daysAgo == 0) currentHour() else 23
                 (0..lastHour).map { hour -> if (hour == 0) "${date.day}일" else "${hour.pad2()}:00" }
             }
             // 1일 간격 · 목업 2일치(어제/오늘). 평소엔 날짜만(ex. "4일"), 월이 바뀌는 지점만 월로 표시(ex. "7월")
@@ -431,7 +433,7 @@ class AdminDataViewModel(
             val daysAgo = patterns.size - 1 - index
             val date = today.minusDays(daysAgo)
             // 오늘 몫은 현재 시각까지만 - 나머지 카테고리(실 데이터)와 동일하게 미래 시간대는 만들지 않는다.
-            val lastHour = if (daysAgo == 0) currentHour else 23
+            val lastHour = if (daysAgo == 0) currentHour() else 23
             patterns[index].mapIndexedNotNull { hour, value ->
                 if (hour > lastHour) null else SensorPoint(date = date.toDateKey(), hour = hour, value = value)
             }

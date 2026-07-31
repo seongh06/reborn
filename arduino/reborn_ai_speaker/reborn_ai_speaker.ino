@@ -562,6 +562,20 @@ void setup() {
   Serial.println("[DEBUG 3] pixel.begin 완료");
   Serial.flush();
 
+  setLed(0, 0, 0);
+  Serial.println("[DEBUG 4] setLed 완료");
+  Serial.flush();
+
+  // isResetHeldAtBoot()가 버튼을 3초간 폴링하는 3초 측정 창보다 먼저 실행되어야 한다 -
+  // 이 블록을 앞에 두면(CodeRabbit 리뷰) 깜빡임 1.2초만큼 측정 시작이 밀려 리셋 홀드
+  // 판정이 부정확해질 수 있다.
+  if (isResetHeldAtBoot()) {
+    Serial.println("버튼 3초 이상 감지 — 저장된 설정 초기화 후 프로비저닝 포털 진입");
+    clearProvisioning();
+  }
+  Serial.println("[DEBUG 5] isResetHeldAtBoot 완료");
+  Serial.flush();
+
   // 업로드/부팅 확인용 임시 마커 — 흰색 3회 깜빡임(디버깅 끝나면 제거)
   for (int i = 0; i < 3; i++) {
     setLed(30, 30, 30);
@@ -569,17 +583,6 @@ void setup() {
     setLed(0, 0, 0);
     delay(200);
   }
-
-  setLed(0, 0, 0);
-  Serial.println("[DEBUG 4] setLed 완료");
-  Serial.flush();
-
-  if (isResetHeldAtBoot()) {
-    Serial.println("버튼 3초 이상 감지 — 저장된 설정 초기화 후 프로비저닝 포털 진입");
-    clearProvisioning();
-  }
-  Serial.println("[DEBUG 5] isResetHeldAtBoot 완료");
-  Serial.flush();
 
   bool provisioned = loadProvisioning();
   Serial.printf("[DEBUG 6] loadProvisioning 완료: provisioned=%d ssid=%s deviceId=%s\n",

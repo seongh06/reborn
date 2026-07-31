@@ -300,7 +300,9 @@ class FeedbackServiceTest {
             snapshotTemperature = 28.0, snapshotHumidity = 60.0, snapshotIlluminance = null, snapshotPeopleCount = null,
             recommendedTemperatureBefore = 28.0, recommendedTemperatureAfter = 24.6,
         )
-        val smartThingsDevice = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-1", name = "에어컨", id = 20)
+        val smartThingsDevice = Device(
+            place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-1", name = "에어컨", id = 20,
+        )
         val request = FeedbackDto.StatusUpdateRequest(status = "APPROVED")
 
         given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
@@ -315,6 +317,33 @@ class FeedbackServiceTest {
             smartThingsDevice,
             com.reborn.server.domain.device.dto.DeviceDto.ControlRequest(temperature = 25),
         )
+    }
+
+    @Test
+    fun `updateStatus - SmartThings 기기가 여러 대면 대상을 특정할 수 없어 제어를 건너뛴다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+        feedback.applyAiRecommendation(
+            snapshotTemperature = 28.0, snapshotHumidity = 60.0, snapshotIlluminance = null, snapshotPeopleCount = null,
+            recommendedTemperatureBefore = 28.0, recommendedTemperatureAfter = 24.6,
+        )
+        val smartThingsDevice1 = Device(
+            place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-1", name = "에어컨", id = 20,
+        )
+        val smartThingsDevice2 = Device(
+            place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "st-2", name = "거실 에어컨", id = 21,
+        )
+        val request = FeedbackDto.StatusUpdateRequest(status = "APPROVED")
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+        given(deviceRepository.findAllByPlaceIdAndDeviceType(501L, DeviceType.SMART_THINGS))
+            .willReturn(listOf(smartThingsDevice1, smartThingsDevice2))
+
+        val response = feedbackService.updateStatus(1L, 100L, request)
+
+        assertThat(response.controlSent).isFalse()
+        verifyNoInteractions(smartThingsDeviceService)
     }
 
     @Test
