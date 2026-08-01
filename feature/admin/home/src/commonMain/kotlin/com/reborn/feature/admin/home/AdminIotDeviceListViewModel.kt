@@ -71,7 +71,7 @@ class AdminIotDeviceListViewModel(
                             place = deviceTypeLabel(device.deviceType),
                             name = device.deviceName ?: device.deviceId,
                             isOnline = device.isOnline,
-                            deviceType = categoryToDeviceType(device.category),
+                            deviceType = resolveDeviceType(device.deviceType, device.category),
                             isPowerOn = false
                         )
                     }
@@ -93,9 +93,14 @@ class AdminIotDeviceListViewModel(
         else -> serverDeviceType
     }
 
-    // SmartThings 기기만 category(아이콘 구분용)가 있을 수 있고, 나머지는 null이라 항상 OTHER
-    private fun categoryToDeviceType(category: String?): DeviceType =
-        category?.let { runCatching { DeviceType.valueOf(it) }.getOrNull() } ?: DeviceType.OTHER
+    // ARDUINO/AI_SPEAKER/AEROMETER는 category가 항상 null이라 deviceType으로 직접 분기하고(#298),
+    // 그 외(SmartThings)는 등록 시 관리자가 고른 category로 아이콘을 정한다.
+    private fun resolveDeviceType(serverDeviceType: String, category: String?): DeviceType = when (serverDeviceType) {
+        "ARDUINO" -> DeviceType.ARDUINO
+        "AI_SPEAKER" -> DeviceType.AI_SPEAKER
+        "AEROMETER" -> DeviceType.AEROMETER
+        else -> category?.let { runCatching { DeviceType.valueOf(it) }.getOrNull() } ?: DeviceType.OTHER
+    }
 
     fun togglePower(deviceId: String) {
         val target = devices.find { it.id == deviceId } ?: return
