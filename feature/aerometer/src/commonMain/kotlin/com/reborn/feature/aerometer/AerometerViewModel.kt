@@ -3,6 +3,8 @@ package com.reborn.feature.aerometer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.SensorAnalyzer
+import com.reborn.core.domain.usecase.GetLocalDeviceIdUseCase
+import com.reborn.core.domain.usecase.SendMetricUseCase
 import com.reborn.feature.aerometer.model.AerometerIntent
 import com.reborn.feature.aerometer.model.AerometerUiState
 import kotlinx.coroutines.Job
@@ -22,7 +24,11 @@ sealed class AerometerEvent {
     data object Exit : AerometerEvent()
 }
 
-class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel() {
+class AerometerViewModel(
+    private val sensorAnalyzer: SensorAnalyzer,
+    private val getLocalDeviceIdUseCase: GetLocalDeviceIdUseCase,
+    private val sendMetricUseCase: SendMetricUseCase,
+) : ViewModel() {
     private val _uiState = MutableStateFlow<AerometerUiState>(AerometerUiState.Loading)
     val uiState: StateFlow<AerometerUiState> = _uiState.asStateFlow()
 
@@ -51,6 +57,8 @@ class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel
         scanJob = viewModelScope.launch {
             delay(1500)
             _uiState.value = AerometerUiState.Home
+            // 페어링 시 저장된 값이라 루프 도중 바뀌지 않음 - 한 번만 읽어서 재사용(#294)
+            val deviceId = getLocalDeviceIdUseCase()
             while (true) {
                 delay(60_000)
                 try {
@@ -58,6 +66,12 @@ class AerometerViewModel(private val sensorAnalyzer: SensorAnalyzer) : ViewModel
                     _event.emit(AerometerEvent.ShowSensorResult(result.personCount, result.lux))
                     result.savedImagePath?.let { path ->
                         _event.emit(AerometerEvent.ShowImageSaved(path))
+                    }
+                    // 로컬 분석/표시는 전송 성공 여부와 무관하게 이미 끝났으므로, 전송 실패는 화면에
+                    // 에러로 띄우지 않고 조용히 넘어간다(#294) - 다음 60초 주기에 다시 시도됨.
+                    if (deviceId != null) {
+                        sendMetricUseCase(deviceId, result.lux, result.personCount)
+                            .onFailure { println("AerometerViewModel: 메트릭 전송 실패 - ${it.message}") }
                     }
                 } catch (e: Exception) {
                     _event.emit(AerometerEvent.ShowErrorSnackbar(e))
