@@ -11,6 +11,7 @@ import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.model.Feedback
+import com.reborn.core.model.Metric
 import com.reborn.core.model.TutorialStep
 import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.FeedbackListItem
@@ -120,13 +121,34 @@ class AdminHomeViewModel(
                 )
             }
 
-            val metric = METRIC_DEVICE_TYPE_PRIORITY
+            // 온습도(아두이노/SmartThings)와 조도·재실 인원(공기계)은 서로 다른 기기가 측정하므로
+            // 각자 조회해서 하나의 카드로 합친다 - 이전엔 METRIC_DEVICE_TYPE_PRIORITY에 AEROMETER가
+            // 아예 빠져있어서 공기계가 정상적으로 조도/재실 인원을 보내도 홈 화면에 영원히 안 보였음.
+            val tempHumidityDevice = METRIC_DEVICE_TYPE_PRIORITY
                 .firstNotNullOfOrNull { type -> serverDevices.firstOrNull { it.deviceType == type } }
-                ?.let { device ->
-                    getCurrentMetricUseCase(device.deviceId)
-                        .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
-                        .getOrNull()
-                }
+            val aerometerDevice = serverDevices.firstOrNull { it.deviceType == "AEROMETER" }
+
+            val tempHumidityMetric = tempHumidityDevice?.let { device ->
+                getCurrentMetricUseCase(device.deviceId)
+                    .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+                    .getOrNull()
+            }
+            val aerometerMetric = aerometerDevice?.let { device ->
+                getCurrentMetricUseCase(device.deviceId)
+                    .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+                    .getOrNull()
+            }
+
+            val metric = if (tempHumidityMetric == null && aerometerMetric == null) {
+                null
+            } else {
+                Metric(
+                    temperature = tempHumidityMetric?.temperature,
+                    humidity = tempHumidityMetric?.humidity,
+                    illuminance = aerometerMetric?.illuminance,
+                    peopleCount = aerometerMetric?.peopleCount,
+                )
+            }
 
             val feedbackListResult = getFeedbackListUseCase(placeId)
             feedbackListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
