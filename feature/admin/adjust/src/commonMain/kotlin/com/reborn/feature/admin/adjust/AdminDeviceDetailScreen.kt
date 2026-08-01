@@ -45,7 +45,6 @@ import com.reborn.feature.admin.adjust.model.WindSpeed
 import com.reborn.feature.admin.adjust.model.defaultAutoControlState
 import com.reborn.feature.admin.adjust.screen.AutoControlScreen
 import com.reborn.feature.admin.adjust.screen.RemoteControlScreen
-import kotlin.math.roundToInt
 
 // 최초 접속 튜토리얼(#240) 설명 문구 - 바텀 네비 자리에 대신 뜨는 TutorialHintCard(App.kt)에서 쓴다.
 private const val REMOTE_TAB_TUTORIAL_HINT = "여기서 전원, 온도, 바람세기 등을 바로 조절할 수 있어요."
@@ -189,10 +188,10 @@ fun AdminDeviceDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ){
                 // 값이 없는 항목(이 기기가 그 센서를 지원하지 않거나 아직 로딩 전)은 칩 자체를 숨긴다.
-                state.metric?.temperature?.let { SensorChip(type = DataType.Temperature, value = it.roundToInt()) }
-                state.metric?.humidity?.let { SensorChip(type = DataType.Humidity, value = it.roundToInt()) }
-                state.metric?.illuminance?.let { SensorChip(type = DataType.Illuminance, value = it) }
-                state.metric?.peopleCount?.let { SensorChip(type = DataType.PeopleCount, value = it) }
+                state.metric?.temperature?.let { SensorChip(type = DataType.Temperature, value = it.toFloat()) }
+                state.metric?.humidity?.let { SensorChip(type = DataType.Humidity, value = it.toFloat()) }
+                state.metric?.illuminance?.let { SensorChip(type = DataType.Illuminance, value = it.toFloat()) }
+                state.metric?.peopleCount?.let { SensorChip(type = DataType.PeopleCount, value = it.toFloat()) }
             }
         }
         TabBar(
