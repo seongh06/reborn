@@ -3,6 +3,7 @@ package com.reborn.server.domain.device.service
 import com.reborn.server.domain.analytics.AutoControlExecutionLog
 import com.reborn.server.domain.analytics.repository.AutoControlExecutionLogRepository
 import com.reborn.server.domain.device.AutoControlRule
+import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.OperationMode
 import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.device.repository.AutoControlRuleRepository
@@ -14,13 +15,20 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.LocalDateTime
 
-// 자동 제어 규칙 1건을 실제로 평가하고, 조건이 맞으면 SmartThings로 제어 명령을 보낸다(#190).
+// 자동 제어 규칙 1건을 실제로 평가하고, 조건이 맞으면 제어 명령을 보낸다(#190, IR은 #288로 확장).
 // 온도 상/하한 조건만 실행 대상 - 습도/재실인원/불쾌지수/자동 꺼짐은 저장만 되고 미실행(범위 밖).
+//
+// ⚠️ IR 기기(hasIrControl=true)는 상태지정형(ON/OFF 별도 코드) 리모컨이라는 가정 하에 SmartThings와
+// 동일하게 취급한다(#288) - 임계값이 계속 참이면 쿨다운마다 그냥 재전송된다. 상태지정형이면 멱등이라
+// 안전하지만, 실제로는 토글형일 수도 있어(설치 후 raw capture로 확인 예정) 확인되기 전까지는 이 반복
+// 재전송이 위험할 수 있다는 걸 감안할 것 - 토글형으로 밝혀지면 온도 추이 기반 효과 확인 없이 이 경로로
+// 반복 호출하면 안 되고 별도 안전장치가 필요하다.
 @Service
 class AutoControlEvaluationService(
     private val metricLogRepository: MetricLogRepository,
     private val autoControlRuleRepository: AutoControlRuleRepository,
     private val smartThingsDeviceService: SmartThingsDeviceService,
+    private val arduinoIrControlService: ArduinoIrControlService,
     private val autoControlExecutionLogRepository: AutoControlExecutionLogRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -50,7 +58,12 @@ class AutoControlEvaluationService(
         } ?: return
         val request = actionToRequest(action) ?: return
 
-        smartThingsDeviceService.controlInternal(device, request)
+        when {
+            device.deviceType == DeviceType.SMART_THINGS -> smartThingsDeviceService.controlInternal(device, request)
+            device.deviceType == DeviceType.ARDUINO && device.hasIrControl ->
+                arduinoIrControlService.controlInternal(device, request)
+            else -> return
+        }
         rule.lastTriggeredAt = now
         autoControlRuleRepository.save(rule)
         autoControlExecutionLogRepository.save(

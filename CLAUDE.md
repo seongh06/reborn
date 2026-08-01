@@ -96,7 +96,7 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 | `user` | 사용자 | refreshToken 없음 → Redis 관리, email nullable(카카오 이메일 동의 미사용) |
 | `place` | 장소 | qrCode UNIQUE 추가. wifiSsid/wifiPassword 추가(2026-07-29, #219) — 이 장소에 연결되는 아두이노/AI스피커 SoftAP 프로비저닝용 WiFi, 평문 저장(SmartThings 자격증명과 동일 수준) |
 | `user_place_mapping` | 사용자-장소 권한 (ADMIN/USER) | - |
-| `device` | 기기 (ARDUINO/AEROMETER/SMART_THINGS/AI_SPEAKER) | deviceType, appToken, isOnline 추가. SMART_THINGS는 2026-07-19 추가 — deviceKey에 SmartThings deviceId 저장, appToken 불필요. ARDUINO/AI_SPEAKER는 2026-07-22(#147)부터 deviceKey가 사전 발급 시리얼(device_serial)에서 옴 — 관리자가 임의로 정하지 않음 |
+| `device` | 기기 (ARDUINO/AEROMETER/SMART_THINGS/AI_SPEAKER) | deviceType, appToken, isOnline 추가. SMART_THINGS는 2026-07-19 추가 — deviceKey에 SmartThings deviceId 저장, appToken 불필요. ARDUINO/AI_SPEAKER는 2026-07-22(#147)부터 deviceKey가 사전 발급 시리얼(device_serial)에서 옴 — 관리자가 임의로 정하지 않음. hasIrControl/pendingIrCommand 추가(2026-08-01, #288) — ARDUINO의 IR 에어컨 제어용, pendingIrCommand는 아두이노 폴링 시 1회성 소비 |
 | `metric_logs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (device_id, created_at DESC) 인덱스. SMART_THINGS 기기는 Arduino의 push(POST /api/metric/collect) 대신 서버가 주기적으로 pull(SmartThings API 폴링)해서 동일 테이블에 적재 |
 | `feedback` | 방문자 피드백 | userAgent, sessionToken 추가. source(QR/VOICE) — AI 스피커(#142) 음성 피드백은 sessionToken 없이 VOICE로 저장 |
 | `smart_things_credential` | 장소별 SmartThings OAuth 토큰 (2026-07-19 신설) | place_id UNIQUE FK, accessToken, refreshToken, expiresAt — 서버가 보유, 공기계/관리자 앱은 접근 안 함 |
@@ -151,7 +151,8 @@ device_serial ──(assignedDeviceId, 등록 시 1회 연결)──> device
 | GET | `/api/smartthings/oauth/callback` | SmartThings OAuth 콜백 (인가 코드 → 토큰 교환) | ❌(SmartThings가 호출) |
 | GET | `/api/smartthings/devices` | 연동된 SmartThings 계정의 기기 목록 조회 (등록용) | ✅ ADMIN |
 | POST | `/api/smartthings/devices` | SmartThings 기기를 이 장소의 제어 대상으로 등록 (device 테이블에 SMART_THINGS로 저장) | ✅ ADMIN |
-| POST | `/api/device/{deviceId}/control` | IoT 기기 제어 명령 (서버가 SmartThings 직접 호출) | ✅ ADMIN |
+| POST | `/api/device/{deviceId}/control` | IoT 기기 제어 명령 (SMART_THINGS는 서버가 직접 호출/즉시 반영, hasIrControl=true인 ARDUINO는 대기열에 담아둠 — 2026-08-01, #288) | ✅ ADMIN |
+| GET | `/api/device/ir-command` | 대기 중인 IR 명령 폴링 (아두이노 전용, 1회성 소비) (2026-08-01 신설, #288) | X-Device-Id 헤더 |
 
 ---
 
