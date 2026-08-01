@@ -16,10 +16,11 @@
 //   <driver/i2s.h>는 이 코어 버전에 없어서 사용 불가(설치된 esp32 코어 3.3.10 기준 확인).
 //
 // ⚠️ ATOM Echo의 MCU(ESP32-PICO-D4)는 SOC_I2S_HW_VERSION_1이라, I2SClass가 mono 요청 시
-//    내부적으로 stereo(BOTH 슬롯)로 전환하는 하드웨어 workaround를 갖고 있다(RX는 라이브러리가
-//    투명하게 mono로 되돌려주지만, TX는 write()에 넘기는 버퍼가 실제로는 stereo(L/R 인터리브)
-//    포맷이어야 할 가능성이 있음 — 미검증). 첫 업로드 후 스피커에서 피치가 이상하거나 잡음이 나면
-//    이 부분(TX를 STEREO로 명시하고 좌우 동일 샘플을 복제해서 쓰는 방식)부터 의심할 것.
+//    내부적으로 stereo(BOTH 슬롯)로 전환하는 하드웨어 workaround를 갖고 있다. TX를 MONO로
+//    요청했더니 실기기에서 "매미소리" 왜곡이 났고, STEREO로 명시 + toStereoInterleaved()로
+//    좌우 동일 샘플을 복제해서 쓰는 방식으로 실제로 고쳐졌다(#276, volume_test.ino로 격리 검증).
+//    (참고로 그 왜곡의 절반은 별개 버그였음 - streamPlayback()의 TLS 스트리밍 읽기가 부분
+//    수신을 완성된 청크로 오인해 샘플 경계가 밀리던 문제도 같이 있었다. 둘 다 고쳐야 깨끗함.)
 //
 // 서버 등록 선행 필요(#147): 프로비저닝 포털에 입력하는 값은 실물에 부착된 8자리 시리얼 번호이며,
 // 관리자 앱에서 그 시리얼로 기기를 등록해야 POST /api/feedback/voice 가 성공합니다.
@@ -94,6 +95,8 @@ bool lastButtonStable = HIGH;
 unsigned long lastButtonChangeAt = 0;
 
 static uint8_t streamBuf[STREAM_CHUNK_BYTES];
+// mono->stereo 인터리브 변환용(TX가 STEREO라 필요, #276) - 2배 크기 필요
+static uint8_t stereoBuf[STREAM_CHUNK_BYTES * 2];
 
 // ===== SoftAP 프로비저닝(#143) =====
 // WiFi SSID/PW·기기 ID를 NVS(Preferences)에 저장해두고, 없으면 기기가 자체적으로 AP(SoftAP)를
@@ -258,7 +261,22 @@ void i2sSetRxRate(uint32_t rate) {
 }
 
 void i2sSetTxRate(uint32_t rate) {
-  i2s.configureTX(rate, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO);
+  // MONO로 요청하면 ATOM Echo의 SOC_I2S_HW_VERSION_1 workaround 때문에 오디오가 깨진다(#276,
+  // volume_test.ino로 격리 확인 - 파일 상단 주석 참고). STEREO로 명시하고 toStereoInterleaved()로
+  // 좌우 동일 샘플을 복제해서 써야 한다.
+  i2s.configureTX(rate, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO);
+}
+
+// mono 16비트 PCM 버퍼를 stereo(L/R 동일 샘플 복제) 인터리브로 변환. 반환값: stereoOut에 쓴 바이트 수.
+size_t toStereoInterleaved(const uint8_t *monoBuf, size_t monoBytes, uint8_t *stereoOut) {
+  size_t sampleCount = monoBytes / 2;
+  const int16_t *monoSamples = reinterpret_cast<const int16_t *>(monoBuf);
+  int16_t *stereoSamples = reinterpret_cast<int16_t *>(stereoOut);
+  for (size_t i = 0; i < sampleCount; i++) {
+    stereoSamples[i * 2] = monoSamples[i];
+    stereoSamples[i * 2 + 1] = monoSamples[i];
+  }
+  return sampleCount * 4;
 }
 
 // ===== 로컬 알림음(#157) =====
@@ -282,7 +300,8 @@ void playTone(float freqHz, unsigned long durationMs, uint32_t sampleRate) {
       phase += phaseInc;
       if (phase > 2.0f * PI) phase -= 2.0f * PI;
     }
-    i2s.write((uint8_t *)chunk, chunkSamples * sizeof(int16_t));
+    size_t stereoBytes = toStereoInterleaved((uint8_t *)chunk, chunkSamples * sizeof(int16_t), stereoBuf);
+    i2s.write(stereoBuf, stereoBytes);
     samplesWritten += chunkSamples;
   }
 }
@@ -414,16 +433,27 @@ void streamPlayback(WiFiClientSecure &client, long contentLength) {
 
   while (remaining > 0 && client.connected() && millis() - lastDataAt < 5000UL) {
     size_t want = (size_t)min((long)STREAM_CHUNK_BYTES, remaining);
-    int n = client.read(streamBuf, want);
-    if (n <= 0) {
-      delay(5);
-      continue;
+    // TLS는 레코드 단위로 데이터를 주기 때문에 client.read()가 want보다 적게 반환할 수 있다.
+    // 그걸 그대로 완성된 청크로 처리하면 16비트 샘플(2바이트) 경계가 홀수 바이트만큼 밀려서
+    // 그 뒤로 재생되는 모든 오디오가 깨진다("매미소리" 원인, #276) - want만큼 다 채울 때까지
+    // 내부에서 이어 읽어야 항상 짝수(샘플) 경계로 청크가 만들어진다.
+    size_t filled = 0;
+    while (filled < want && client.connected() && millis() - lastDataAt < 5000UL) {
+      if (!client.available()) {
+        delay(2);
+        continue;
+      }
+      int n = client.read(streamBuf + filled, want - filled);
+      if (n <= 0) continue;
+      filled += (size_t)n;
+      lastDataAt = millis();
     }
-    lastDataAt = millis();
-    applyGain(streamBuf, (size_t)n); // 음량 부스트(#156) — NS4168은 게인 고정이라 소프트웨어로 증폭
-    bytesWritten = i2s.write(streamBuf, (size_t)n);
+    if (filled == 0) break;
+    applyGain(streamBuf, filled); // 음량 부스트(#156) — NS4168은 게인 고정이라 소프트웨어로 증폭
+    size_t stereoBytes = toStereoInterleaved(streamBuf, filled, stereoBuf);
+    bytesWritten = i2s.write(stereoBuf, stereoBytes);
     (void)bytesWritten;
-    remaining -= n;
+    remaining -= filled;
   }
 }
 
