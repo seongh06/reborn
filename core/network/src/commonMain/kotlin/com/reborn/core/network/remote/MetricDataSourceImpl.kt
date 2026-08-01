@@ -21,7 +21,10 @@ class MetricDataSourceImpl(
     private val httpClient: HttpClient,
 ) : MetricDataSource {
 
-    override suspend fun collect(deviceId: String, request: MetricCollectRequest): ApiResponse<MetricCollectResponse> = runCatching {
+    override suspend fun collect(
+        deviceId: String,
+        request: MetricCollectRequest,
+    ): ApiResponse<MetricCollectResponse> = runCatching {
         httpClient.post("/api/metric/collect") {
             header("X-Device-Id", deviceId)
             setBody(request)
