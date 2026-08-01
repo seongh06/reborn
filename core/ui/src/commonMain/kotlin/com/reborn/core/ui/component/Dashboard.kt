@@ -115,8 +115,8 @@ fun DashboardItem(
     }
 }
 
-// 온도·습도는 소수점 한 자리까지, 조도·인원수는 정수로 표시
-private fun formatDashboardValue(type: DataType, value: Float): String {
+// 온도·습도는 소수점 한 자리까지, 조도·인원수는 정수로 표시 - SensorChip에서도 재사용(internal)
+internal fun formatDashboardValue(type: DataType, value: Float): String {
     return when (type) {
         DataType.Temperature, DataType.Humidity -> {
             val scaled = (abs(value) * 10).roundToInt()

@@ -19,7 +19,7 @@ import org.jetbrains.compose.resources.painterResource
 fun SensorChip(
     modifier: Modifier = Modifier,
     type: DataType,
-    value: Int,
+    value: Float,
 ) {
     val style = getUiStyleForType(type)
 
@@ -37,7 +37,7 @@ fun SensorChip(
             tint = style.color
         )
         Text(
-            value.toString(),
+            "${formatDashboardValue(type, value)}${style.sign}",
             style = RebornTheme.typography.labelMedium,
             color = RebornTheme.color.grayScale500
         )
