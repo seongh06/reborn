@@ -178,7 +178,8 @@ private val categoryOptions = listOf(
     DeviceType.PLUG to "플러그",
     DeviceType.TV to "TV",
     DeviceType.AIR_CONDITIONER to "에어컨",
-    DeviceType.CURTAIN to "커튼",
+    DeviceType.AIR_PURIFIER to "공기청정기",
+    DeviceType.VENTILATOR to "환풍기",
     DeviceType.OTHER to "기타",
 )
 

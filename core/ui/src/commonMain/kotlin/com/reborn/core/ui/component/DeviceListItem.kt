@@ -20,13 +20,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.Res
+import com.reborn.core.ui.ic_aerometer
+import com.reborn.core.ui.ic_aiSpeaker
 import com.reborn.core.ui.ic_airConditioner
-import com.reborn.core.ui.ic_curtain
+import com.reborn.core.ui.ic_airPurifier
+import com.reborn.core.ui.ic_arduino
 import com.reborn.core.ui.ic_device
 import com.reborn.core.ui.ic_kamp
 import com.reborn.core.ui.ic_plug
 import com.reborn.core.ui.ic_power
 import com.reborn.core.ui.ic_tv
+import com.reborn.core.ui.ic_ventilator
 import org.jetbrains.compose.resources.painterResource
 
 enum class DeviceType {
@@ -34,7 +38,13 @@ enum class DeviceType {
     PLUG,
     TV,
     AIR_CONDITIONER,
-    CURTAIN,
+    AIR_PURIFIER,
+    VENTILATOR,
+    // 아래 3개는 category(SmartThings 전용)가 아니라 device.deviceType 기준으로 직접 매핑된다 -
+    // ARDUINO/AEROMETER/AI_SPEAKER는 category가 항상 null이라 예전엔 전부 OTHER로만 표시됐음(#298).
+    ARDUINO,
+    AI_SPEAKER,
+    AEROMETER,
     OTHER
 }
 
@@ -44,7 +54,11 @@ val DeviceType.icon
         DeviceType.PLUG -> Res.drawable.ic_plug
         DeviceType.TV -> Res.drawable.ic_tv
         DeviceType.AIR_CONDITIONER -> Res.drawable.ic_airConditioner
-        DeviceType.CURTAIN -> Res.drawable.ic_curtain
+        DeviceType.AIR_PURIFIER -> Res.drawable.ic_airPurifier
+        DeviceType.VENTILATOR -> Res.drawable.ic_ventilator
+        DeviceType.ARDUINO -> Res.drawable.ic_arduino
+        DeviceType.AI_SPEAKER -> Res.drawable.ic_aiSpeaker
+        DeviceType.AEROMETER -> Res.drawable.ic_aerometer
         DeviceType.OTHER -> Res.drawable.ic_device
     }
 
