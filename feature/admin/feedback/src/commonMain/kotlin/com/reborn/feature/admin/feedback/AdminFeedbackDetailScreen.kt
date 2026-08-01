@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -28,6 +29,8 @@ import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.Res
 import com.reborn.core.ui.ext.rebornDefault
+import com.reborn.core.ui.component.DeviceType
+import com.reborn.core.ui.component.icon
 import com.reborn.core.ui.ic_humidity
 import com.reborn.core.ui.ic_illuminance
 import com.reborn.core.ui.ic_people
@@ -91,25 +94,37 @@ fun AdminFeedbackDetailScreen(
                         .background(RebornTheme.color.grayScale300)
                 )
                 AiRecommendationSection(feedbackDetail.temperatureAdjustment)
+            } else if (feedbackDetail.aiAdvice != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .background(RebornTheme.color.grayScale300)
+                )
+                AiAdviceSection(feedbackDetail.aiAdvice)
             }
         }
 
-        Row(
-            modifier = Modifier.padding(16.dp, 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            RebornButton(
-                modifier = Modifier.weight(1f),
-                text = "거절",
-                backgroundColor = RebornTheme.color.grayScale300,
-                onClick = onRejectClick
-            )
-            RebornButton(
-                modifier = Modifier.weight(1f),
-                text = "승인",
-                backgroundColor = RebornTheme.color.grayScale100,
-                onClick = onApproveClick
-            )
+        // 승인/거절은 IoT 제어 대상(온도 추천)이 있을 때만 의미가 있다 - 조언만 있는 피드백은
+        // 제어할 게 없어서 버튼 자체를 아예 숨긴다(#296).
+        if (feedbackDetail.temperatureAdjustment != null) {
+            Row(
+                modifier = Modifier.padding(16.dp, 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                RebornButton(
+                    modifier = Modifier.weight(1f),
+                    text = "거절",
+                    backgroundColor = RebornTheme.color.grayScale300,
+                    onClick = onRejectClick
+                )
+                RebornButton(
+                    modifier = Modifier.weight(1f),
+                    text = "승인",
+                    backgroundColor = RebornTheme.color.grayScale100,
+                    onClick = onApproveClick
+                )
+            }
         }
     }
 }
@@ -176,12 +191,22 @@ private fun AiRecommendationSection(adjustment: AdminFeedbackUiState.Temperature
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // 지금 자동 제어가 실제로 구현된 건 온도(SmartThings 냉난방)뿐이라(#271), 이
+                // 섹션이 뜬다는 것 자체가 곧 에어컨을 조절하겠다는 뜻 - 항상 에어컨 아이콘 고정.
                 Box(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(RebornTheme.color.grayScale300)
-                )
+                        .background(RebornTheme.color.grayScale300),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(DeviceType.AIR_CONDITIONER.icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = RebornTheme.color.grayScale700
+                    )
+                }
                 Column {
                     Text(
                         text = "현재 데이터와 피드백을 합쳐서 => IoT 조절",
@@ -203,19 +228,42 @@ private fun AiRecommendationSection(adjustment: AdminFeedbackUiState.Temperature
     }
 }
 
+// IoT로 직접 제어할 수 없는 피드백에 대한 AI 조언 - AiRecommendationSection과 달리 승인/거절
+// 대상이 없어서(#296) 기기 아이콘·"승인을 누르면 바로 전송됩니다" 문구 없이 조언 텍스트만 보여준다.
+@Composable
+private fun AiAdviceSection(advice: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp, 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "AI 맞춤 피드백",
+            style = RebornTheme.typography.titleSmall,
+            color = RebornTheme.color.grayScale700
+        )
+        Text(
+            text = advice,
+            style = RebornTheme.typography.bodyLarge,
+            color = RebornTheme.color.grayScale900
+        )
+    }
+}
+
 @Composable
 private fun buildTemperatureAdjustmentText(adjustment: AdminFeedbackUiState.TemperatureAdjustment) = buildAnnotatedString {
     withStyle(SpanStyle(color = RebornTheme.color.grayScale900)) {
-        append("희망 온도: ${adjustment.before} → ")
+        append("희망 온도: ${formatDiff(adjustment.before)}°C → ")
     }
     val diff = adjustment.after - adjustment.before
     val suffix = when {
-        diff > 0 -> "(${formatDiff(diff)} 증가)"
-        diff < 0 -> "(${formatDiff(abs(diff))} 감소)"
+        diff > 0 -> "(${formatDiff(diff)}°C 증가)"
+        diff < 0 -> "(${formatDiff(abs(diff))}°C 감소)"
         else -> "(유지)"
     }
     withStyle(SpanStyle(color = RebornTheme.color.humidity, fontWeight = FontWeight.Bold)) {
-        append("${adjustment.after} $suffix")
+        append("${formatDiff(adjustment.after)}°C $suffix")
     }
 }
 

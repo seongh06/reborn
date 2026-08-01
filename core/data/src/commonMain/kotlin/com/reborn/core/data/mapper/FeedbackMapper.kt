@@ -16,4 +16,5 @@ fun FeedbackItemResponse.toFeedback(): Feedback =
         snapshotPeopleCount = snapshotPeopleCount,
         recommendedTemperatureBefore = recommendedTemperatureBefore,
         recommendedTemperatureAfter = recommendedTemperatureAfter,
+        aiAdvice = aiAdvice,
     )

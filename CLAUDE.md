@@ -98,7 +98,7 @@ reborn/                             ← 루트 프로젝트 (모노레포)
 | `user_place_mapping` | 사용자-장소 권한 (ADMIN/USER) | - |
 | `device` | 기기 (ARDUINO/AEROMETER/SMART_THINGS/AI_SPEAKER) | deviceType, appToken, isOnline 추가. SMART_THINGS는 2026-07-19 추가 — deviceKey에 SmartThings deviceId 저장, appToken 불필요. ARDUINO/AI_SPEAKER는 2026-07-22(#147)부터 deviceKey가 사전 발급 시리얼(device_serial)에서 옴 — 관리자가 임의로 정하지 않음. hasIrControl/pendingIrCommand 추가(2026-08-01, #288) — ARDUINO의 IR 에어컨 제어용, pendingIrCommand는 아두이노 폴링 시 1회성 소비 |
 | `metric_logs` | 메트릭(온습도·조도·재실 인원) 수집 로그 | (device_id, created_at DESC) 인덱스. SMART_THINGS 기기는 Arduino의 push(POST /api/metric/collect) 대신 서버가 주기적으로 pull(SmartThings API 폴링)해서 동일 테이블에 적재 |
-| `feedback` | 방문자 피드백 | userAgent, sessionToken 추가. source(QR/VOICE) — AI 스피커(#142) 음성 피드백은 sessionToken 없이 VOICE로 저장 |
+| `feedback` | 방문자 피드백 | userAgent, sessionToken 추가. source(QR/VOICE) — AI 스피커(#142) 음성 피드백은 sessionToken 없이 VOICE로 저장. aiAdvice 추가(2026-08-01, #296) — 온도 외 IoT 제어 불가 피드백에 대한 Gemini 조언, recommendedTemperature*와 상호 배타적 |
 | `smart_things_credential` | 장소별 SmartThings OAuth 토큰 (2026-07-19 신설) | place_id UNIQUE FK, accessToken, refreshToken, expiresAt — 서버가 보유, 공기계/관리자 앱은 접근 안 함 |
 | `device_serial` | 판매용 ARDUINO/AI_SPEAKER 사전 발급 시리얼 재고 (2026-07-22 신설, #147) | serial UNIQUE(8자리, 앞 2자리 타입 프리픽스 AR/AI), assignedDeviceId — place 매핑 전 재고 상태를 표현해야 해서 device와 별도 테이블 |
 

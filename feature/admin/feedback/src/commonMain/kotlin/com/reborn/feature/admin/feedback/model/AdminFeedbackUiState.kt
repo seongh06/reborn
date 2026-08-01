@@ -36,7 +36,11 @@ sealed interface AdminFeedbackUiState {
         // 그 기기의 최신 메트릭이 아예 없거나 Gemini 호출이 실패하면 계속 null로 남는다.
         // 상세 화면에서 null이면 해당 섹션을 숨긴다.
         val sensorSnapshot: SensorSnapshot? = null,
-        val temperatureAdjustment: TemperatureAdjustment? = null
+        val temperatureAdjustment: TemperatureAdjustment? = null,
+        // temperatureAdjustment와 상호 배타적 - IoT로 직접 제어할 수 없는 피드백에 대한 AI 조언.
+        // 이게 있으면 승인/거절 버튼 없이 조언 텍스트만 보여준다(제어할 대상이 없어서 승인 자체가
+        // 성립하지 않음).
+        val aiAdvice: String? = null,
     )
 
     // 피드백 접수 시점 센서 스냅샷 - Figma 596:3594 4개 칩(온도/습도/조도/재실 인원)

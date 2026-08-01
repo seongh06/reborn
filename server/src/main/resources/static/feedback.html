@@ -67,26 +67,6 @@
     font-weight: 500;
     margin: 0 0 12px;
   }
-  .device-group {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .device-chip {
-    padding: 10px 16px;
-    border-radius: 8px;
-    border: 1px solid var(--gray-400);
-    background: var(--gray-100);
-    color: var(--gray-800);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  .device-chip.selected {
-    background: var(--gray-800);
-    border-color: var(--gray-800);
-    color: var(--gray-100);
-  }
   .type-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -269,10 +249,6 @@
         <p class="subtitle">지금 이 공간은 어떠신가요? 느끼신 점을 알려주세요.</p>
       </div>
       <div class="content">
-        <div id="deviceSection" class="hidden">
-          <p class="section-label">어떤 기기에 대한 의견인가요?</p>
-          <div class="device-group" id="deviceGroup"></div>
-        </div>
         <div>
           <p class="section-label">빠른 선택</p>
           <div class="type-grid" id="typeGrid"></div>
@@ -315,13 +291,10 @@
   var doneState = document.getElementById('doneState');
   var formState = document.getElementById('formState');
   var placeNameEl = document.getElementById('placeName');
-  var deviceSection = document.getElementById('deviceSection');
-  var deviceGroup = document.getElementById('deviceGroup');
   var typeGrid = document.getElementById('typeGrid');
   var contentEl = document.getElementById('content');
   var submitButton = document.getElementById('submitButton');
 
-  var selectedDeviceId = null;
   var selectedTypeIndex = -1;
   // 빠른 선택으로 자동 채운 텍스트를 기억해뒀다가, 사용자가 그 뒤로 직접 고치지 않았으면
   // 다른 빠른 선택을 눌렀을 때도 계속 자동으로 교체되게 한다 - 첫 선택 이후엔 !value.trim()이
@@ -339,37 +312,11 @@
     showOnly(errorState);
   }
 
-  // deviceId는 서버 DTO/스키마에서 nullable(기기 미등록 장소도 피드백 제출 가능) - 기기가
-  // 하나도 없는 장소는 renderDevices()에서 selectedDeviceId가 계속 null로 남아, 여기서 기기
-  // 선택을 요구하면 빠른 선택을 눌러도 버튼이 영원히 비활성 상태로 남는 문제가 있었음
+  // deviceId는 항상 null로 제출한다 - 실제 제어 대상 기기는 서버가 장소의 SmartThings
+  // 기기로 알아서 판단하므로(FeedbackService.sendApprovedTemperatureControl) 방문자가
+  // 직접 고를 필요도, 고를 방법도 없다(#296).
   function updateSubmitState() {
     submitButton.disabled = contentEl.value.trim().length === 0;
-  }
-
-  function renderDevices(devices) {
-    if (devices.length <= 1) {
-      selectedDeviceId = devices.length === 1 ? devices[0].deviceId : null;
-      deviceSection.classList.add('hidden');
-      return;
-    }
-    deviceSection.classList.remove('hidden');
-    devices.forEach(function (device, index) {
-      var chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'device-chip';
-      chip.textContent = device.name;
-      chip.addEventListener('click', function () {
-        selectedDeviceId = device.deviceId;
-        Array.prototype.forEach.call(deviceGroup.children, function (c) { c.classList.remove('selected'); });
-        chip.classList.add('selected');
-        updateSubmitState();
-      });
-      if (index === 0) {
-        chip.classList.add('selected');
-        selectedDeviceId = device.deviceId;
-      }
-      deviceGroup.appendChild(chip);
-    });
   }
 
   function renderTypes(hasControllableDevice) {
@@ -422,7 +369,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         qrCode: qrCode,
-        deviceId: selectedDeviceId,
+        deviceId: null,
         content: contentEl.value.trim(),
         sessionToken: sessionTokenFor()
       })
@@ -463,7 +410,6 @@
     .then(function (body) {
       var data = body.data || body;
       placeNameEl.textContent = data.placeName;
-      renderDevices(data.devices || []);
       renderTypes(!!data.hasControllableDevice);
       updateSubmitState();
       showOnly(formState);

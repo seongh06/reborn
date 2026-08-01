@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS `feedback`
     `snapshot_people_count`          INT    NULL COMMENT 'AI 추천 계산 시점 재실 인원 스냅샷',
     `recommended_temperature_before` DOUBLE NULL COMMENT 'AI 추천 전 온도(스냅샷과 동일)',
     `recommended_temperature_after`  DOUBLE NULL COMMENT 'Gemini가 추천한 희망 온도',
+    `ai_advice`     TEXT          NULL COMMENT 'IoT 제어 불가 피드백에 대한 AI 조언 텍스트',
     `created_at`    DATETIME(6)   NOT NULL COMMENT '작성일시',
     `updated_at`    DATETIME(6)   NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),

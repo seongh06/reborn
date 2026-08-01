@@ -43,6 +43,8 @@ class FeedbackDto {
         val snapshotPeopleCount: Int? = null,
         val recommendedTemperatureBefore: Double? = null,
         val recommendedTemperatureAfter: Double? = null,
+        // IoT 제어 대상이 아닌 피드백에 대한 AI 조언(#296) - recommendedTemperature*와 상호 배타적.
+        val aiAdvice: String? = null,
     )
 
     data class CountResponse(

@@ -128,6 +128,42 @@ class GeminiClient(
         return if (node.isNumber) node.asDouble() else null
     }
 
+    // 피드백 "AI 맞춤 피드백" 조언(FeedbackAiRecommendationService) - 온도 조절처럼 IoT로 직접
+    // 제어할 수 없는 피드백(환기해주세요, 냄새나요 등)에 대해 관리자가 바로 실행할 수 있는 조치를
+    // 한두 문장으로 제안한다. 실패 시 null 반환 - recommendTemperatureAdjustment와 동일한 이유로
+    // 호출부가 그대로 스킵.
+    fun recommendAction(feedbackContent: String, currentTemperature: Double?, currentHumidity: Double?): String? {
+        if (apiKey.isBlank()) return null
+
+        val temperatureText = currentTemperature?.let { "현재 온도는 ${it}°C 입니다. " } ?: ""
+        val humidityText = currentHumidity?.let { "현재 습도는 ${it}% 입니다. " } ?: ""
+        val prompt = """
+            실내 환경 관리 서비스(ReBorn)에 방문자가 다음과 같은 피드백을 남겼습니다: "$feedbackContent"
+            ${temperatureText}${humidityText}
+            이 피드백은 냉난방처럼 IoT 기기로 직접 제어할 수 있는 내용이 아닙니다. 관리자가 바로
+            실행할 수 있는 짧고 구체적인 조치를 한국어 한두 문장으로 제안하세요.
+            다른 설명 없이 반드시 다음 JSON 형식으로만 답하세요: {"advice": "string"}
+        """.trimIndent()
+
+        val body = mapOf(
+            "contents" to listOf(mapOf("parts" to listOf(mapOf("text" to prompt)))),
+            "generationConfig" to mapOf("responseMimeType" to "application/json"),
+        )
+
+        val response = runCatching { post(model, body) }
+            .onFailure { e -> log.warn("Gemini 조언 생성 실패: {}", e.message) }
+            .getOrNull() ?: return null
+
+        val text = response
+            .path("candidates").path(0).path("content").path("parts").path(0).path("text")
+            .asText("")
+        if (text.isBlank()) return null
+
+        val parsed = runCatching { objectMapper.readTree(text) }.getOrNull() ?: return null
+        val advice = parsed.path("advice").asText("")
+        return advice.ifBlank { null }
+    }
+
     // 데이터 화면 AI 분석 텍스트(#158) 등 오디오/JSON이 아닌 일반 텍스트 생성에 재사용.
     fun generateText(prompt: String): String {
         requireConfigured()

@@ -67,6 +67,12 @@ class Feedback(
     @Column
     var recommendedTemperatureAfter: Double? = null,
 
+    // IoT로 직접 제어할 수 없는 피드백(환기해주세요 등)에 대한 AI 조언(#296) - 온도 추천과
+    // 상호 배타적(둘 다 채워지지 않음). 승인/거절 버튼은 이게 아니라 recommendedTemperature*
+    // 유무로 노출 여부가 결정된다(제어할 대상이 있어야 승인이 의미 있음).
+    @Column(columnDefinition = "TEXT")
+    var aiAdvice: String? = null,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
@@ -91,5 +97,19 @@ class Feedback(
         this.snapshotPeopleCount = snapshotPeopleCount
         this.recommendedTemperatureBefore = recommendedTemperatureBefore
         this.recommendedTemperatureAfter = recommendedTemperatureAfter
+    }
+
+    fun applyAiAdvice(
+        snapshotTemperature: Double?,
+        snapshotHumidity: Double?,
+        snapshotIlluminance: Int?,
+        snapshotPeopleCount: Int?,
+        advice: String,
+    ) {
+        this.snapshotTemperature = snapshotTemperature
+        this.snapshotHumidity = snapshotHumidity
+        this.snapshotIlluminance = snapshotIlluminance
+        this.snapshotPeopleCount = snapshotPeopleCount
+        this.aiAdvice = advice
     }
 }

@@ -201,6 +201,7 @@ class AdminFeedbackViewModel(
             content = content,
             sensorSnapshot = toSensorSnapshot(),
             temperatureAdjustment = toTemperatureAdjustment(),
+            aiAdvice = aiAdvice,
         )
 
     // 네 값이 전부 있어야 Figma 596:3594의 4개 칩(온도/습도/조도/재실 인원)을 온전히 채울 수 있음 -
