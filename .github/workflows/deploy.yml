@@ -6,6 +6,13 @@ on:
     branches:
       - dev
 
+# 같은 브랜치에 짧은 시간 안에 여러 번 push(예: PR 여러 개 연속 머지)되면 배포가 중복으로 쌓인다 -
+# 최신 커밋 기준 배포 하나만 의미 있으므로 이전 실행은 취소한다(2026-08-01). self-hosted 러너에서
+# docker build/up 도중 취소되면 해당 스텝만 중단되고 다음 실행이 이어서 최신 상태로 재빌드/재기동함.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: [self-hosted, pi5]
