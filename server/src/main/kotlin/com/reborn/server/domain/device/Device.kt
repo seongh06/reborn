@@ -44,6 +44,17 @@ class Device(
     @Column(nullable = false)
     var isOnline: Boolean = false,
 
+    // ARDUINO 기기에 IR 송신 모듈이 실제로 물려있는지(#288) - 관리자가 등록 시 직접 설정. 물리적으로
+    // 확인할 방법이 서버엔 없어서 신뢰 기반 플래그. SmartThings/AEROMETER/AI_SPEAKER는 항상 false.
+    @Column(nullable = false)
+    var hasIrControl: Boolean = false,
+
+    // 관리자가 보낸 IR 명령 중 아두이노가 아직 폴링해가지 않은 것(#288) - 폴링 시 1회성으로 소비되고
+    // 즉시 null로 비워짐(큐 길이 1, 이전 명령 대기 중 새 명령이 오면 그냥 덮어씀 - MVP 스코프).
+    @Column
+    @Enumerated(EnumType.STRING)
+    var pendingIrCommand: IrCommand? = null,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
@@ -56,5 +67,13 @@ class Device(
 
     fun updateAppToken(token: String?) {
         appToken = token
+    }
+
+    fun queuePendingIrCommand(command: IrCommand) {
+        pendingIrCommand = command
+    }
+
+    fun clearPendingIrCommand() {
+        pendingIrCommand = null
     }
 }

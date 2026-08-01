@@ -22,6 +22,7 @@ object DeviceConverter {
             deviceType = entity.deviceType.name,
             category = entity.category,
             isOnline = entity.isOnline,
+            hasIrControl = entity.hasIrControl,
             createdAt = requireNotNull(entity.createdAt),
         )
 

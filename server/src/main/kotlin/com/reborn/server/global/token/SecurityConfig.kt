@@ -71,6 +71,9 @@ class SecurityConfig(
                     // X-Device-Id로만 인증하는 다른 하드웨어 엔드포인트와 동일한 모델
                     .requestMatchers(HttpMethod.POST, "/api/device/online").permitAll()
 
+                    // 아두이노가 IR 제어 명령을 폴링하는 엔드포인트(#288) - 위와 동일한 X-Device-Id 신뢰 모델
+                    .requestMatchers(HttpMethod.GET, "/api/device/ir-command").permitAll()
+
                     // 공기계 앱은 별도 로그인을 하지 않음 — 페어링 코드 자체가 유일한 인가 수단(JWT 불필요)
                     .requestMatchers(HttpMethod.POST, "/api/device/pairing").permitAll()
 

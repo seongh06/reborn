@@ -2,6 +2,7 @@ package com.reborn.server.domain.device.controller
 
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.dto.DeviceDto
+import com.reborn.server.domain.device.service.ArduinoIrControlService
 import com.reborn.server.domain.device.service.DeviceService
 import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
 import com.reborn.server.global.handler.BusinessAlertException
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController
 class DeviceController(
     private val deviceService: DeviceService,
     private val smartThingsDeviceService: SmartThingsDeviceService,
+    private val arduinoIrControlService: ArduinoIrControlService,
 ) {
 
     @Operation(
@@ -154,6 +156,20 @@ class DeviceController(
     }
 
     @Operation(
+        summary = "IR 명령 폴링 (아두이노 전용)",
+        description = "hasIrControl=true인 아두이노가 주기적으로 호출해서 대기 중인 제어 명령을 가져간다(#288). " +
+            "가져간 명령은 그 즉시 서버에서 비워지는 1회성 소비 방식 - command가 null이면 대기 중인 명령이 " +
+            "없다는 뜻이라 아무것도 안 하면 된다. X-Device-Id로만 인증한다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공 (명령 없으면 command=null)"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기"),
+    )
+    @GetMapping("/ir-command")
+    fun getPendingIrCommand(@RequestHeader("X-Device-Id") deviceId: String): ApiResponse<DeviceDto.IrCommandResponse> =
+        ApiResponse.success(arduinoIrControlService.consumePendingCommand(deviceId))
+
+    @Operation(
         summary = "기기 목록 조회",
         description = "특정 장소에 등록된 기기(ARDUINO/AEROMETER) 목록을 조회합니다. 해당 장소의 ADMIN 권한이 필요합니다.",
     )
@@ -194,13 +210,15 @@ class DeviceController(
 
     @Operation(
         summary = "IoT 기기 제어",
-        description = "SmartThings로 등록된 기기(SMART_THINGS 타입)에 제어 명령을 보냅니다. 서버가 해당 " +
-            "장소의 SmartThings 토큰으로 SmartThings API를 직접 호출합니다(#132). 전원/운전모드/온도/풍량 중 " +
-            "보낸 필드만 반영됩니다. 해당 장소의 ADMIN 권한이 필요합니다.",
+        description = "SMART_THINGS 타입은 서버가 해당 장소의 SmartThings 토큰으로 API를 직접 호출해 " +
+            "즉시 반영합니다(#132). hasIrControl=true인 ARDUINO 타입은 명령을 대기열에 담아두기만 하고 " +
+            "아두이노가 폴링(GET /ir-command)해서 가져가 실행합니다(#288) - 즉시 반영을 보장하지 않고 " +
+            "최대 폴링 주기만큼 지연될 수 있으며, 실제로 반영됐는지 확인할 방법도 없습니다(IR은 단방향). " +
+            "전원/운전모드/온도/풍량 중 보낸 필드만 반영됩니다. 해당 장소의 ADMIN 권한이 필요합니다.",
     )
     @ApiResponses(
         SwaggerApiResponse(responseCode = "200", description = "제어 명령 전달 완료"),
-        SwaggerApiResponse(responseCode = "400", description = "제어할 항목 없음 또는 SmartThings 기기가 아님"),
+        SwaggerApiResponse(responseCode = "400", description = "제어할 항목 없음 또는 제어 불가능한 기기"),
         SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
         SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
         SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기 또는 이 장소에 SmartThings 미연동"),
@@ -212,7 +230,7 @@ class DeviceController(
         @RequestBody request: DeviceDto.ControlRequest,
         authentication: Authentication,
     ): ApiResponse<DeviceDto.ControlResponse> =
-        ApiResponse.success(smartThingsDeviceService.control(extractUserId(authentication), deviceId, request))
+        ApiResponse.success(deviceService.control(extractUserId(authentication), deviceId, request))
 
     @Operation(
         summary = "기기 등록 해제",

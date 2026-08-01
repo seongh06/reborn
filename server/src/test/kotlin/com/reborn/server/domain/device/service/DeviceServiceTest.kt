@@ -18,6 +18,7 @@ import com.reborn.server.domain.place.UserPlaceMapping
 import com.reborn.server.domain.place.UserPlaceMappingRepository
 import com.reborn.server.global.handler.BusinessAlertException
 import com.reborn.server.global.model.CommonErrorCode
+import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
 import com.reborn.server.global.redis.RedisUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -65,6 +66,12 @@ class DeviceServiceTest {
     @Mock
     private lateinit var redisUtil: RedisUtil
 
+    @Mock
+    private lateinit var smartThingsDeviceService: SmartThingsDeviceService
+
+    @Mock
+    private lateinit var arduinoIrControlService: ArduinoIrControlService
+
     // @Value 문자열 필드(operatorApiKey)가 섞여있어 @InjectMocks 대신 직접 생성한다
     // (SmartThingsServiceTest와 동일 패턴).
     private lateinit var deviceService: DeviceService
@@ -85,6 +92,8 @@ class DeviceServiceTest {
             autoControlRuleRepository = autoControlRuleRepository,
             userPlaceMappingRepository = userPlaceMappingRepository,
             redisUtil = redisUtil,
+            smartThingsDeviceService = smartThingsDeviceService,
+            arduinoIrControlService = arduinoIrControlService,
             operatorApiKey = "test-operator-key",
         )
     }

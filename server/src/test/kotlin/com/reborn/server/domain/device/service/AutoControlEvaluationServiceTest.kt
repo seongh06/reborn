@@ -76,6 +76,9 @@ class AutoControlEvaluationServiceTest {
     private lateinit var smartThingsDeviceService: SmartThingsDeviceService
 
     @Mock
+    private lateinit var arduinoIrControlService: ArduinoIrControlService
+
+    @Mock
     private lateinit var autoControlExecutionLogRepository: AutoControlExecutionLogRepository
 
     private lateinit var evaluationService: AutoControlEvaluationService
@@ -91,6 +94,7 @@ class AutoControlEvaluationServiceTest {
             metricLogRepository = metricLogRepository,
             autoControlRuleRepository = autoControlRuleRepository,
             smartThingsDeviceService = smartThingsDeviceService,
+            arduinoIrControlService = arduinoIrControlService,
             autoControlExecutionLogRepository = autoControlExecutionLogRepository,
         )
     }

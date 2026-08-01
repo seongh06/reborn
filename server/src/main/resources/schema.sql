@@ -101,6 +101,8 @@ CREATE TABLE IF NOT EXISTS `device`
     `category`    VARCHAR(20)  NULL COMMENT '아이콘 구분용 카테고리 (LAMP/PLUG/TV/AIR_CONDITIONER/CURTAIN/OTHER) - SmartThings 등록 시 관리자가 직접 선택, Arduino/AI스피커는 항상 NULL',
     `app_token`   VARCHAR(512) NULL COMMENT 'FCM 앱 토큰 (AEROMETER 전용)',
     `is_online`   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '온라인 여부',
+    `has_ir_control` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'IR 송신 모듈 보유 여부 (ARDUINO 전용, #288)',
+    `pending_ir_command` VARCHAR(20) NULL COMMENT '대기 중인 IR 명령 - 폴링 시 1회성 소비 (#288)',
     `created_at`  DATETIME(6)  NOT NULL COMMENT '등록일시',
     `updated_at`  DATETIME(6)  NOT NULL COMMENT '수정일시',
     PRIMARY KEY (`id`),

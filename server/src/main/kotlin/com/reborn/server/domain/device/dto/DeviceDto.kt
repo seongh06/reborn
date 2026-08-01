@@ -12,6 +12,8 @@ class DeviceDto {
         @field:NotNull val placeId: Long? = null,
         @field:NotBlank val deviceId: String? = null,
         @field:NotBlank val deviceName: String? = null,
+        // ARDUINO에 IR 송신 모듈이 실제로 물려있는 경우에만 true로 등록(#288) - 다른 기기 타입은 무시됨.
+        val hasIrControl: Boolean = false,
     )
 
     data class RegisterResponse(
@@ -63,6 +65,7 @@ class DeviceDto {
         val deviceType: String,
         val category: String?,
         val isOnline: Boolean,
+        val hasIrControl: Boolean,
         val createdAt: LocalDateTime,
     )
 
@@ -77,6 +80,12 @@ class DeviceDto {
     data class ControlResponse(
         val deviceId: String,
         val sentAt: LocalDateTime,
+    )
+
+    // 아두이노가 폴링(GET /api/device/ir-command)해서 대기 중인 IR 명령을 가져갈 때 응답(#288).
+    // command가 null이면 대기 중인 명령 없음 - 펌웨어는 이 경우 아무것도 안 하면 됨.
+    data class IrCommandResponse(
+        val command: String?,
     )
 
     // 필드가 null이면 이 기기가 그 capability를 지원하지 않는다는 뜻(#221) - 클라이언트가 원격 제어

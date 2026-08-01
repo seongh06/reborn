@@ -18,6 +18,7 @@ import com.reborn.server.global.redis.RedisUtil
 import com.reborn.server.global.util.generateDeviceSerial
 import com.reborn.server.global.util.generateRandomCode
 import com.reborn.server.global.util.generateUuid
+import com.reborn.server.domain.smartthings.service.SmartThingsDeviceService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
@@ -35,6 +36,8 @@ class DeviceService(
     private val autoControlRuleRepository: AutoControlRuleRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
     private val redisUtil: RedisUtil,
+    private val smartThingsDeviceService: SmartThingsDeviceService,
+    private val arduinoIrControlService: ArduinoIrControlService,
     @param:Value("\${operator.api-key:}") private val operatorApiKey: String,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -63,9 +66,19 @@ class DeviceService(
             throw BusinessAlertException(CommonErrorCode.CONFLICT, "이미 등록된 기기입니다.")
         }
 
+        // hasIrControl은 ARDUINO가 아닌 타입이 잘못 보내도 조용히 무시 - device_serial이 이미 실제
+        // 타입을 결정하므로, 여기서 에러를 내는 것보다 타입에 안 맞는 요청값을 버리는 쪽이 자연스럽다.
+        val hasIrControl = request.hasIrControl && deviceSerial.deviceType == DeviceType.ARDUINO
+
         val device = try {
             deviceRepository.save(
-                Device(place = place, deviceType = deviceSerial.deviceType, deviceKey = serial, name = deviceName),
+                Device(
+                    place = place,
+                    deviceType = deviceSerial.deviceType,
+                    deviceKey = serial,
+                    name = deviceName,
+                    hasIrControl = hasIrControl,
+                ),
             )
         } catch (e: DataIntegrityViolationException) {
             log.warn("register 기기 저장 중 무결성 위반: {}", e.message)
@@ -75,6 +88,22 @@ class DeviceService(
         deviceSerialRepository.save(deviceSerial)
 
         return DeviceConverter.toRegisterResponse(device)
+    }
+
+    // SmartThings/아두이노(IR) 제어 요청 단일 진입점(#288) - 기기 타입에 따라 알맞은 서비스로 위임.
+    // 각 서비스가 자체적으로 타입 검증 + ADMIN 권한 확인을 다시 하므로 여기서 중복 검사하지 않는다.
+    @Transactional
+    fun control(userId: Long, deviceKey: String, request: DeviceDto.ControlRequest): DeviceDto.ControlResponse {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+
+        return when {
+            device.deviceType == DeviceType.SMART_THINGS ->
+                smartThingsDeviceService.control(userId, deviceKey, request)
+            device.deviceType == DeviceType.ARDUINO && device.hasIrControl ->
+                arduinoIrControlService.control(userId, deviceKey, request)
+            else -> throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "제어할 수 없는 기기입니다.")
+        }
     }
 
     // #147: 판매 전 서비스 운영자가 실물에 인쇄할 시리얼을 배치로 미리 발급한다. 장소/ADMIN과 무관한
