@@ -1,13 +1,18 @@
 package com.reborn.core.network.datasource
 
 import com.reborn.core.network.model.ApiResponse
+import com.reborn.core.network.model.request.metric.MetricCollectRequest
 import com.reborn.core.network.model.response.metric.MetricAggregateResponse
 import com.reborn.core.network.model.response.metric.MetricAnalysisResponse
+import com.reborn.core.network.model.response.metric.MetricCollectResponse
 import com.reborn.core.network.model.response.metric.MetricCurrentResponse
 import com.reborn.core.network.model.response.metric.MetricExportResponse
 import com.reborn.core.network.model.response.metric.MetricHistoryResponse
 
 interface MetricDataSource {
+    // 공기계 전용(#294) - X-Device-Id 헤더로 인증(Arduino와 동일 모델), JWT 불필요
+    suspend fun collect(deviceId: String, request: MetricCollectRequest): ApiResponse<MetricCollectResponse>
+
     suspend fun getCurrent(deviceId: String): ApiResponse<MetricCurrentResponse>
     suspend fun getHistory(deviceId: String, size: Int): ApiResponse<MetricHistoryResponse>
 

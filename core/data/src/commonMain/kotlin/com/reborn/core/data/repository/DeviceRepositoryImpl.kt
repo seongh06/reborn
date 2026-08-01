@@ -83,4 +83,6 @@ class DeviceRepositoryImpl(
 
     override suspend fun getAutoControlRule(deviceId: String): Result<AutoControlRule?> =
         remote.getAutoControlRule(deviceId).toResult { it?.toAutoControlRule() }
+
+    override suspend fun getLocalDeviceId(): String? = deviceLocal.getDeviceId()
 }

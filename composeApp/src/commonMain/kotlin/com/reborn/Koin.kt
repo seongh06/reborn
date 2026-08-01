@@ -20,6 +20,7 @@ import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetDeviceStatusUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
+import com.reborn.core.domain.usecase.GetLocalDeviceIdUseCase
 import com.reborn.core.domain.usecase.GetPlaceAdminsUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
@@ -39,6 +40,7 @@ import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
+import com.reborn.core.domain.usecase.SendMetricUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
@@ -93,6 +95,7 @@ val appDependenciesModule = module {
     factory { PairDeviceUseCase(get()) }
     factory { GetDeviceListUseCase(get()) }
     factory { GetDeviceStatusUseCase(get()) }
+    factory { GetLocalDeviceIdUseCase(get()) }
     factory { RegisterArduinoDeviceUseCase(get()) }
     factory { RegisterAiSpeakerDeviceUseCase(get()) }
     factory { GetSmartThingsAuthorizeUrlUseCase(get()) }
@@ -106,6 +109,7 @@ val appDependenciesModule = module {
     factory { GetFeedbackListUseCase(get()) }
     factory { UpdateFeedbackStatusUseCase(get()) }
     factory { GetCurrentMetricUseCase(get()) }
+    factory { SendMetricUseCase(get()) }
     factory { GetSensorHistoryUseCase(get()) }
     factory { GetSensorAggregateUseCase(get()) }
     factory { GetAnalysisTextUseCase(get()) }

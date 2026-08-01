@@ -2,20 +2,34 @@ package com.reborn.core.network.remote
 
 import com.reborn.core.network.datasource.MetricDataSource
 import com.reborn.core.network.model.ApiResponse
+import com.reborn.core.network.model.request.metric.MetricCollectRequest
 import com.reborn.core.network.model.response.metric.MetricAggregateResponse
 import com.reborn.core.network.model.response.metric.MetricAnalysisResponse
+import com.reborn.core.network.model.response.metric.MetricCollectResponse
 import com.reborn.core.network.model.response.metric.MetricCurrentResponse
 import com.reborn.core.network.model.response.metric.MetricExportResponse
 import com.reborn.core.network.model.response.metric.MetricHistoryResponse
 import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 class MetricDataSourceImpl(
     private val httpClient: HttpClient,
 ) : MetricDataSource {
+
+    override suspend fun collect(
+        deviceId: String,
+        request: MetricCollectRequest,
+    ): ApiResponse<MetricCollectResponse> = runCatching {
+        httpClient.post("/api/metric/collect") {
+            header("X-Device-Id", deviceId)
+            setBody(request)
+        }
+    }.asApiResponse()
 
     override suspend fun getCurrent(deviceId: String): ApiResponse<MetricCurrentResponse> = runCatching {
         httpClient.get("/api/metric/current") {

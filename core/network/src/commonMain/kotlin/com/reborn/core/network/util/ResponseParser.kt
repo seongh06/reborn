@@ -7,10 +7,15 @@ import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 
 internal suspend inline fun <reified T> Result<HttpResponse>.asApiResponse(): ApiResponse<T> {
     val response = this.getOrNull()
     val exception = this.exceptionOrNull()
+
+    // runCatching은 CancellationException도 잡아버려서, 여기서 그대로 실패 응답으로 바꿔버리면
+    // 코루틴 취소 신호가 사라진다(구조적 동시성 위반) - 재던져서 정상적으로 전파되게 한다.
+    if (exception is CancellationException) throw exception
 
     if (exception != null) {
         return when (exception) {
