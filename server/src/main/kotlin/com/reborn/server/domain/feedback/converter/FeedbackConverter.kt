@@ -54,5 +54,6 @@ object FeedbackConverter {
             snapshotPeopleCount = entity.snapshotPeopleCount,
             recommendedTemperatureBefore = entity.recommendedTemperatureBefore,
             recommendedTemperatureAfter = entity.recommendedTemperatureAfter,
+            aiAdvice = entity.aiAdvice,
         )
 }
