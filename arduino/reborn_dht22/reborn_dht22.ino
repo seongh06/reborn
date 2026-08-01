@@ -225,8 +225,12 @@ void runProvisioningPortal() {
   WiFiServer server(80);
   server.begin();
 
-  Serial.printf("프로비저닝 포털 시작 — SSID: %s (PW: %s), http://192.168.4.1/\n",
-                apSsid.c_str(), apPassword.c_str());
+  // SAMD21 코어의 Serial_ 클래스는 printf를 지원 안 함(ESP32 HardwareSerial과 다름) - print로 대체
+  Serial.print("프로비저닝 포털 시작 — SSID: ");
+  Serial.print(apSsid);
+  Serial.print(" (PW: ");
+  Serial.print(apPassword);
+  Serial.println("), http://192.168.4.1/");
 
   while (true) {
     WiFiClient client = server.available();
@@ -366,8 +370,12 @@ void setup() {
   Serial.flush();
 
   bool provisioned = loadProvisioning();
-  Serial.printf("[DEBUG 3] loadProvisioning 완료: provisioned=%d ssid=%s deviceId=%s\n",
-                provisioned, g_wifiSsid.c_str(), g_deviceId.c_str());
+  Serial.print("[DEBUG 3] loadProvisioning 완료: provisioned=");
+  Serial.print(provisioned);
+  Serial.print(" ssid=");
+  Serial.print(g_wifiSsid);
+  Serial.print(" deviceId=");
+  Serial.println(g_deviceId);
   Serial.flush();
 
   if (!provisioned) {
