@@ -92,7 +92,7 @@ fun AerometerScreen(
     val dots = ".".repeat(dotCount)
 
     Column(
-        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale900),
+        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale900, topPadding = false),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         RebornTopAppBar(onNavigateSetting = onSettingClick, darkTheme = true)

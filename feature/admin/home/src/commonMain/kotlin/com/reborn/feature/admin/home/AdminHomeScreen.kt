@@ -179,7 +179,7 @@ fun AdminHomeScreen(
 
          Box {
              Column(
-                 modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+                 modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
              ) {
                  RebornTopAppBar(
                      title = roomTitle,
@@ -240,7 +240,7 @@ fun AdminHomeScreen(
 
         Box {
             Column(
-                modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+                modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
             ) {
                 RebornTopAppBar(
                     title = roomTitle,

@@ -75,7 +75,7 @@ fun IntroAdminCodeScreen(
     }
 
     Column(
-        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
     ) {
         RebornTopAppBar(onBackClick = { onBackClick() })
         RebornTopAppBar(title = "관리자 초대 코드")

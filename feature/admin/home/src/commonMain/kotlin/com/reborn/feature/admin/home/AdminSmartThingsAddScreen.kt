@@ -67,7 +67,7 @@ fun AdminSmartThingsAddRoute(
             RebornLoadingScreen()
         } else {
             Column(
-                modifier = Modifier.rebornDefault(Color.White)
+                modifier = Modifier.rebornDefault(Color.White, topPadding = false)
             ) {
                 RebornTopAppBar(title = "SmartThings 기기 추가", onBackClick = onBackClick)
                 when (val state = uiState) {

@@ -44,7 +44,12 @@ fun Modifier.customInsets(
 @Composable
 fun Modifier.rebornDefault(
     color: Color = Color.White,
-    bottomPadding: Boolean = true
+    bottomPadding: Boolean = true,
+    // RebornTopAppBar를 쓰는 화면은 false를 넘긴다 - 상단 inset을 여기서 미리 적용해버리면
+    // topbar의 배경(backgroundColor)이 상태바 영역까지 못 올라가서 상태바와 topbar 사이에
+    // 색 경계선이 생긴다(topbar 자신이 상단 inset을 갖고 배경은 그 위까지 그리도록 함).
+    // RebornTopAppBar가 없는 화면(로딩/인트로 등)은 기본값 true로 여기서 계속 처리.
+    topPadding: Boolean = true,
 ): Modifier {
     return Modifier
         .background(color)
@@ -54,5 +59,5 @@ fun Modifier.rebornDefault(
         // 더해서, 제스처 내비게이션 기기에서 시스템 inset(보통 16~24dp) + 24dp가 합산돼
         // 하단 여백이 두 배로 넓어 보이는 버그가 있었다(발견 07-28). union()으로 "더 큰 값"만
         // 취하도록 고쳐서 항상 최소 24dp, 시스템 inset이 더 크면 그 값만 적용되게 수정.
-        .customInsets(top = true, bottom = bottomPadding, minBottomPadding = if (bottomPadding) 24.dp else 0.dp)
+        .customInsets(top = topPadding, bottom = bottomPadding, minBottomPadding = if (bottomPadding) 24.dp else 0.dp)
 }

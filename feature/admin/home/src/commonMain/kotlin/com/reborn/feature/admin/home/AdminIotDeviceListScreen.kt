@@ -80,7 +80,7 @@ fun AdminIotDeviceListScreen(
     val groupedDevices = devices.groupBy { it.place }
 
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ) {
         RebornTopAppBar(title = "기기", onBackClick = onBackClick, onNavigateAddDevice = onAddDeviceClick)
 

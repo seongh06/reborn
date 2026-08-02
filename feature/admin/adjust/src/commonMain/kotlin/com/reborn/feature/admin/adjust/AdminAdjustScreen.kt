@@ -143,7 +143,7 @@ fun AdminAdjustScreen(
     navToDeviceDetail: (String) -> Unit
 ) {
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ){
         RebornTopAppBar(title = "기기 제어", onNavigateAddDevice = onAddDeviceClick)
         Text(
@@ -198,7 +198,7 @@ fun AdminAddDeviceScreen(
     var name by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ) {
         RebornTopAppBar(title = "기기 연결 추가", onBackClick = onBackClick)
 

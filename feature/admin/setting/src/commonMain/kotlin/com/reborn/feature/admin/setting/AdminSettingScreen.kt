@@ -188,7 +188,7 @@ fun AdminSettingScreen(
 
     Column(
         modifier = Modifier
-            .rebornDefault(Color.White)
+            .rebornDefault(Color.White, topPadding = false)
             .verticalScroll(rememberScrollState())
     ) {
         RebornTopAppBar(title = "설정", onBackClick = onBackClick)

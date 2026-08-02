@@ -101,7 +101,7 @@ fun AdminDataScreen(
 
     Column(
         modifier = Modifier
-            .rebornDefault(Color.White)
+            .rebornDefault(Color.White, topPadding = false)
             .verticalScroll(rememberScrollState())
     ) {
         RebornTopAppBar(
