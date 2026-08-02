@@ -232,7 +232,7 @@ class AdminDataViewModel(
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val category = AdminDataUiState.Category.TEMPERATURE
-            val period = AdminDataUiState.Period.DAY
+            val period = AdminDataUiState.Period.HOUR
             try {
                 resolveDeviceContext()
                 navigationManager.clearAndReset(
