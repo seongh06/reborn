@@ -5,8 +5,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.systemGestures
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -58,6 +66,15 @@ fun RebornTopAppBar(
                 } else {
                     Modifier
                 }
+            )
+            // 배경(그라데이션 스크림)은 위에서 이미 이 Box 전체에 칠해졌으므로, 상태바 높이만큼의
+            // inset을 여기서 적용해도 배경은 상태바 영역까지 계속 이어져 보이고 내부 콘텐츠(아이콘/
+            // 타이틀)만 상태바 아래로 밀려난다 - 화면(rebornDefault)이 아니라 topbar 자신이 상단
+            // inset을 소유해야 상태바와 topbar 배경 사이에 색 경계선이 안 생긴다.
+            .windowInsetsPadding(
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Top)
+                    .union(WindowInsets.displayCutout.only(WindowInsetsSides.Top))
+                    .union(WindowInsets.systemGestures.only(WindowInsetsSides.Top))
             )
             .padding(4.dp, 8.dp)
     ) {

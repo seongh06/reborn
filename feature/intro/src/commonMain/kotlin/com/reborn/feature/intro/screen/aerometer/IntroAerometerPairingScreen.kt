@@ -34,7 +34,7 @@ fun IntroAermeterPairingScreen(
     }
 
     Column(
-        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
     ) {
         RebornTopAppBar(title = "페어링", onBackClick = { onBackClick() })
         PairingCodeInput(

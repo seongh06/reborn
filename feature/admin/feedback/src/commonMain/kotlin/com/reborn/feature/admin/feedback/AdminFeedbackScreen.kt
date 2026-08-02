@@ -103,7 +103,7 @@ fun AdminFeedbackScreen(
     val filteredFeedbacks = state.filteredFeedbacks()
 
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ) {
         RebornTopAppBar(title = "피드백", onBackClick = onBackClick, onNavigateFeedbackQR = navToFeedbackQR)
         TabBar(

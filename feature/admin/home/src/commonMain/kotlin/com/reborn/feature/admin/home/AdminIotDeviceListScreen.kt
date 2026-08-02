@@ -80,7 +80,7 @@ fun AdminIotDeviceListScreen(
     val groupedDevices = devices.groupBy { it.place }
 
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ) {
         RebornTopAppBar(title = "기기", onBackClick = onBackClick, onNavigateAddDevice = onAddDeviceClick)
 
@@ -98,7 +98,8 @@ fun AdminIotDeviceListScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 groupedDevices.forEach { (place, roomDevices) ->
                     item(key = "room_$place") {

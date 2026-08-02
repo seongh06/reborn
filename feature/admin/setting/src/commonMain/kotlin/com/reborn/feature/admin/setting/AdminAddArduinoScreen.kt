@@ -50,7 +50,7 @@ fun AdminAddArduinoRoute(
         snackbarHostState = snackbarHostState
     ) { _ ->
         Column(
-            modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+            modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
         ) {
             RebornTopAppBar(title = "아두이노 추가", onBackClick = onBackClick)
 

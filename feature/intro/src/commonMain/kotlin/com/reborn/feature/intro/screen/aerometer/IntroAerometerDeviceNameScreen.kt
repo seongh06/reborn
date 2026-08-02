@@ -55,7 +55,7 @@ fun IntroAerometerDeviceNameScreen(
     }
 
     Column(
-        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
     ) {
         RebornTopAppBar(title = "기기 이름 입력", onBackClick = { onBackClick() })
         RebornTextField(

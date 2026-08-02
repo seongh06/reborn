@@ -50,7 +50,7 @@ fun AdminAddAiSpeakerRoute(
         snackbarHostState = snackbarHostState
     ) { _ ->
         Column(
-            modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+            modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
         ) {
             RebornTopAppBar(title = "AI 스피커 추가", onBackClick = onBackClick)
 

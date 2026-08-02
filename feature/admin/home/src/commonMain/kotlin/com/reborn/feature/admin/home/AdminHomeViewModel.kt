@@ -90,6 +90,20 @@ class AdminHomeViewModel(
             is AdminHomeIntent.ClickAlarmFilter -> clickAlarmFilter(intent.filter)
             is AdminHomeIntent.DismissTutorial -> dismissTutorial(intent.stepId)
             is AdminHomeIntent.SelectPlace -> selectPlace(intent.placeId)
+            is AdminHomeIntent.Refresh -> refresh()
+        }
+    }
+
+    // 당겨서 새로고침(pull-to-refresh) - 이미 대시보드를 보고 있는 상태에서만 의미가 있어 Home이
+    // 아니면 무시한다. checkInitialState()처럼 전체를 Loading으로 갈아엎지 않고 지금 화면은
+    // 그대로 둔 채 isRefreshing만 켜서 상단 인디케이터만 보여준다.
+    private fun refresh() {
+        if (navController.uiState.value !is AdminHomeUiState.Home) return
+        navController.updateCurrentState { state ->
+            (state as? AdminHomeUiState.Home)?.copy(isRefreshing = true) ?: state
+        }
+        viewModelScope.launch {
+            navController.clearAndReset(loadHomeState())
         }
     }
 
@@ -107,13 +121,19 @@ class AdminHomeViewModel(
     private fun checkInitialState() {
         navController.clearAndReset(AdminHomeUiState.Loading)
         viewModelScope.launch {
+            navController.clearAndReset(loadHomeState())
+        }
+    }
+
+    // checkInitialState()(최초 진입 - Loading 경유)와 refresh()(당겨서 새로고침 - 지금 화면 유지)가
+    // 공유하는 실제 데이터 조회+상태 조립 로직.
+    private suspend fun loadHomeState(): AdminHomeUiState.Home {
             val placeResolution = resolveSelectedPlaceUseCase()
             placeResolution.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
             val places = placeResolution.getOrNull()?.places.orEmpty()
             val placeId = placeResolution.getOrNull()?.selected?.placeId
             if (placeId == null) {
-                navController.clearAndReset(AdminHomeUiState.Home(hasDevices = false))
-                return@launch
+                return AdminHomeUiState.Home(hasDevices = false)
             }
 
             val seenSteps = getTutorialSeenStepsUseCase().first()
@@ -173,27 +193,24 @@ class AdminHomeViewModel(
                 .map { it.toFeedbackListItem() }
             alarmItems = sortedFeedbacks.map { it.toAlarmItem() }
 
-            navController.clearAndReset(
-                AdminHomeUiState.Home(
-                    hasDevices = serverDevices.isNotEmpty(),
-                    // 등록만 되고 WiFi 연결에 한 번도 성공한 적 없는 기기는 홈 카드에서 숨긴다(#276) -
-                    // 등록 자체는 됐으므로 hasDevices/튜토리얼 판단은 그대로 serverDevices 기준을 쓰고,
-                    // 전체 기기 목록(설정 화면)에서는 계속 보여서 삭제/재시도가 가능하게 한다.
-                    devices = devices.filter { it.isOnline },
-                    metric = metric,
-                    feedbackTotalCount = feedbacks.size,
-                    // "미확인 피드백" 배지(#318) - status==PENDING 기준이면 액션 없는(조언만
-                    // 있는) 피드백은 읽어도 상태가 안 바뀌어 배지에 영원히 남는다. isRead 기준으로
-                    // 바꿔서 읽으면 바로 빠지도록 수정.
-                    feedbackWaitingCount = feedbacks.count { !it.isRead },
-                    recentFeedbacks = recentFeedbacks,
-                    showTutorialHint = TutorialStep.HOME_SMART_THINGS !in seenSteps && serverDevices.isEmpty(),
-                    showFirstFeedbackHint = TutorialStep.HOME_FIRST_FEEDBACK !in seenSteps && feedbacks.isNotEmpty(),
-                    rooms = places.map { RoomOption(id = it.placeId, name = it.name) },
-                    selectedRoomId = placeId,
-                )
+            return AdminHomeUiState.Home(
+                hasDevices = serverDevices.isNotEmpty(),
+                // 등록만 되고 WiFi 연결에 한 번도 성공한 적 없는 기기는 홈 카드에서 숨긴다(#276) -
+                // 등록 자체는 됐으므로 hasDevices/튜토리얼 판단은 그대로 serverDevices 기준을 쓰고,
+                // 전체 기기 목록(설정 화면)에서는 계속 보여서 삭제/재시도가 가능하게 한다.
+                devices = devices.filter { it.isOnline },
+                metric = metric,
+                feedbackTotalCount = feedbacks.size,
+                // "미확인 피드백" 배지(#318) - status==PENDING 기준이면 액션 없는(조언만
+                // 있는) 피드백은 읽어도 상태가 안 바뀌어 배지에 영원히 남는다. isRead 기준으로
+                // 바꿔서 읽으면 바로 빠지도록 수정.
+                feedbackWaitingCount = feedbacks.count { !it.isRead },
+                recentFeedbacks = recentFeedbacks,
+                showTutorialHint = TutorialStep.HOME_SMART_THINGS !in seenSteps && serverDevices.isEmpty(),
+                showFirstFeedbackHint = TutorialStep.HOME_FIRST_FEEDBACK !in seenSteps && feedbacks.isNotEmpty(),
+                rooms = places.map { RoomOption(id = it.placeId, name = it.name) },
+                selectedRoomId = placeId,
             )
-        }
     }
 
     // 서버 device 도메인에 방(room) 개념이 없어(#166) 대신 기기 종류로 그룹/부제목을 표시

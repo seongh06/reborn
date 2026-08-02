@@ -43,7 +43,7 @@ fun AdminFeedbackQRScreen(
     val clipboardManager = LocalClipboardManager.current
 
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ){
         RebornTopAppBar(title = "QR 코드", onBackClick = onBackClick)
         Box(

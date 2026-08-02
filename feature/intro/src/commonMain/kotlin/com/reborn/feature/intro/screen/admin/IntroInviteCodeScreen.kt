@@ -53,7 +53,7 @@ fun IntroInviteCodeScreen(
     }
 
     Column(
-        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
     ) {
         RebornTopAppBar(title = "초대 코드 입력", onBackClick = { onBackClick() })
         PairingCodeInput(

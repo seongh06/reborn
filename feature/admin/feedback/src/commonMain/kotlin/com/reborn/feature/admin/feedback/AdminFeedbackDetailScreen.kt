@@ -50,7 +50,7 @@ fun AdminFeedbackDetailScreen(
     val feedbackDetail = state.feedback
 
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ){
         RebornTopAppBar(title = "피드백 상세보기", onBackClick = onBackClick)
         Column(

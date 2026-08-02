@@ -1,8 +1,10 @@
 package com.reborn
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
@@ -16,7 +18,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // 앱 배경이 항상 밝은 색(흰색/grayScale) 고정이라 시스템 다크모드를 안 따른다 - 기본
+        // enableEdgeToEdge()는 SystemBarStyle.auto()라 기기 다크모드에 따라 상태바 아이콘이
+        // 밝은색(흰색)으로 뒤집혀서 흰 배경 위에서 아예 안 보이는 문제가 있었다. 상태바 아이콘을
+        // 항상 어두운색으로 고정.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+        )
         pendingFeedbackId = intent.extractFeedbackId()
         intent.emitSmartThingsCallbackIfPresent()
         setContent { App(initialFeedbackId = pendingFeedbackId) }

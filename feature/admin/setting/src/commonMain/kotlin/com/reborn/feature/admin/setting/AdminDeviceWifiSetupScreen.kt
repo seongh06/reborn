@@ -74,7 +74,7 @@ fun AdminDeviceWifiSetupRoute(
         snackbarHostState = snackbarHostState
     ) { _ ->
         Column(
-            modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
+            modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200, topPadding = false)
         ) {
             RebornTopAppBar(title = "기기 WiFi 설정", onBackClick = onBackClick)
 

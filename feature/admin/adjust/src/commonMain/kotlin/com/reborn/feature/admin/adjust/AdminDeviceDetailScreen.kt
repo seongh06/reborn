@@ -142,7 +142,7 @@ fun AdminDeviceDetailScreen(
 
     Box {
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             RebornTopAppBar(title = "IoT 기기 상세", onBackClick = onBackClick)

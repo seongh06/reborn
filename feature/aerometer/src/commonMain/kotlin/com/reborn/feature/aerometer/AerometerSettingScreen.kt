@@ -23,7 +23,7 @@ fun AerometerSettingScreen(
     onBackClick: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale900)
+        modifier = Modifier.rebornDefault(RebornTheme.color.grayScale900, topPadding = false)
     ) {
         RebornTopAppBar(onBackClick = onBackClick, title = "설정", darkTheme = true)
 

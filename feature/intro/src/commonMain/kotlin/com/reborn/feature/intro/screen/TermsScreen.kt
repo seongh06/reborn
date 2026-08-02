@@ -44,7 +44,7 @@ fun TermsScreen(
     var selected by remember { mutableStateOf(initialType) }
 
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ) {
         RebornTopAppBar(title = "약관", onBackClick = onBackClick)
 

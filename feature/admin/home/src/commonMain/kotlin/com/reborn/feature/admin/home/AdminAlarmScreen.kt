@@ -52,7 +52,7 @@ fun AdminAlarmScreen(
     val groupedAlarms = state.filteredGroupedAlarms()
 
     Column(
-        modifier = Modifier.rebornDefault(Color.White)
+        modifier = Modifier.rebornDefault(Color.White, topPadding = false)
     ) {
         RebornTopAppBar(title = "알림", onBackClick = onBackClick)
 
