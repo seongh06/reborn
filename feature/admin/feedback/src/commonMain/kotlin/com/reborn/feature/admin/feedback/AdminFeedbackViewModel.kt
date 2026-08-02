@@ -6,7 +6,7 @@ import com.reborn.core.common.GalleryImageSaver
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
-import com.reborn.core.domain.usecase.GetPlaceListUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
 import com.reborn.core.model.Feedback
 import com.reborn.core.ui.component.State
@@ -26,11 +26,11 @@ sealed class AdminFeedbackEvent {
 }
 
 class AdminFeedbackViewModel(
-    private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getPlaceDetailUseCase: GetPlaceDetailUseCase,
     private val getFeedbackListUseCase: GetFeedbackListUseCase,
     private val updateFeedbackStatusUseCase: UpdateFeedbackStatusUseCase,
     private val galleryImageSaver: GalleryImageSaver,
+    private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminFeedbackUiState, AdminFeedbackEvent>(
         initialState = AdminFeedbackUiState.Loading,
@@ -43,12 +43,13 @@ class AdminFeedbackViewModel(
 
     private var feedbacks: List<AdminFeedbackUiState.FeedbackItem> = emptyList()
 
-    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
+    // Home/Data에서 지금 선택된 룸(#166)을 그대로 따른다 - 이전엔 항상 첫 번째 룸만 봐서, Home에서
+    // 다른 룸으로 전환해도 실시간 피드백 목록은 계속 첫 번째 룸(A) 것만 보이던 버그가 있었다.
     private var resolvedPlaceId: Long? = null
 
     private suspend fun resolvePlaceId(): Long? {
         resolvedPlaceId?.let { return it }
-        val resolved = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        val resolved = resolveSelectedPlaceUseCase().getOrNull()?.selected?.placeId
         resolvedPlaceId = resolved
         return resolved
     }
