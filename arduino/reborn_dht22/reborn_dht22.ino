@@ -20,6 +20,20 @@
 //   - "ArduinoHttpClient" by Arduino
 //   - "FlashStorage_SAMD" by Khoi Hoang — EEPROM 에뮬레이션 API(EEPROM.put/get/commit)로 SAMD21
 //     플래시에 WiFi SSID/비밀번호/기기 시리얼을 저장한다(#143, SoftAP 프로비저닝).
+//   - "IRremote" by Armin Joachimsmeyer (v4 이상) — IR 에어컨 제어(#288/#300). ac_LG.hpp는
+//     이 라이브러리 자체에 포함돼있어 별도로 구할 필요 없음(라이브러리 매니저로 설치만 하면 됨).
+//
+// ===== IR 에어컨 제어 대상 선택(#300) =====
+// 이 보드가 실제로 겨냥하는 에어컨에 맞춰 아래 둘 중 하나만 주석 해제할 것 — 배선(IR_SEND_PIN)과
+// 서버 명령 폴링 로직은 공통이라 이 스위치 하나만 바꾸고 재업로드하면 대상이 바뀐다:
+//   AC_TARGET_LG_GENERIC : 카세트형 상업용 에어컨(#1, LT-W1102M3E) — IRremote의 범용 LG 프로토콜
+//                          인코더(Aircondition_LG) 사용, raw capture 불필요. 원래 reborn_ac1_ir_button.ino
+//                          (독립 버튼 전용, WiFi 없음)로 있던 걸 여기로 흡수 — 실기기 미검증인 건
+//                          동일(Obsidian "구형 에어컨 IR 제어" 6-4절 참고).
+//   AC_TARGET_RAW        : 스탠드형 에어컨(#2, LP-307CS) — 리모컨 raw capture 결과를 그대로 재생.
+//                          아직 raw capture 전이라 배열이 비어있음(설계문서 5절 진행 후 채울 것).
+#define AC_TARGET_LG_GENERIC
+// #define AC_TARGET_RAW
 //
 // HTTPS 인증서 등록 필요 (최초 1회, 업로드 전에):
 //   도구 > "Upload SSL Root Certificates" 실행 → 목록에 "www.reborn-energy.com" 추가 후 업로드.
@@ -52,6 +66,10 @@
 #include <ArduinoHttpClient.h>
 #include <DHT.h>
 #include <FlashStorage_SAMD.h>
+#include <IRremote.hpp>
+#ifdef AC_TARGET_LG_GENERIC
+#include "ac_LG.hpp"
+#endif
 
 // ===== 설정값 =====
 const char *SERVER_HOST = "www.reborn-energy.com";
@@ -63,14 +81,21 @@ String g_deviceId; // 서버에 등록된 deviceKey(시리얼 번호)와 반드�
 
 #define DHTPIN 2 // DHT22 Signal 핀 — Nano 33 IoT의 D2 (특별 기능 없는 안전한 범용 핀)
 #define DHTTYPE DHT22
+#define IR_SEND_PIN 3 // IR 송신 모듈 SIG 핀 — D2는 DHT22가 쓰는 중이라 겹치지 않게 D3 사용
 
-const unsigned long SEND_INTERVAL_MS = 60UL * 1000UL; // 60초마다 전송
+const unsigned long SEND_INTERVAL_MS = 60UL * 1000UL; // 60초마다 온습도 전송
+const unsigned long IR_POLL_INTERVAL_MS = 5UL * 1000UL; // 5초마다 대기 중인 IR 명령 폴링
 
 // ===== 전역 상태 =====
 DHT dht(DHTPIN, DHTTYPE);
 WiFiSSLClient wifiClient;
 HttpClient httpClient(wifiClient, SERVER_HOST, SERVER_PORT);
 unsigned long lastSendAt = 0;
+unsigned long lastIrPollAt = 0;
+
+#ifdef AC_TARGET_LG_GENERIC
+Aircondition_LG lgAc;
+#endif
 
 // ===== SoftAP 프로비저닝(#143) =====
 // FlashStorage_SAMD가 제공하는 EEPROM 에뮬레이션(EEPROM.put/get/commit)으로 저장한다.
@@ -341,6 +366,106 @@ void notifyOnline() {
   Serial.println("온라인 알림 전송 완료");
 }
 
+// ===== IR 에어컨 제어(#288/#300) =====
+void irSetup() {
+  IrSender.begin(IR_SEND_PIN);
+#ifdef AC_TARGET_LG_GENERIC
+  // true=벽걸이형 프로토콜 팬속도 매핑 - 상업용 카세트형(TW/NW 계열)이 어느 쪽에 더 가까운지
+  // 불확실. 반응이 없으면 false로 바꿔서 재업로드해볼 것(Obsidian 6-4절 참고).
+  lgAc.setType(true);
+#endif
+}
+
+#ifdef AC_TARGET_LG_GENERIC
+// 카세트형(#1, LT-W1102M3E) - raw capture가 아니라 IRremote의 범용 LG 프로토콜 인코더로 바로
+// 만들어서 보냄. 원래 reborn_ac1_ir_button.ino(독립 버튼 전용)에 있던 로직을 그대로 흡수한 것 -
+// 실기기 미검증인 것도 동일(이 카세트형이 애초에 IR 수신부를 갖고 있는지부터 불확실).
+void sendAcPowerOn() {
+  lgAc.sendCommandAndParameter('1', 0);   // 전원 켜기
+  delay(300);
+  lgAc.sendCommandAndParameter('m', 'c'); // 냉방 모드
+  delay(300);
+  lgAc.sendCommandAndParameter('t', 24);  // 24도
+  Serial.println("IR 전송: 전원 켜기 + 냉방 24도 (LG 범용 프로토콜)");
+}
+
+void sendAcPowerOff() {
+  lgAc.sendCommandAndParameter('0', 0);   // 전원 끄기
+  Serial.println("IR 전송: 전원 끄기 (LG 범용 프로토콜)");
+}
+#endif
+
+#ifdef AC_TARGET_RAW
+// 스탠드형(#2, LP-307CS) - 리모컨 raw capture 결과를 그대로 재생하는 방식(설계문서 5절).
+// TODO: 아직 캡처 전이라 배열이 비어있음 - IRremote의 ReceiveDump류 예제로 캡처한 값을 채울 것.
+// 채우기 전까지는 호출해도 로그만 남기고 아무 신호도 안 나간다(빈 배열을 그대로 쏘면 안 되므로).
+const uint16_t AC_RAW_POWER_ON[] = {};
+const uint16_t AC_RAW_POWER_OFF[] = {};
+
+void sendAcPowerOn() {
+  if (sizeof(AC_RAW_POWER_ON) == 0) {
+    Serial.println("IR 전송 스킵 - raw 코드 미캡처(AC_RAW_POWER_ON 비어있음)");
+    return;
+  }
+  IrSender.sendRaw(AC_RAW_POWER_ON, sizeof(AC_RAW_POWER_ON) / sizeof(AC_RAW_POWER_ON[0]), 38);
+  Serial.println("IR 전송: 전원 켜기 (raw)");
+}
+
+void sendAcPowerOff() {
+  if (sizeof(AC_RAW_POWER_OFF) == 0) {
+    Serial.println("IR 전송 스킵 - raw 코드 미캡처(AC_RAW_POWER_OFF 비어있음)");
+    return;
+  }
+  IrSender.sendRaw(AC_RAW_POWER_OFF, sizeof(AC_RAW_POWER_OFF) / sizeof(AC_RAW_POWER_OFF[0]), 38);
+  Serial.println("IR 전송: 전원 끄기 (raw)");
+}
+#endif
+
+// 응답 바디에서 "command":"..." 값만 뽑아낸다 - 별도 JSON 라이브러리 없이 다른 파싱 함수들과
+// 동일한 방식으로 최소 파싱. command가 null이거나 필드 자체가 없으면 빈 문자열을 반환한다.
+String extractIrCommand(const String &body) {
+  int keyIdx = body.indexOf("\"command\":\"");
+  if (keyIdx < 0) return "";
+  int start = keyIdx + strlen("\"command\":\"");
+  int end = body.indexOf('"', start);
+  if (end < 0) return "";
+  return body.substring(start, end);
+}
+
+// 서버에 대기 중인 IR 명령이 있는지 폴링(#288) - 있으면 그 자리에서 1회성으로 소비되므로 중복
+// 실행 걱정은 없다. 이번 전송만 건너뛰는 sendMetric()과 동일하게, WiFi가 잠깐 끊겨도 조용히
+// 다음 주기에 재시도한다.
+void pollIrCommand() {
+  if (!connectWiFi(5000UL)) {
+    return;
+  }
+
+  httpClient.beginRequest();
+  httpClient.get("/api/device/ir-command");
+  httpClient.sendHeader("X-Device-Id", g_deviceId.c_str());
+  httpClient.endRequest();
+
+  int statusCode = httpClient.responseStatusCode();
+  String response = httpClient.responseBody();
+  if (statusCode != 200) {
+    return;
+  }
+
+  String command = extractIrCommand(response);
+  if (command.length() == 0) {
+    return;
+  }
+
+  Serial.print("IR 명령 수신: ");
+  Serial.println(command);
+
+  if (command == "POWER_ON" || command == "COOL_24") {
+    sendAcPowerOn();
+  } else if (command == "POWER_OFF") {
+    sendAcPowerOff();
+  }
+}
+
 void readAndSend() {
   float humidity = dht.readHumidity();
   float temperature = dht.readTemperature();
@@ -367,6 +492,10 @@ void setup() {
 
   dht.begin();
   Serial.println("[DEBUG 2] dht.begin 완료");
+  Serial.flush();
+
+  irSetup();
+  Serial.println("[DEBUG 2-1] irSetup 완료");
   Serial.flush();
 
   bool provisioned = loadProvisioning();
@@ -398,6 +527,7 @@ void setup() {
   Serial.println("[DEBUG 5] readAndSend 완료(부팅 직후 1회)");
   Serial.flush();
   lastSendAt = millis();
+  lastIrPollAt = millis();
 }
 
 void loop() {
@@ -407,6 +537,11 @@ void loop() {
     Serial.flush();
     readAndSend();
   }
+
+  if (millis() - lastIrPollAt >= IR_POLL_INTERVAL_MS) {
+    lastIrPollAt = millis();
+    pollIrCommand();
+  }
 }
 
 // ===== 실기기 검증 체크리스트 (다음 세션, 보드 확보 후) =====
@@ -414,4 +549,6 @@ void loop() {
 // - [ ] 폼 제출 후 저장되고 재부팅되는지, 재부팅 후에도 값이 유지되는지(FlashStorage_SAMD 영속성)
 // - [ ] 저장된 WiFi 비밀번호가 틀렸을 때 20초 타임아웃 후 포털로 폴백하는지
 // - [ ] urlDecode()가 공백/특수문자 포함 비밀번호를 깨트리지 않는지
+// - [ ] AC_TARGET_LG_GENERIC(카세트형) - 관리자 앱에서 IR 제어 명령 승인 시 실제로 반응하는지
+// - [ ] AC_TARGET_RAW(스탠드형) - raw capture 완료 후 배열 채우고 나서 동일하게 확인
 // - [ ] WiFi.macAddress() 반환 바이트 순서와 무관하게 AP 비밀번호/SSID가 매 부팅 동일하게 나오는지
