@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -34,9 +35,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
+import com.reborn.core.ui.component.getFeedbackIcon
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.home.model.AdminHomeUiState
 import com.reborn.feature.admin.home.model.filteredGroupedAlarms
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun AdminAlarmScreen(
@@ -205,12 +208,23 @@ private fun AlarmItemRow(alarm: AdminHomeUiState.AlarmItem, onClick: () -> Unit 
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.Top
         ) {
+            val feedbackIcon = alarm.feedbackType?.let { getFeedbackIcon(it) }
             Box(
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(RebornTheme.color.grayScale300)
-            )
+                    .background(feedbackIcon?.color?.copy(alpha = 0.15f) ?: RebornTheme.color.grayScale300),
+                contentAlignment = Alignment.Center
+            ) {
+                feedbackIcon?.let {
+                    Icon(
+                        painter = painterResource(it.icon),
+                        tint = it.color,
+                        modifier = Modifier.size(18.dp),
+                        contentDescription = null
+                    )
+                }
+            }
             if (alarm.title != null) {
                 Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(

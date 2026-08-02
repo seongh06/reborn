@@ -3,6 +3,7 @@ package com.reborn.feature.admin.home.model
 import androidx.compose.runtime.Immutable
 import com.reborn.core.model.Metric
 import com.reborn.core.ui.component.FeedbackListItem
+import com.reborn.core.ui.component.FeedbackType
 import com.reborn.feature.admin.home.component.IoTDeviceItem
 
 @Immutable
@@ -36,7 +37,10 @@ sealed interface AdminHomeUiState{
         val category: AlarmFilter,
         val content: String,
         val title: String? = null,
-        val time: String? = null
+        val time: String? = null,
+        // 피드백 타입일 때만 채워짐 - 알림 목록 앞 동그라미에 피드백 목록과 동일한 종류별 아이콘을 쓰기 위함.
+        // 결산(SETTLEMENT)은 매칭되는 아이콘이 없어 null로 남겨 회색 빈 동그라미로 표시.
+        val feedbackType: FeedbackType? = null,
     )
 
     enum class AlarmGroup(val label: String) {

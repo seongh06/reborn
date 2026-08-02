@@ -9,6 +9,7 @@ import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.device.repository.AutoControlRuleRepository
 import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.device.repository.DeviceSerialRepository
+import com.reborn.server.domain.metric.MetricLogRepository
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.PlaceRepository
 import com.reborn.server.domain.place.UserPlaceMappingRepository
@@ -38,9 +39,22 @@ class DeviceService(
     private val redisUtil: RedisUtil,
     private val smartThingsDeviceService: SmartThingsDeviceService,
     private val arduinoIrControlService: ArduinoIrControlService,
+    private val metricLogRepository: MetricLogRepository,
     @param:Value("\${operator.api-key:}") private val operatorApiKey: String,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    // ARDUINO/AEROMETER는 markOnline()의 "연결된 적 있음" 1회성 플래그(#276) 대신 최근 metric_logs
+    // 수신 시각 기준으로 온라인 여부를 판단한다(#307) - WiFi가 끊긴 뒤에도 계속 온라인으로 보이던 문제 수정.
+    // AI_SPEAKER/SMART_THINGS는 주기적으로 메트릭을 보내는 기기가 아니라 기존 markOnline() 플래그를 그대로 쓴다.
+    private val recencyBasedOnlineTypes = setOf(DeviceType.ARDUINO, DeviceType.AEROMETER)
+    private val onlineMetricWindow: Duration = Duration.ofMinutes(10)
+
+    private fun resolveIsOnline(device: Device): Boolean {
+        if (device.deviceType !in recencyBasedOnlineTypes) return device.isOnline
+        val lastMetricAt = metricLogRepository.findTopByDeviceIdOrderByCreatedAtDesc(device.id)?.createdAt ?: return false
+        return Duration.between(lastMetricAt, LocalDateTime.now()) <= onlineMetricWindow
+    }
 
     @Transactional
     fun register(userId: Long, request: DeviceDto.RegisterRequest): DeviceDto.RegisterResponse {
@@ -215,7 +229,8 @@ class DeviceService(
         }
         requireAdmin(userId, placeId)
 
-        val devices = deviceRepository.findAllByPlaceId(placeId).map { DeviceConverter.toDeviceItem(it) }
+        val devices = deviceRepository.findAllByPlaceId(placeId)
+            .map { DeviceConverter.toDeviceItem(it, isOnline = resolveIsOnline(it)) }
         return DeviceDto.ListResponse(devices = devices)
     }
 
