@@ -9,9 +9,9 @@ import com.reborn.core.domain.usecase.GetAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetDeviceStatusUseCase
-import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.model.AutoControlRule
 import com.reborn.core.model.TutorialStep
@@ -34,7 +34,6 @@ sealed class AdminAdjustEvent {
 }
 
 class AdminAdjustViewModel(
-    private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val controlDeviceUseCase: ControlDeviceUseCase,
     private val deleteDeviceUseCase: DeleteDeviceUseCase,
@@ -44,6 +43,7 @@ class AdminAdjustViewModel(
     private val getDeviceStatusUseCase: GetDeviceStatusUseCase,
     private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
     private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
+    private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminAdjustUiState, AdminAdjustEvent>(
         initialState = AdminAdjustUiState.Loading,
@@ -60,14 +60,19 @@ class AdminAdjustViewModel(
     // 하이라이트 여부를 DeviceDetail 진입/전환 시마다 이 값으로 판단한다.
     private var seenTutorialSteps: Set<String> = emptySet()
 
-    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
+    // Home/Data에서 지금 선택된 룸(#166)을 그대로 따른다 - ResolveSelectedPlaceUseCase가 선택한
+    // 적 없거나 삭제된 룸을 자동으로 첫 번째 룸으로 폴백시켜준다. 이전엔 항상 첫 번째 룸만 봐서,
+    // 다른 룸에 등록한 기기를 클릭해도 그 룸 목록엔 없어 "기기를 찾을 수 없습니다" 에러만 뜨고
+    // 상세 화면으로 못 넘어가던 버그가 있었다.
     private var resolvedPlaceId: Long? = null
 
-    private suspend fun resolvePlaceId(): Long? {
-        resolvedPlaceId?.let { return it }
-        val resolved = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
-        resolvedPlaceId = resolved
-        return resolved
+    // 장소 조회 자체가 실패한 경우(네트워크 오류 등)를 "장소 없음"으로 뭉개면 사용자가 진짜 원인을
+    // 못 보고 오해한다(CodeRabbit 리뷰) - Result를 그대로 호출부까지 전달해서 실패/빈 목록을 구분한다.
+    private suspend fun resolvePlaceId(): Result<Long?> {
+        resolvedPlaceId?.let { return Result.success(it) }
+        return resolveSelectedPlaceUseCase().map { resolution ->
+            resolution.selected?.placeId?.also { resolvedPlaceId = it }
+        }
     }
 
     // 캐시해둔 placeId가 가리키는 장소가 그 사이 삭제되는 등으로 이 값을 쓰는 호출이 실패하면
@@ -124,11 +129,15 @@ class AdminAdjustViewModel(
         navController.clearAndReset(AdminAdjustUiState.Loading)
         viewModelScope.launch {
             seenTutorialSteps = getTutorialSeenStepsUseCase().first()
-            val placeId = resolvePlaceId()
+            val placeResult = resolvePlaceId()
+            placeResult.onFailure { navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it)) }
+            val placeId = placeResult.getOrNull()
             if (placeId == null) {
-                navController.emitEvent(
-                    AdminAdjustEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다."))
-                )
+                if (placeResult.isSuccess) {
+                    navController.emitEvent(
+                        AdminAdjustEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다."))
+                    )
+                }
                 navController.clearAndReset(AdminAdjustUiState.Adjust(emptyList()))
                 return@launch
             }
