@@ -7,6 +7,9 @@ import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.ui.component.DeviceType
 import com.reborn.feature.admin.home.component.IoTDeviceItem
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -36,61 +39,49 @@ class AdminIotDeviceListViewModel(
 
     private var devices: List<IoTDeviceItem> = emptyList()
 
-    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
-    private var placeId: Long? = null
-
-    private suspend fun resolvePlaceId(): Long? {
-        placeId?.let { return it }
-        val resolved = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
-        placeId = resolved
-        return resolved
-    }
-
-    // 캐시해둔 placeId가 가리키는 장소가 그 사이 삭제되는 등으로 이 값을 쓰는 호출이 실패하면
-    // 캐시를 지워서 다음 진입 시 장소 목록을 다시 조회하게 한다 - 캐시가 죽은 채로 남아있으면
-    // 장소가 삭제된 뒤에도 이 화면 전체가 계속 실패한다(#232).
-    private fun invalidatePlaceId() {
-        placeId = null
-    }
-
+    // 기기 상세(설정 > IoT 기기 목록)는 "지금 선택된 룸"만 보여주는 화면이 아니라 관리자가 가진
+    // 모든 룸의 기기를 한 번에 보여줘야 해서(#166, 피그마 요구사항) 첫 장소로 고정하던 이전 로직을
+    // 버리고 장소마다 병렬로 기기 목록을 조회한다. 룸 수가 적은 가정용 앱이라 동시 조회 수를
+    // 별도로 제한하지 않는다(AdminSettingViewModel의 관리자 조회처럼 무거운 호출도 아님).
     fun loadDevices() {
         viewModelScope.launch {
             _uiState.value = AdminIotDeviceListUiState.Loading
-            val pid = resolvePlaceId()
-            if (pid == null) {
-                _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
+            val placeListResult = getPlaceListUseCase()
+            // 조회 자체가 실패한 건지, 정말 등록된 장소가 없는 건지 구분해서 실제 오류를 그대로
+            // 보여준다(CodeRabbit 리뷰 - 이전엔 네트워크 오류도 전부 "등록된 장소가 없습니다"로 뭉개짐).
+            placeListResult.onFailure { _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(it)) }
+            val places = placeListResult.getOrNull().orEmpty()
+            if (places.isEmpty()) {
+                if (placeListResult.isSuccess) {
+                    _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
+                }
                 _uiState.value = AdminIotDeviceListUiState.Loaded(emptyList())
                 return@launch
             }
 
-            getDeviceListUseCase(pid)
-                .onSuccess { list ->
-                    devices = list.map { device ->
-                        IoTDeviceItem(
-                            id = device.deviceId,
-                            place = deviceTypeLabel(device.deviceType),
-                            name = device.deviceName ?: device.deviceId,
-                            isOnline = device.isOnline,
-                            deviceType = resolveDeviceType(device.deviceType, device.category),
-                            isPowerOn = false
-                        )
-                    }
-                    _uiState.value = AdminIotDeviceListUiState.Loaded(devices)
-                }
-                .onFailure {
-                    invalidatePlaceId()
-                    _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(it))
-                    _uiState.value = AdminIotDeviceListUiState.Loaded(emptyList())
-                }
-        }
-    }
+            val results = coroutineScope {
+                places.map { place -> async { place to getDeviceListUseCase(place.placeId) } }.awaitAll()
+            }
 
-    // 서버 device 도메인에 방(room) 개념이 없어(#166) 대신 기기 종류로 그룹/부제목을 표시
-    private fun deviceTypeLabel(serverDeviceType: String): String = when (serverDeviceType) {
-        "ARDUINO" -> "아두이노"
-        "SMART_THINGS" -> "SmartThings"
-        "AI_SPEAKER" -> "AI 스피커"
-        else -> serverDeviceType
+            val failure = results.firstNotNullOfOrNull { (_, result) -> result.exceptionOrNull() }
+            if (failure != null) {
+                _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(failure))
+            }
+
+            devices = results.flatMap { (place, result) ->
+                result.getOrNull().orEmpty().map { device ->
+                    IoTDeviceItem(
+                        id = device.deviceId,
+                        place = place.name,
+                        name = device.deviceName ?: device.deviceId,
+                        isOnline = device.isOnline,
+                        deviceType = resolveDeviceType(device.deviceType, device.category),
+                        isPowerOn = false
+                    )
+                }
+            }
+            _uiState.value = AdminIotDeviceListUiState.Loaded(devices)
+        }
     }
 
     // ARDUINO/AI_SPEAKER/AEROMETER는 category가 항상 null이라 deviceType으로 직접 분기하고(#298),

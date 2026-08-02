@@ -39,7 +39,9 @@ import com.reborn.core.domain.usecase.RegisterAiSpeakerDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
+import com.reborn.core.domain.usecase.SelectPlaceUseCase
 import com.reborn.core.domain.usecase.SendMetricUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
@@ -75,6 +77,11 @@ val appDependenciesModule = module {
     factory { LogoutUseCase(get()) }
     factory { UpdateFcmTokenUseCase(get()) }
     factory { RegisterPlaceUseCase(get()) }
+    // Home/Data/기기 등록 화면이 공유하는 "지금 선택된 룸"(#166) - PlaceRepository가 감싸고 있는
+    // 순수 인메모리 UI 선택 상태를 core:domain UseCase로만 노출한다(ViewModel엔 core:domain
+    // UseCase만 주입 - CodeRabbit 리뷰).
+    factory { ResolveSelectedPlaceUseCase(get()) }
+    factory { SelectPlaceUseCase(get()) }
     factory { GenerateAdminCodeUseCase(get()) }
     factory { RedeemAdminCodeUseCase(get()) }
     factory { GetPlaceListUseCase(get()) }

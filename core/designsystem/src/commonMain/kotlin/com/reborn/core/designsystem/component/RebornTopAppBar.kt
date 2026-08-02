@@ -1,6 +1,7 @@
 package com.reborn.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.reborn.core.designsystem.Res
 import com.reborn.core.designsystem.ic_back
@@ -28,6 +30,7 @@ fun RebornTopAppBar(
     modifier: Modifier = Modifier,
     title: String? = null,
     onBackClick: (() -> Unit)? = null,
+    onTitleClick: (() -> Unit)? = null,
     onNavigateAlert: (() -> Unit)? = null,
     onNavigateSetting: (() -> Unit)? = null,
     onNavigateAddDevice: (() -> Unit)? = null,
@@ -85,7 +88,12 @@ fun RebornTopAppBar(
                     text = title,
                     style = RebornTheme.typography.displayLarge,
                     color = if(!darkTheme)RebornTheme.color.grayScale900 else RebornTheme.color.grayScale100,
-                    modifier = Modifier.align(Alignment.CenterStart).padding(horizontal = 12.dp)
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(horizontal = 12.dp)
+                        .then(if (onTitleClick != null) Modifier.clickable(onClick = onTitleClick) else Modifier)
                 )
             }
         }

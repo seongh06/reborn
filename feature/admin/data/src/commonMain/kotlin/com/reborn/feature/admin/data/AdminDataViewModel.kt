@@ -8,12 +8,14 @@ import com.reborn.core.domain.usecase.GetAnalysisTextParams
 import com.reborn.core.domain.usecase.GetAnalysisTextUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetGoogleSheetsAuthorizeUrlUseCase
-import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetSensorAggregateParams
 import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryParams
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
+import com.reborn.core.domain.usecase.SelectPlaceUseCase
 import com.reborn.core.model.SensorPoint
+import com.reborn.core.ui.component.RoomOption
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
 import com.reborn.feature.admin.data.model.MIN_ANALYSIS_DATA_COUNT
@@ -158,13 +160,14 @@ sealed class AdminDataEvent {
 }
 
 class AdminDataViewModel(
-    private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val getSensorHistoryUseCase: GetSensorHistoryUseCase,
     private val getSensorAggregateUseCase: GetSensorAggregateUseCase,
     private val getAnalysisTextUseCase: GetAnalysisTextUseCase,
     private val exportMetricToSheetsUseCase: ExportMetricToSheetsUseCase,
     private val getGoogleSheetsAuthorizeUrlUseCase: GetGoogleSheetsAuthorizeUrlUseCase,
+    private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
+    private val selectPlaceUseCase: SelectPlaceUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminDataUiState, AdminDataEvent>(
         initialState = AdminDataUiState.Loading,
@@ -178,11 +181,13 @@ class AdminDataViewModel(
     // 공유하면 한쪽이 취소될 때 다른 쪽도 조용히 취소된다(CodeRabbit 리뷰) - 별도 Job으로 분리.
     private var analysisJob: Job? = null
 
-    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소의 첫 ARDUINO/SMART_THINGS
-    // 기기로 임시 고정한다.
     private var resolvedDeviceId: String? = null
     private var hasAerometer: Boolean = false
     private var deviceContextResolved: Boolean = false
+    // 룸 전환(#166) - 선택 가능한 전체 룸 목록/현재 선택된 룸(id·이름)도 같이 캐시해둔다.
+    private var resolvedRooms: List<RoomOption> = emptyList()
+    private var resolvedPlaceId: Long? = null
+    private var resolvedPlaceName: String = "Room01"
 
     // 장소의 기기 목록을 조회해 (조회/제어 대상 deviceId, 공기계 연결 여부)를 함께 얻는다 - 조도/재실
     // 인원 탭은 공기계(AEROMETER)가 있어야만 노출해야 하므로(#236) deviceId만 필요했던 이전 로직에
@@ -190,7 +195,19 @@ class AdminDataViewModel(
     // 이유 - 캐시가 죽은 채로 남아있으면 장소가 삭제된 뒤에도 계속 실패한다).
     private suspend fun resolveDeviceContext(): String? {
         if (deviceContextResolved) return resolvedDeviceId
-        val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        val resolution = resolveSelectedPlaceUseCase()
+        val places = resolution.getOrNull()?.places
+        if (places == null) {
+            // 장소 조회 자체가 실패한 경우 - deviceContextResolved를 세우지 않아 다음 진입 때 재시도한다
+            // (CodeRabbit 리뷰 - 실패를 "장소 없음"으로 뭉개면 재시도 없이 계속 빈 화면만 보임).
+            resolution.exceptionOrNull()?.let { navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(it)) }
+            return null
+        }
+        val selected = resolution.getOrNull()?.selected
+        resolvedRooms = places.map { RoomOption(id = it.placeId, name = it.name) }
+        val placeId = selected?.placeId
+        resolvedPlaceId = placeId
+        resolvedPlaceName = selected?.name ?: "Room01"
         if (placeId == null) {
             deviceContextResolved = true
             return null
@@ -224,7 +241,17 @@ class AdminDataViewModel(
             is AdminDataIntent.ClickPeriod -> handlePeriodClick(intent.period)
             is AdminDataIntent.ClickExport -> exportToGoogleSheets()
             is AdminDataIntent.ClickRevealAnalysis -> revealAnalysis()
+            is AdminDataIntent.SelectPlace -> selectPlace(intent.placeId)
         }
+    }
+
+    private fun selectPlace(placeId: Long) {
+        selectPlaceUseCase(placeId)
+        // 진행 중이던 이전 룸의 분석 요청이 뒤늦게 도착해 새 룸 상태를 덮어쓰지 않도록 취소
+        // (CodeRabbit 리뷰 - checkInitialState()의 loadJob 취소만으로는 analysisJob이 안 잡힘).
+        analysisJob?.cancel()
+        deviceContextResolved = false
+        checkInitialState()
     }
 
     private fun checkInitialState() {
@@ -237,12 +264,15 @@ class AdminDataViewModel(
                 resolveDeviceContext()
                 navigationManager.clearAndReset(
                     AdminDataUiState.Data(
+                        place = resolvedPlaceName,
                         selectedCategory = category,
                         selectedPeriod = period,
                         chartLabels = chartLabelsFor(period),
                         chartValues = chartValuesFor(category, period),
                         hasEnoughData = hasEnoughDataFor(period),
                         availableCategories = availableCategories(),
+                        rooms = resolvedRooms,
+                        selectedRoomId = resolvedPlaceId,
                     )
                 )
             } catch (e: CancellationException) {
@@ -480,7 +510,7 @@ class AdminDataViewModel(
     }
 
     private suspend fun startGoogleSheetsConnection() {
-        val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        val placeId = resolvedPlaceId
         if (placeId == null) {
             navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
             return

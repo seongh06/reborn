@@ -7,15 +7,17 @@ import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
-import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
+import com.reborn.core.domain.usecase.SelectPlaceUseCase
 import com.reborn.core.model.DomainException
 import com.reborn.core.model.Feedback
 import com.reborn.core.model.Metric
 import com.reborn.core.model.TutorialStep
 import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.FeedbackListItem
+import com.reborn.core.ui.component.RoomOption
 import com.reborn.core.ui.component.classifyFeedbackType
 import com.reborn.core.ui.component.feedbackStatusToState
 import com.reborn.core.ui.component.formatFeedbackRelativeTime
@@ -47,13 +49,14 @@ private const val RECENT_FEEDBACK_COUNT = 3
 private val METRIC_DEVICE_TYPE_PRIORITY = listOf("ARDUINO", "SMART_THINGS")
 
 class AdminHomeViewModel(
-    private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val getCurrentMetricUseCase: GetCurrentMetricUseCase,
     private val getFeedbackListUseCase: GetFeedbackListUseCase,
     private val controlDeviceUseCase: ControlDeviceUseCase,
     private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
     private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
+    private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
+    private val selectPlaceUseCase: SelectPlaceUseCase,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminHomeUiState, AdminHomeEvent>(
         initialState = AdminHomeUiState.Loading,
@@ -86,7 +89,13 @@ class AdminHomeViewModel(
             is AdminHomeIntent.DeleteAlarm -> deleteAlarm(intent.alarmId)
             is AdminHomeIntent.ClickAlarmFilter -> clickAlarmFilter(intent.filter)
             is AdminHomeIntent.DismissTutorial -> dismissTutorial(intent.stepId)
+            is AdminHomeIntent.SelectPlace -> selectPlace(intent.placeId)
         }
+    }
+
+    private fun selectPlace(placeId: Long) {
+        selectPlaceUseCase(placeId)
+        checkInitialState()
     }
 
     private fun clickAlarmFilter(filter: AdminHomeUiState.AlarmFilter) {
@@ -98,9 +107,10 @@ class AdminHomeViewModel(
     private fun checkInitialState() {
         navController.clearAndReset(AdminHomeUiState.Loading)
         viewModelScope.launch {
-            val placeListResult = getPlaceListUseCase()
-            placeListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
-            val placeId = placeListResult.getOrNull()?.firstOrNull()?.placeId
+            val placeResolution = resolveSelectedPlaceUseCase()
+            placeResolution.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+            val places = placeResolution.getOrNull()?.places.orEmpty()
+            val placeId = placeResolution.getOrNull()?.selected?.placeId
             if (placeId == null) {
                 navController.clearAndReset(AdminHomeUiState.Home(hasDevices = false))
                 return@launch
@@ -176,6 +186,8 @@ class AdminHomeViewModel(
                     recentFeedbacks = recentFeedbacks,
                     showTutorialHint = TutorialStep.HOME_SMART_THINGS !in seenSteps && serverDevices.isEmpty(),
                     showFirstFeedbackHint = TutorialStep.HOME_FIRST_FEEDBACK !in seenSteps && feedbacks.isNotEmpty(),
+                    rooms = places.map { RoomOption(id = it.placeId, name = it.name) },
+                    selectedRoomId = placeId,
                 )
             )
         }

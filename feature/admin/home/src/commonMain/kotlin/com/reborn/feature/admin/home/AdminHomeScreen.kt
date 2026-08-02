@@ -34,6 +34,7 @@ import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.Dashboard
 import com.reborn.core.ui.component.FeedbackStatusSection
 import com.reborn.core.ui.component.RebornScaffold
+import com.reborn.core.ui.component.RoomSwitcherBottomSheet
 import com.reborn.core.ui.component.TutorialHighlightOverlay
 import com.reborn.core.ui.component.tutorialTarget
 import com.reborn.core.ui.ext.rebornDefault
@@ -128,7 +129,8 @@ fun AdminHomeRoute(
                 onDeviceDetailClick = { id -> viewModel.onIntent(AdminHomeIntent.NavigateToDeviceDetail(id)) },
                 onDevicePowerToggle = { id -> viewModel.onIntent(AdminHomeIntent.TogglePower(id)) },
                 onAddSmartThingsClick = { viewModel.onIntent(AdminHomeIntent.NavigateToAddSmartThingsDevice) },
-                onDismissTutorial = { stepId -> viewModel.onIntent(AdminHomeIntent.DismissTutorial(stepId)) }
+                onDismissTutorial = { stepId -> viewModel.onIntent(AdminHomeIntent.DismissTutorial(stepId)) },
+                onSelectPlace = { placeId -> viewModel.onIntent(AdminHomeIntent.SelectPlace(placeId)) }
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
                 state = state,
@@ -152,8 +154,26 @@ fun AdminHomeScreen(
     onDeviceDetailClick: (String) -> Unit = {},
     onDevicePowerToggle: (String) -> Unit = {},
     onAddSmartThingsClick: () -> Unit = {},
-    onDismissTutorial: (String) -> Unit = {}
+    onDismissTutorial: (String) -> Unit = {},
+    onSelectPlace: (Long) -> Unit = {}
 ) {
+    var showRoomSwitcher by remember { mutableStateOf(false) }
+    // 룸 전환(#166) - 룸이 하나뿐이면 "Re:Born"으로, 2개 이상이면 지금 선택된 룸 이름으로 표시
+    val roomTitle = if (state.rooms.size <= 1) {
+        "Re:Born"
+    } else {
+        state.rooms.find { it.id == state.selectedRoomId }?.name ?: "Re:Born"
+    }
+
+    if (showRoomSwitcher) {
+        RoomSwitcherBottomSheet(
+            rooms = state.rooms,
+            selectedRoomId = state.selectedRoomId,
+            onSelect = onSelectPlace,
+            onDismiss = { showRoomSwitcher = false }
+        )
+    }
+
     if (!state.hasDevices) {
          var smartThingsHintRect by remember { mutableStateOf<Rect?>(null) }
 
@@ -162,7 +182,8 @@ fun AdminHomeScreen(
                  modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
              ) {
                  RebornTopAppBar(
-                     title = "Re:Born",
+                     title = roomTitle,
+                     onTitleClick = { showRoomSwitcher = true },
                      onNavigateAlert = onAlarmClick,
                      onNavigateSetting = onSettingClick,
                      backgroundColor = RebornTheme.color.grayScale100
@@ -222,7 +243,8 @@ fun AdminHomeScreen(
                 modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)
             ) {
                 RebornTopAppBar(
-                    title = "Re:Born",
+                    title = roomTitle,
+                    onTitleClick = { showRoomSwitcher = true },
                     onNavigateAlert = onAlarmClick,
                     onNavigateSetting = onSettingClick,
                     backgroundColor = RebornTheme.color.grayScale100

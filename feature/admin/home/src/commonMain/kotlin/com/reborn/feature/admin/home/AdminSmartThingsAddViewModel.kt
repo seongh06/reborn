@@ -3,10 +3,10 @@ package com.reborn.feature.admin.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.common.SmartThingsCallbackSignal
-import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsDeviceListUseCase
 import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -34,10 +34,10 @@ sealed class AdminSmartThingsAddEvent {
 }
 
 class AdminSmartThingsAddViewModel(
-    private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getSmartThingsAuthorizeUrlUseCase: GetSmartThingsAuthorizeUrlUseCase,
     private val getSmartThingsDeviceListUseCase: GetSmartThingsDeviceListUseCase,
     private val registerSmartThingsDeviceUseCase: RegisterSmartThingsDeviceUseCase,
+    private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AdminSmartThingsAddUiState>(AdminSmartThingsAddUiState.Idle)
@@ -63,13 +63,16 @@ class AdminSmartThingsAddViewModel(
         }
     }
 
-    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
-    // 다중 장소를 관리하는 관리자가 늘어나면 장소 선택 UI를 별도로 추가해야 함.
+    // Home에서 지금 선택된 룸(#166)에 등록한다 - ResolveSelectedPlaceUseCase가 선택된 적 없거나
+    // 삭제된 룸을 자동으로 첫 번째 룸으로 폴백시키고 그 결과를 다시 저장해준다(자체 치유) - 그래서
+    // invalidatePlaceId()는 이 로컬 캐시만 지우면 되고, 다음 resolvePlaceId() 호출이 항상 최신
+    // 상태를 다시 읽어온다(CodeRabbit 리뷰 - 예전엔 로컬 캐시만 지우고 공유 상태는 그대로 남아
+    // 삭제된 장소를 계속 가리켜서 재시도해도 같은 오류가 반복됐음).
     private var placeId: Long? = null
 
     private suspend fun resolvePlaceId(): Long? {
         placeId?.let { return it }
-        val resolved = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        val resolved = resolveSelectedPlaceUseCase().getOrNull()?.selected?.placeId
         placeId = resolved
         return resolved
     }

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.reborn.core.model.Metric
 import com.reborn.core.ui.component.FeedbackListItem
 import com.reborn.core.ui.component.FeedbackType
+import com.reborn.core.ui.component.RoomOption
 import com.reborn.feature.admin.home.component.IoTDeviceItem
 
 @Immutable
@@ -23,6 +24,10 @@ sealed interface AdminHomeUiState{
         // 안내한다. 별도의 0->1 전이 추적 없이 "피드백이 1건 이상 && 이 단계를 아직 안 봄"으로
         // 판단 - 다른 단계들과 동일한 패턴(현재 상태 + 미확인 여부).
         val showFirstFeedbackHint: Boolean = false,
+        // 룸 전환(#166) - 타이틀에 표시할 룸 목록/현재 선택된 룸. rooms.size <= 1이면 화면에서
+        // "Re:Born"으로 표시하고, 2개 이상이면 selectedRoomId에 해당하는 룸 이름을 표시한다.
+        val rooms: List<RoomOption> = emptyList(),
+        val selectedRoomId: Long? = null,
     ): AdminHomeUiState
     data class Alarm(
         val alarm: List<AlarmItem> = emptyList(),
@@ -76,4 +81,5 @@ sealed interface AdminHomeIntent{
     data class DeleteAlarm(val alarmId: Int) : AdminHomeIntent
     data class ClickAlarmFilter(val filter: AdminHomeUiState.AlarmFilter) : AdminHomeIntent
     data class DismissTutorial(val stepId: String) : AdminHomeIntent
+    data class SelectPlace(val placeId: Long) : AdminHomeIntent
 }
