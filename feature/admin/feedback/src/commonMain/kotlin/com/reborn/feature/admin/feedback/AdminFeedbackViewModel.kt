@@ -6,6 +6,7 @@ import com.reborn.core.common.GalleryImageSaver
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceDetailUseCase
+import com.reborn.core.domain.usecase.MarkFeedbackReadUseCase
 import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
 import com.reborn.core.model.Feedback
@@ -31,6 +32,7 @@ class AdminFeedbackViewModel(
     private val updateFeedbackStatusUseCase: UpdateFeedbackStatusUseCase,
     private val galleryImageSaver: GalleryImageSaver,
     private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
+    private val markFeedbackReadUseCase: MarkFeedbackReadUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminFeedbackUiState, AdminFeedbackEvent>(
         initialState = AdminFeedbackUiState.Loading,
@@ -155,7 +157,23 @@ class AdminFeedbackViewModel(
                     IllegalArgumentException("피드백을 찾을 수 없습니다.")
                 )
             )
-        navigationManager.navigateTo(AdminFeedbackUiState.FeedbackDetail(intent.feedbackId, feedback))
+
+        // 안읽음이었다면 상세를 여는 순간 낙관적으로 읽음 처리한다(#318) - 목록/배지가 바로
+        // 반영되게. 서버 호출은 백그라운드로 보내고 실패해도 조용히 무시(목록이 깨지면 안 되고,
+        // 다음에 다시 열면 재시도되는 정도로 충분).
+        val detailFeedback = if (feedback.state == State.UNREAD) {
+            val updated = feedback.copy(state = State.READ)
+            feedbacks = feedbacks.map { if (it.id == intent.feedbackId) updated else it }
+            navigationManager.updateCurrentState { state ->
+                (state as? AdminFeedbackUiState.Feedback)?.copy(feedbacks = feedbacks) ?: state
+            }
+            viewModelScope.launch { markFeedbackReadUseCase(intent.feedbackId.toLong()) }
+            updated
+        } else {
+            feedback
+        }
+
+        navigationManager.navigateTo(AdminFeedbackUiState.FeedbackDetail(intent.feedbackId, detailFeedback))
     }
 
     private fun updateStatus(feedbackId: Int, approve: Boolean) {
@@ -195,7 +213,7 @@ class AdminFeedbackViewModel(
         AdminFeedbackUiState.FeedbackItem(
             id = feedbackId.toInt(),
             type = classifyFeedbackType(content),
-            state = feedbackStatusToState(status),
+            state = feedbackStatusToState(status, isRead),
             title = content,
             time = formatFeedbackRelativeTime(createdAt),
             submittedAt = formatAbsoluteTime(createdAt),

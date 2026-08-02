@@ -5,6 +5,8 @@ data class Feedback(
     val deviceName: String?,
     val content: String,
     val status: String,
+    // 승인/거절(status)과는 별도 축 - 관리자가 상세를 열어본 적 있는지(#318)
+    val isRead: Boolean = false,
     // ISO-8601 로컬 날짜시각(타임존 없음, 서버 LocalDateTime 그대로) - 표시용 포맷팅은 UI 레이어 책임
     val createdAt: String,
     // "AI 맞춤 피드백" - 제출 직후 서버가 비동기로 채우므로 접수 직후 잠깐은 전부 null일 수 있음

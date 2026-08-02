@@ -33,6 +33,7 @@ import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.GetUserProfileUseCase
 import com.reborn.core.domain.usecase.LoginUseCase
 import com.reborn.core.domain.usecase.LogoutUseCase
+import com.reborn.core.domain.usecase.MarkFeedbackReadUseCase
 import com.reborn.core.domain.usecase.PairDeviceUseCase
 import com.reborn.core.domain.usecase.RedeemAdminCodeUseCase
 import com.reborn.core.domain.usecase.RegisterAiSpeakerDeviceUseCase
@@ -115,6 +116,7 @@ val appDependenciesModule = module {
     factory { GetAutoControlRuleUseCase(get()) }
     factory { GetFeedbackListUseCase(get()) }
     factory { UpdateFeedbackStatusUseCase(get()) }
+    factory { MarkFeedbackReadUseCase(get()) }
     factory { GetCurrentMetricUseCase(get()) }
     factory { SendMetricUseCase(get()) }
     factory { GetSensorHistoryUseCase(get()) }

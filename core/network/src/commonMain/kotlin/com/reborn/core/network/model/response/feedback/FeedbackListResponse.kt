@@ -16,6 +16,8 @@ data class FeedbackItemResponse(
     val content: String,
     val source: String,
     val status: String,
+    // 승인/거절(status)과는 별도 축 - 관리자가 상세를 열어본 적 있는지(#318)
+    val isRead: Boolean = false,
     val createdAt: String,
     // "AI 맞춤 피드백" - 제출 직후 비동기로 채워지므로 접수 직후 잠깐은 전부 null일 수 있음
     val snapshotTemperature: Double? = null,

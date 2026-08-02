@@ -182,7 +182,10 @@ class AdminHomeViewModel(
                     devices = devices.filter { it.isOnline },
                     metric = metric,
                     feedbackTotalCount = feedbacks.size,
-                    feedbackWaitingCount = feedbacks.count { it.status == "PENDING" },
+                    // "미확인 피드백" 배지(#318) - status==PENDING 기준이면 액션 없는(조언만
+                    // 있는) 피드백은 읽어도 상태가 안 바뀌어 배지에 영원히 남는다. isRead 기준으로
+                    // 바꿔서 읽으면 바로 빠지도록 수정.
+                    feedbackWaitingCount = feedbacks.count { !it.isRead },
                     recentFeedbacks = recentFeedbacks,
                     showTutorialHint = TutorialStep.HOME_SMART_THINGS !in seenSteps && serverDevices.isEmpty(),
                     showFirstFeedbackHint = TutorialStep.HOME_FIRST_FEEDBACK !in seenSteps && feedbacks.isNotEmpty(),
@@ -239,7 +242,7 @@ class AdminHomeViewModel(
         FeedbackListItem(
             id = feedbackId.toInt(),
             type = classifyFeedbackType(content),
-            state = feedbackStatusToState(status),
+            state = feedbackStatusToState(status, isRead),
             time = formatFeedbackRelativeTime(createdAt),
             title = content
         )
