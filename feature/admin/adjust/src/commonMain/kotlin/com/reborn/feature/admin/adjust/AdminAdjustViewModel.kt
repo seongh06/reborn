@@ -9,9 +9,9 @@ import com.reborn.core.domain.usecase.GetAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetDeviceStatusUseCase
-import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.model.AutoControlRule
 import com.reborn.core.model.TutorialStep
@@ -34,7 +34,6 @@ sealed class AdminAdjustEvent {
 }
 
 class AdminAdjustViewModel(
-    private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val controlDeviceUseCase: ControlDeviceUseCase,
     private val deleteDeviceUseCase: DeleteDeviceUseCase,
@@ -44,6 +43,7 @@ class AdminAdjustViewModel(
     private val getDeviceStatusUseCase: GetDeviceStatusUseCase,
     private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
     private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
+    private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminAdjustUiState, AdminAdjustEvent>(
         initialState = AdminAdjustUiState.Loading,
@@ -60,12 +60,15 @@ class AdminAdjustViewModel(
     // 하이라이트 여부를 DeviceDetail 진입/전환 시마다 이 값으로 판단한다.
     private var seenTutorialSteps: Set<String> = emptySet()
 
-    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
+    // Home/Data에서 지금 선택된 룸(#166)을 그대로 따른다 - ResolveSelectedPlaceUseCase가 선택한
+    // 적 없거나 삭제된 룸을 자동으로 첫 번째 룸으로 폴백시켜준다. 이전엔 항상 첫 번째 룸만 봐서,
+    // 다른 룸에 등록한 기기를 클릭해도 그 룸 목록엔 없어 "기기를 찾을 수 없습니다" 에러만 뜨고
+    // 상세 화면으로 못 넘어가던 버그가 있었다.
     private var resolvedPlaceId: Long? = null
 
     private suspend fun resolvePlaceId(): Long? {
         resolvedPlaceId?.let { return it }
-        val resolved = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        val resolved = resolveSelectedPlaceUseCase().getOrNull()?.selected?.placeId
         resolvedPlaceId = resolved
         return resolved
     }
