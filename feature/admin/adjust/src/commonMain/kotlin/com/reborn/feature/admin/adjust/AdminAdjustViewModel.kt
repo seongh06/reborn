@@ -66,11 +66,13 @@ class AdminAdjustViewModel(
     // 상세 화면으로 못 넘어가던 버그가 있었다.
     private var resolvedPlaceId: Long? = null
 
-    private suspend fun resolvePlaceId(): Long? {
-        resolvedPlaceId?.let { return it }
-        val resolved = resolveSelectedPlaceUseCase().getOrNull()?.selected?.placeId
-        resolvedPlaceId = resolved
-        return resolved
+    // 장소 조회 자체가 실패한 경우(네트워크 오류 등)를 "장소 없음"으로 뭉개면 사용자가 진짜 원인을
+    // 못 보고 오해한다(CodeRabbit 리뷰) - Result를 그대로 호출부까지 전달해서 실패/빈 목록을 구분한다.
+    private suspend fun resolvePlaceId(): Result<Long?> {
+        resolvedPlaceId?.let { return Result.success(it) }
+        return resolveSelectedPlaceUseCase().map { resolution ->
+            resolution.selected?.placeId?.also { resolvedPlaceId = it }
+        }
     }
 
     // 캐시해둔 placeId가 가리키는 장소가 그 사이 삭제되는 등으로 이 값을 쓰는 호출이 실패하면
@@ -127,11 +129,15 @@ class AdminAdjustViewModel(
         navController.clearAndReset(AdminAdjustUiState.Loading)
         viewModelScope.launch {
             seenTutorialSteps = getTutorialSeenStepsUseCase().first()
-            val placeId = resolvePlaceId()
+            val placeResult = resolvePlaceId()
+            placeResult.onFailure { navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it)) }
+            val placeId = placeResult.getOrNull()
             if (placeId == null) {
-                navController.emitEvent(
-                    AdminAdjustEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다."))
-                )
+                if (placeResult.isSuccess) {
+                    navController.emitEvent(
+                        AdminAdjustEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다."))
+                    )
+                }
                 navController.clearAndReset(AdminAdjustUiState.Adjust(emptyList()))
                 return@launch
             }
