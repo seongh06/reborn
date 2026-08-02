@@ -51,12 +51,6 @@ fun RoomSwitcherBottomSheet(
         sheetState = sheetState,
         containerColor = RebornTheme.color.grayScale100
     ) {
-        Text(
-            "룸 선택",
-            style = RebornTheme.typography.titleMedium,
-            color = RebornTheme.color.grayScale900,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-        )
         LazyColumn(
             modifier = Modifier.padding(bottom = 24.dp)
         ) {
