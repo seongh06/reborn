@@ -71,6 +71,7 @@ fun NavGraphBuilder.adminAddAiSpeakerNavGraph(
 
 fun NavGraphBuilder.adminDeviceWifiSetupNavGraph(
     onBackClick: () -> Unit,
+    onWifiConfigured: () -> Unit = onBackClick,
 ) {
     composable<Route.Admin.DeviceWifiSetup> { backStackEntry ->
         val route = backStackEntry.toRoute<Route.Admin.DeviceWifiSetup>()
@@ -78,6 +79,7 @@ fun NavGraphBuilder.adminDeviceWifiSetupNavGraph(
             deviceId = route.deviceId,
             placeId = route.placeId.toLong(),
             onBackClick = onBackClick,
+            onWifiConfigured = onWifiConfigured,
         )
     }
 }

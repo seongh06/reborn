@@ -1,7 +1,5 @@
 package com.reborn.feature.intro
 
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.ui.RebornLoadingScreen
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.feature.intro.model.IntroIntent
 import com.reborn.feature.intro.model.IntroUiState
 import com.reborn.feature.intro.screen.IntroWelcomeScreen
@@ -54,8 +53,8 @@ fun IntroRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ) { _ ->
         when(uiState){
             is IntroUiState.Loading -> RebornLoadingScreen()

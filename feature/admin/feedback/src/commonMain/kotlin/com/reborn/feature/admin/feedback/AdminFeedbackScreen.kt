@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +17,7 @@ import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.FeedbackList
 import com.reborn.core.ui.component.FeedbackListItem
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.feedback.model.AdminFeedbackIntent
@@ -63,8 +62,8 @@ fun AdminFeedbackRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState)}
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ){_ ->
         when(val state = uiState) {
             is AdminFeedbackUiState.Loading -> RebornLoadingScreen()
