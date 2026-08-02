@@ -24,6 +24,17 @@ class PlaceRepositoryImpl(
     private val remote: PlaceDataSource,
 ) : PlaceRepository {
 
+    // "지금 선택된 장소"(#166) - 서버 데이터가 아닌 순수 인메모리 UI 상태라 이 Repository가 Koin
+    // single로 등록돼있는 것에 기대 필드로 직접 들고 있는다(멀티플랫폼에서 별도 DataStore 없이
+    // 세션 동안만 유지 - 앱 재시작 시 리셋되는데 기존에도 항상 첫 번째 장소만 봤으니 회귀 아님).
+    private var selectedPlaceId: Long? = null
+
+    override fun getSelectedPlaceId(): Long? = selectedPlaceId
+
+    override fun selectPlace(placeId: Long) {
+        selectedPlaceId = placeId
+    }
+
     override suspend fun register(name: String, type: String): Result<Place> =
         remote.register(RegisterPlaceRequest(name, type))
             // 장소 등록은 항상 등록한 사람을 ADMIN이자 방장으로 만든다(서버 PlaceService.register()).

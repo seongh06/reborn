@@ -1,6 +1,5 @@
 package com.reborn
 
-import com.reborn.core.common.CurrentPlaceState
 import com.reborn.core.common.platformSensorModule
 import com.reborn.core.data.di.repositoryModule
 import com.reborn.core.datastore.di.dataStoreModule
@@ -40,7 +39,9 @@ import com.reborn.core.domain.usecase.RegisterAiSpeakerDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterArduinoDeviceUseCase
 import com.reborn.core.domain.usecase.RegisterPlaceUseCase
 import com.reborn.core.domain.usecase.RegisterSmartThingsDeviceUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
+import com.reborn.core.domain.usecase.SelectPlaceUseCase
 import com.reborn.core.domain.usecase.SendMetricUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
@@ -72,14 +73,15 @@ import org.koin.dsl.module
 
 
 val appDependenciesModule = module {
-    // Home/Data/기기 등록 화면이 공유하는 "지금 선택된 룸" 상태(#166) - 서버 데이터가 아니라
-    // 순수 UI 선택 상태라 싱글턴으로 직접 등록한다.
-    single { CurrentPlaceState() }
-
     factory { LoginUseCase(get()) }
     factory { LogoutUseCase(get()) }
     factory { UpdateFcmTokenUseCase(get()) }
     factory { RegisterPlaceUseCase(get()) }
+    // Home/Data/기기 등록 화면이 공유하는 "지금 선택된 룸"(#166) - PlaceRepository가 감싸고 있는
+    // 순수 인메모리 UI 선택 상태를 core:domain UseCase로만 노출한다(ViewModel엔 core:domain
+    // UseCase만 주입 - CodeRabbit 리뷰).
+    factory { ResolveSelectedPlaceUseCase(get()) }
+    factory { SelectPlaceUseCase(get()) }
     factory { GenerateAdminCodeUseCase(get()) }
     factory { RedeemAdminCodeUseCase(get()) }
     factory { GetPlaceListUseCase(get()) }

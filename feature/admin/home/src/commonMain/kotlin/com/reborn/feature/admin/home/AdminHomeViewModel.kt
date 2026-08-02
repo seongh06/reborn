@@ -2,15 +2,15 @@ package com.reborn.feature.admin.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.reborn.core.common.CurrentPlaceState
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
-import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
+import com.reborn.core.domain.usecase.SelectPlaceUseCase
 import com.reborn.core.model.DomainException
 import com.reborn.core.model.Feedback
 import com.reborn.core.model.Metric
@@ -49,14 +49,14 @@ private const val RECENT_FEEDBACK_COUNT = 3
 private val METRIC_DEVICE_TYPE_PRIORITY = listOf("ARDUINO", "SMART_THINGS")
 
 class AdminHomeViewModel(
-    private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val getCurrentMetricUseCase: GetCurrentMetricUseCase,
     private val getFeedbackListUseCase: GetFeedbackListUseCase,
     private val controlDeviceUseCase: ControlDeviceUseCase,
     private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
     private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
-    private val currentPlaceState: CurrentPlaceState,
+    private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
+    private val selectPlaceUseCase: SelectPlaceUseCase,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminHomeUiState, AdminHomeEvent>(
         initialState = AdminHomeUiState.Loading,
@@ -94,7 +94,7 @@ class AdminHomeViewModel(
     }
 
     private fun selectPlace(placeId: Long) {
-        currentPlaceState.select(placeId)
+        selectPlaceUseCase(placeId)
         checkInitialState()
     }
 
@@ -107,12 +107,10 @@ class AdminHomeViewModel(
     private fun checkInitialState() {
         navController.clearAndReset(AdminHomeUiState.Loading)
         viewModelScope.launch {
-            val placeListResult = getPlaceListUseCase()
-            placeListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
-            val places = placeListResult.getOrNull().orEmpty()
-            // 룸 전환(#166) - 선택해둔 룸이 그 사이 삭제됐으면(존재하지 않으면) 첫 번째 룸으로 폴백
-            val placeId = currentPlaceState.selectedPlaceId.value?.takeIf { id -> places.any { it.placeId == id } }
-                ?: places.firstOrNull()?.placeId
+            val placeResolution = resolveSelectedPlaceUseCase()
+            placeResolution.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+            val places = placeResolution.getOrNull()?.places.orEmpty()
+            val placeId = placeResolution.getOrNull()?.selected?.placeId
             if (placeId == null) {
                 navController.clearAndReset(AdminHomeUiState.Home(hasDevices = false))
                 return@launch

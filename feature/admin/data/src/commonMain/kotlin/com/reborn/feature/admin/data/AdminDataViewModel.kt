@@ -2,18 +2,18 @@ package com.reborn.feature.admin.data
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.reborn.core.common.CurrentPlaceState
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.ExportMetricToSheetsUseCase
 import com.reborn.core.domain.usecase.GetAnalysisTextParams
 import com.reborn.core.domain.usecase.GetAnalysisTextUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetGoogleSheetsAuthorizeUrlUseCase
-import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetSensorAggregateParams
 import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryParams
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
+import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
+import com.reborn.core.domain.usecase.SelectPlaceUseCase
 import com.reborn.core.model.SensorPoint
 import com.reborn.core.ui.component.RoomOption
 import com.reborn.feature.admin.data.model.AdminDataIntent
@@ -160,14 +160,14 @@ sealed class AdminDataEvent {
 }
 
 class AdminDataViewModel(
-    private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val getSensorHistoryUseCase: GetSensorHistoryUseCase,
     private val getSensorAggregateUseCase: GetSensorAggregateUseCase,
     private val getAnalysisTextUseCase: GetAnalysisTextUseCase,
     private val exportMetricToSheetsUseCase: ExportMetricToSheetsUseCase,
     private val getGoogleSheetsAuthorizeUrlUseCase: GetGoogleSheetsAuthorizeUrlUseCase,
-    private val currentPlaceState: CurrentPlaceState,
+    private val resolveSelectedPlaceUseCase: ResolveSelectedPlaceUseCase,
+    private val selectPlaceUseCase: SelectPlaceUseCase,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminDataUiState, AdminDataEvent>(
         initialState = AdminDataUiState.Loading,
@@ -195,11 +195,16 @@ class AdminDataViewModel(
     // 이유 - 캐시가 죽은 채로 남아있으면 장소가 삭제된 뒤에도 계속 실패한다).
     private suspend fun resolveDeviceContext(): String? {
         if (deviceContextResolved) return resolvedDeviceId
-        val places = getPlaceListUseCase().getOrNull().orEmpty()
+        val resolution = resolveSelectedPlaceUseCase()
+        val places = resolution.getOrNull()?.places
+        if (places == null) {
+            // 장소 조회 자체가 실패한 경우 - deviceContextResolved를 세우지 않아 다음 진입 때 재시도한다
+            // (CodeRabbit 리뷰 - 실패를 "장소 없음"으로 뭉개면 재시도 없이 계속 빈 화면만 보임).
+            resolution.exceptionOrNull()?.let { navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(it)) }
+            return null
+        }
+        val selected = resolution.getOrNull()?.selected
         resolvedRooms = places.map { RoomOption(id = it.placeId, name = it.name) }
-        // 선택해둔 룸이 그 사이 삭제됐으면(존재하지 않으면) 첫 번째 룸으로 폴백
-        val selected = currentPlaceState.selectedPlaceId.value?.let { id -> places.find { it.placeId == id } }
-            ?: places.firstOrNull()
         val placeId = selected?.placeId
         resolvedPlaceId = placeId
         resolvedPlaceName = selected?.name ?: "Room01"
@@ -241,7 +246,10 @@ class AdminDataViewModel(
     }
 
     private fun selectPlace(placeId: Long) {
-        currentPlaceState.select(placeId)
+        selectPlaceUseCase(placeId)
+        // 진행 중이던 이전 룸의 분석 요청이 뒤늦게 도착해 새 룸 상태를 덮어쓰지 않도록 취소
+        // (CodeRabbit 리뷰 - checkInitialState()의 loadJob 취소만으로는 analysisJob이 안 잡힘).
+        analysisJob?.cancel()
         deviceContextResolved = false
         checkInitialState()
     }

@@ -46,9 +46,15 @@ class AdminIotDeviceListViewModel(
     fun loadDevices() {
         viewModelScope.launch {
             _uiState.value = AdminIotDeviceListUiState.Loading
-            val places = getPlaceListUseCase().getOrNull().orEmpty()
+            val placeListResult = getPlaceListUseCase()
+            // 조회 자체가 실패한 건지, 정말 등록된 장소가 없는 건지 구분해서 실제 오류를 그대로
+            // 보여준다(CodeRabbit 리뷰 - 이전엔 네트워크 오류도 전부 "등록된 장소가 없습니다"로 뭉개짐).
+            placeListResult.onFailure { _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(it)) }
+            val places = placeListResult.getOrNull().orEmpty()
             if (places.isEmpty()) {
-                _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
+                if (placeListResult.isSuccess) {
+                    _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
+                }
                 _uiState.value = AdminIotDeviceListUiState.Loaded(emptyList())
                 return@launch
             }
