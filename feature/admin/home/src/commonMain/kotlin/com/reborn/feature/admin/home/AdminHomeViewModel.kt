@@ -10,6 +10,7 @@ import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetTutorialSeenStepsUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
+import com.reborn.core.model.DomainException
 import com.reborn.core.model.Feedback
 import com.reborn.core.model.Metric
 import com.reborn.core.model.TutorialStep
@@ -128,14 +129,17 @@ class AdminHomeViewModel(
                 .firstNotNullOfOrNull { type -> serverDevices.firstOrNull { it.deviceType == type } }
             val aerometerDevice = serverDevices.firstOrNull { it.deviceType == "AEROMETER" }
 
+            // 신규 등록/오프라인 기기는 아직 metric_logs가 없어 서버가 404(UserNotFoundException으로
+            // 매핑됨)를 내려주는데, 이게 홈 탭 재진입마다(#305) 매번 스낵바로 떠서 소음이 됐다 -
+            // 이 경우만 조용히 무시하고, 그 외 진짜 네트워크/서버 오류는 그대로 노출한다.
             val tempHumidityMetric = tempHumidityDevice?.let { device ->
                 getCurrentMetricUseCase(device.deviceId)
-                    .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+                    .onFailure { if (it !is DomainException.UserNotFoundException) navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
                     .getOrNull()
             }
             val aerometerMetric = aerometerDevice?.let { device ->
                 getCurrentMetricUseCase(device.deviceId)
-                    .onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
+                    .onFailure { if (it !is DomainException.UserNotFoundException) navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
                     .getOrNull()
             }
 
