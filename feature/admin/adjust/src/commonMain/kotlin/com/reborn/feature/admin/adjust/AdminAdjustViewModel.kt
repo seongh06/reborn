@@ -138,7 +138,7 @@ class AdminAdjustViewModel(
                         AdminAdjustEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다."))
                     )
                 }
-                navController.clearAndReset(AdminAdjustUiState.Adjust(emptyList()))
+                exitOrShowEmptyList(deviceId)
                 return@launch
             }
 
@@ -154,16 +154,37 @@ class AdminAdjustViewModel(
                             serverDeviceType = device.deviceType,
                         )
                     }
-                    navController.clearAndReset(AdminAdjustUiState.Adjust(devices))
+                    // 이 화면(Adjust 목록)은 바텀탭에서 빠져서 실제로는 항상 특정 기기(deviceId)로만
+                    // 진입한다 - 목록 상태를 거치지 않고 바로 상세로 간다. 실패하면(기기를 못 찾음)
+                    // 아무 역할 없는 빈 목록 화면 대신 바로 나간다("기기 화면이 하는 역할이 없다"는
+                    // 사용자 피드백 - 이전엔 실패 시 항상 목록 화면이 남아있었음).
                     if (deviceId != null) {
-                        navigateToDeviceDetail(AdminAdjustIntent.NavigateToDeviceDetail(deviceId = deviceId))
+                        val device = devices.find { it.id == deviceId }
+                        if (device == null) {
+                            navController.emitEvent(
+                                AdminAdjustEvent.ShowErrorSnackbar(IllegalArgumentException("기기를 찾을 수 없습니다."))
+                            )
+                            navController.emitEvent(AdminAdjustEvent.Exit)
+                            return@onSuccess
+                        }
+                        openDeviceDetail(device, AdminAdjustUiState.ControlMethod.Remote)
+                    } else {
+                        navController.clearAndReset(AdminAdjustUiState.Adjust(devices))
                     }
                 }
                 .onFailure {
                     invalidatePlaceId()
                     navController.emitEvent(AdminAdjustEvent.ShowErrorSnackbar(it))
-                    navController.clearAndReset(AdminAdjustUiState.Adjust(emptyList()))
+                    exitOrShowEmptyList(deviceId)
                 }
+        }
+    }
+
+    private fun exitOrShowEmptyList(deviceId: String?) {
+        if (deviceId != null) {
+            navController.emitEvent(AdminAdjustEvent.Exit)
+        } else {
+            navController.clearAndReset(AdminAdjustUiState.Adjust(emptyList()))
         }
     }
 
@@ -200,19 +221,23 @@ class AdminAdjustViewModel(
             ?: return navController.emitEvent(
                 AdminAdjustEvent.ShowErrorSnackbar(IllegalArgumentException("기기를 찾을 수 없습니다."))
             )
+        openDeviceDetail(device, intent.controlMethod)
+    }
+
+    private fun openDeviceDetail(device: AdminAdjustUiState.DeviceItem, controlMethod: AdminAdjustUiState.ControlMethod) {
         navController.navigateTo(
             AdminAdjustUiState.DeviceDetail(
-                selectedTab = intent.controlMethod,
-                deviceId = intent.deviceId,
+                selectedTab = controlMethod,
+                deviceId = device.id,
                 device = device,
                 showRemoteTabHint = TutorialStep.ADJUST_REMOTE_TAB !in seenTutorialSteps,
                 showAutoTabHint = TutorialStep.ADJUST_AUTO_TAB !in seenTutorialSteps,
             )
         )
-        loadData(intent.controlMethod)
-        loadMetric(intent.deviceId)
+        loadData(controlMethod)
+        loadMetric(device.id)
         if (device.serverDeviceType == "SMART_THINGS") {
-            loadDeviceStatus(intent.deviceId)
+            loadDeviceStatus(device.id)
         }
     }
 
