@@ -12,7 +12,7 @@ sealed interface AdminDataUiState {
     data class Data(
         val place: String = "Room01",
         val selectedCategory: Category = Category.TEMPERATURE,
-        val selectedPeriod: Period = Period.DAY,
+        val selectedPeriod: Period = Period.HOUR,
         val chartLabels: List<String> = emptyList(),
         val chartValues: List<Float> = emptyList(),
         val hasEnoughData: Boolean = true,
