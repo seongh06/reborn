@@ -68,7 +68,14 @@
 #include <FlashStorage_SAMD.h>
 #include <IRremote.hpp>
 #ifdef AC_TARGET_LG_GENERIC
+// IRremote(최소 v4.6.1~v4.7.1까지 확인) ac_LG.hpp 자체의 버그 우회: sendIRCommand() 안에서
+// INFO_PRINT(...)는 LocalDebugLevelStart.h가 정의해주는데, 그 바로 옆의 맨 INFO(...) 호출은
+// 어느 헤더도 정의를 안 해줘서 "'INFO' was not declared in this scope"로 컴파일이 깨진다(2026-08-02
+// 실기기 확인). 라이브러리 소스를 직접 고치면 다음 업데이트 때 되돌아가니, 여기서 INFO_PRINT의
+// 별칭으로 미리 정의해서 우회 - ac_LG.hpp 안에서만 쓰이므로 include 직후 바로 #undef 한다.
+#define INFO(...) INFO_PRINT(__VA_ARGS__)
 #include "ac_LG.hpp"
+#undef INFO
 #endif
 
 // ===== 설정값 =====
