@@ -1,5 +1,6 @@
 package com.reborn
 
+import com.reborn.core.common.CurrentPlaceState
 import com.reborn.core.common.platformSensorModule
 import com.reborn.core.data.di.repositoryModule
 import com.reborn.core.datastore.di.dataStoreModule
@@ -71,6 +72,10 @@ import org.koin.dsl.module
 
 
 val appDependenciesModule = module {
+    // Home/Data/기기 등록 화면이 공유하는 "지금 선택된 룸" 상태(#166) - 서버 데이터가 아니라
+    // 순수 UI 선택 상태라 싱글턴으로 직접 등록한다.
+    single { CurrentPlaceState() }
+
     factory { LoginUseCase(get()) }
     factory { LogoutUseCase(get()) }
     factory { UpdateFcmTokenUseCase(get()) }

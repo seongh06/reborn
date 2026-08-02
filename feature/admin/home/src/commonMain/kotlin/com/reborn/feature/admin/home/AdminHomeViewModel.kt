@@ -2,6 +2,7 @@ package com.reborn.feature.admin.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reborn.core.common.CurrentPlaceState
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
@@ -16,6 +17,7 @@ import com.reborn.core.model.Metric
 import com.reborn.core.model.TutorialStep
 import com.reborn.core.ui.component.DeviceType
 import com.reborn.core.ui.component.FeedbackListItem
+import com.reborn.core.ui.component.RoomOption
 import com.reborn.core.ui.component.classifyFeedbackType
 import com.reborn.core.ui.component.feedbackStatusToState
 import com.reborn.core.ui.component.formatFeedbackRelativeTime
@@ -54,6 +56,7 @@ class AdminHomeViewModel(
     private val controlDeviceUseCase: ControlDeviceUseCase,
     private val getTutorialSeenStepsUseCase: GetTutorialSeenStepsUseCase,
     private val markTutorialStepSeenUseCase: MarkTutorialStepSeenUseCase,
+    private val currentPlaceState: CurrentPlaceState,
 ) : ViewModel() {
     private val navController = NavigationManager<AdminHomeUiState, AdminHomeEvent>(
         initialState = AdminHomeUiState.Loading,
@@ -86,7 +89,13 @@ class AdminHomeViewModel(
             is AdminHomeIntent.DeleteAlarm -> deleteAlarm(intent.alarmId)
             is AdminHomeIntent.ClickAlarmFilter -> clickAlarmFilter(intent.filter)
             is AdminHomeIntent.DismissTutorial -> dismissTutorial(intent.stepId)
+            is AdminHomeIntent.SelectPlace -> selectPlace(intent.placeId)
         }
+    }
+
+    private fun selectPlace(placeId: Long) {
+        currentPlaceState.select(placeId)
+        checkInitialState()
     }
 
     private fun clickAlarmFilter(filter: AdminHomeUiState.AlarmFilter) {
@@ -100,7 +109,10 @@ class AdminHomeViewModel(
         viewModelScope.launch {
             val placeListResult = getPlaceListUseCase()
             placeListResult.onFailure { navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
-            val placeId = placeListResult.getOrNull()?.firstOrNull()?.placeId
+            val places = placeListResult.getOrNull().orEmpty()
+            // 룸 전환(#166) - 선택해둔 룸이 그 사이 삭제됐으면(존재하지 않으면) 첫 번째 룸으로 폴백
+            val placeId = currentPlaceState.selectedPlaceId.value?.takeIf { id -> places.any { it.placeId == id } }
+                ?: places.firstOrNull()?.placeId
             if (placeId == null) {
                 navController.clearAndReset(AdminHomeUiState.Home(hasDevices = false))
                 return@launch
@@ -176,6 +188,8 @@ class AdminHomeViewModel(
                     recentFeedbacks = recentFeedbacks,
                     showTutorialHint = TutorialStep.HOME_SMART_THINGS !in seenSteps && serverDevices.isEmpty(),
                     showFirstFeedbackHint = TutorialStep.HOME_FIRST_FEEDBACK !in seenSteps && feedbacks.isNotEmpty(),
+                    rooms = places.map { RoomOption(id = it.placeId, name = it.name) },
+                    selectedRoomId = placeId,
                 )
             )
         }

@@ -2,6 +2,7 @@ package com.reborn.feature.admin.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reborn.core.common.CurrentPlaceState
 import com.reborn.core.common.SmartThingsCallbackSignal
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.domain.usecase.GetSmartThingsAuthorizeUrlUseCase
@@ -38,6 +39,7 @@ class AdminSmartThingsAddViewModel(
     private val getSmartThingsAuthorizeUrlUseCase: GetSmartThingsAuthorizeUrlUseCase,
     private val getSmartThingsDeviceListUseCase: GetSmartThingsDeviceListUseCase,
     private val registerSmartThingsDeviceUseCase: RegisterSmartThingsDeviceUseCase,
+    private val currentPlaceState: CurrentPlaceState,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AdminSmartThingsAddUiState>(AdminSmartThingsAddUiState.Idle)
@@ -63,13 +65,13 @@ class AdminSmartThingsAddViewModel(
         }
     }
 
-    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소로 임시 고정한다.
-    // 다중 장소를 관리하는 관리자가 늘어나면 장소 선택 UI를 별도로 추가해야 함.
+    // Home에서 지금 선택된 룸(#166)에 등록한다 - 선택된 룸이 없으면(단일 룸 등) 첫 번째 룸으로 폴백.
     private var placeId: Long? = null
 
     private suspend fun resolvePlaceId(): Long? {
         placeId?.let { return it }
-        val resolved = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        val resolved = currentPlaceState.selectedPlaceId.value
+            ?: getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
         placeId = resolved
         return resolved
     }

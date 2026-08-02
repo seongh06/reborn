@@ -12,7 +12,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
@@ -22,6 +24,7 @@ import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.RebornScaffold
+import com.reborn.core.ui.component.RoomSwitcherBottomSheet
 import com.reborn.core.ui.component.SelectOptionRow
 import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
@@ -69,7 +72,8 @@ fun AdminDataRoute(
                 onCategoryClick = { category -> viewModel.onIntent(AdminDataIntent.ClickCategoryTab(category)) },
                 onPeriodClick = { period -> viewModel.onIntent(AdminDataIntent.ClickPeriod(period)) },
                 onExportClick = { viewModel.onIntent(AdminDataIntent.ClickExport) },
-                onRevealAnalysisClick = { viewModel.onIntent(AdminDataIntent.ClickRevealAnalysis) }
+                onRevealAnalysisClick = { viewModel.onIntent(AdminDataIntent.ClickRevealAnalysis) },
+                onSelectPlace = { placeId -> viewModel.onIntent(AdminDataIntent.SelectPlace(placeId)) }
             )
         }
     }
@@ -81,14 +85,30 @@ fun AdminDataScreen(
     onCategoryClick: (AdminDataUiState.Category) -> Unit,
     onPeriodClick: (AdminDataUiState.Period) -> Unit,
     onExportClick: () -> Unit,
-    onRevealAnalysisClick: () -> Unit = {}
+    onRevealAnalysisClick: () -> Unit = {},
+    onSelectPlace: (Long) -> Unit = {}
 ) {
+    var showRoomSwitcher by remember { mutableStateOf(false) }
+
+    if (showRoomSwitcher) {
+        RoomSwitcherBottomSheet(
+            rooms = state.rooms,
+            selectedRoomId = state.selectedRoomId,
+            onSelect = onSelectPlace,
+            onDismiss = { showRoomSwitcher = false }
+        )
+    }
+
     Column(
         modifier = Modifier
             .rebornDefault(Color.White)
             .verticalScroll(rememberScrollState())
     ) {
-        RebornTopAppBar(title = "${state.place} 보고서", onNavigateDataExport = onExportClick)
+        RebornTopAppBar(
+            title = "${state.place} 보고서",
+            onTitleClick = { showRoomSwitcher = true },
+            onNavigateDataExport = onExportClick
+        )
         TabBar(
             tabItems = state.availableCategories,
             selectedTab = state.selectedCategory,

@@ -1,6 +1,7 @@
 package com.reborn.feature.admin.data.model
 
 import androidx.compose.runtime.Immutable
+import com.reborn.core.ui.component.RoomOption
 
 // AI 분석은 Gemini 호출 비용이 들어서(사용자 요청) 자동으로 부르지 않고, 데이터가 이 개수
 // 이상 쌓였을 때만 "탭해서 보기" 형태로 노출 - 실제로 탭했을 때만 AI를 호출한다.
@@ -23,6 +24,9 @@ sealed interface AdminDataUiState {
         // 조도/재실 인원은 공기계(AEROMETER)가 있어야 수집되는 값이라, 공기계가 연결 안 된
         // 장소에서는 해당 탭 자체를 노출하지 않는다(#236).
         val availableCategories: List<Category> = Category.entries,
+        // 룸 전환(#166) - 선택 가능한 룸 목록과 현재 선택된 룸
+        val rooms: List<RoomOption> = emptyList(),
+        val selectedRoomId: Long? = null,
     ) : AdminDataUiState
 
     enum class Category(val label: String) {
@@ -48,4 +52,5 @@ sealed interface AdminDataIntent {
     data class ClickPeriod(val period: AdminDataUiState.Period) : AdminDataIntent
     data object ClickExport : AdminDataIntent
     data object ClickRevealAnalysis : AdminDataIntent
+    data class SelectPlace(val placeId: Long) : AdminDataIntent
 }

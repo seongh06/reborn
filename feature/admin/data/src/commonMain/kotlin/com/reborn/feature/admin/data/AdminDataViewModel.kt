@@ -2,6 +2,7 @@ package com.reborn.feature.admin.data
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reborn.core.common.CurrentPlaceState
 import com.reborn.core.common.NavigationManager
 import com.reborn.core.domain.usecase.ExportMetricToSheetsUseCase
 import com.reborn.core.domain.usecase.GetAnalysisTextParams
@@ -14,6 +15,7 @@ import com.reborn.core.domain.usecase.GetSensorAggregateUseCase
 import com.reborn.core.domain.usecase.GetSensorHistoryParams
 import com.reborn.core.domain.usecase.GetSensorHistoryUseCase
 import com.reborn.core.model.SensorPoint
+import com.reborn.core.ui.component.RoomOption
 import com.reborn.feature.admin.data.model.AdminDataIntent
 import com.reborn.feature.admin.data.model.AdminDataUiState
 import com.reborn.feature.admin.data.model.MIN_ANALYSIS_DATA_COUNT
@@ -165,6 +167,7 @@ class AdminDataViewModel(
     private val getAnalysisTextUseCase: GetAnalysisTextUseCase,
     private val exportMetricToSheetsUseCase: ExportMetricToSheetsUseCase,
     private val getGoogleSheetsAuthorizeUrlUseCase: GetGoogleSheetsAuthorizeUrlUseCase,
+    private val currentPlaceState: CurrentPlaceState,
 ) : ViewModel() {
     private val navigationManager = NavigationManager<AdminDataUiState, AdminDataEvent>(
         initialState = AdminDataUiState.Loading,
@@ -178,11 +181,13 @@ class AdminDataViewModel(
     // 공유하면 한쪽이 취소될 때 다른 쪽도 조용히 취소된다(CodeRabbit 리뷰) - 별도 Job으로 분리.
     private var analysisJob: Job? = null
 
-    // TODO: 장소 선택/전환 개념이 앱에 아직 없어(#166 참고) 첫 번째 장소의 첫 ARDUINO/SMART_THINGS
-    // 기기로 임시 고정한다.
     private var resolvedDeviceId: String? = null
     private var hasAerometer: Boolean = false
     private var deviceContextResolved: Boolean = false
+    // 룸 전환(#166) - 선택 가능한 전체 룸 목록/현재 선택된 룸(id·이름)도 같이 캐시해둔다.
+    private var resolvedRooms: List<RoomOption> = emptyList()
+    private var resolvedPlaceId: Long? = null
+    private var resolvedPlaceName: String = "Room01"
 
     // 장소의 기기 목록을 조회해 (조회/제어 대상 deviceId, 공기계 연결 여부)를 함께 얻는다 - 조도/재실
     // 인원 탭은 공기계(AEROMETER)가 있어야만 노출해야 하므로(#236) deviceId만 필요했던 이전 로직에
@@ -190,7 +195,14 @@ class AdminDataViewModel(
     // 이유 - 캐시가 죽은 채로 남아있으면 장소가 삭제된 뒤에도 계속 실패한다).
     private suspend fun resolveDeviceContext(): String? {
         if (deviceContextResolved) return resolvedDeviceId
-        val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        val places = getPlaceListUseCase().getOrNull().orEmpty()
+        resolvedRooms = places.map { RoomOption(id = it.placeId, name = it.name) }
+        // 선택해둔 룸이 그 사이 삭제됐으면(존재하지 않으면) 첫 번째 룸으로 폴백
+        val selected = currentPlaceState.selectedPlaceId.value?.let { id -> places.find { it.placeId == id } }
+            ?: places.firstOrNull()
+        val placeId = selected?.placeId
+        resolvedPlaceId = placeId
+        resolvedPlaceName = selected?.name ?: "Room01"
         if (placeId == null) {
             deviceContextResolved = true
             return null
@@ -224,7 +236,14 @@ class AdminDataViewModel(
             is AdminDataIntent.ClickPeriod -> handlePeriodClick(intent.period)
             is AdminDataIntent.ClickExport -> exportToGoogleSheets()
             is AdminDataIntent.ClickRevealAnalysis -> revealAnalysis()
+            is AdminDataIntent.SelectPlace -> selectPlace(intent.placeId)
         }
+    }
+
+    private fun selectPlace(placeId: Long) {
+        currentPlaceState.select(placeId)
+        deviceContextResolved = false
+        checkInitialState()
     }
 
     private fun checkInitialState() {
@@ -237,12 +256,15 @@ class AdminDataViewModel(
                 resolveDeviceContext()
                 navigationManager.clearAndReset(
                     AdminDataUiState.Data(
+                        place = resolvedPlaceName,
                         selectedCategory = category,
                         selectedPeriod = period,
                         chartLabels = chartLabelsFor(period),
                         chartValues = chartValuesFor(category, period),
                         hasEnoughData = hasEnoughDataFor(period),
                         availableCategories = availableCategories(),
+                        rooms = resolvedRooms,
+                        selectedRoomId = resolvedPlaceId,
                     )
                 )
             } catch (e: CancellationException) {
@@ -480,7 +502,7 @@ class AdminDataViewModel(
     }
 
     private suspend fun startGoogleSheetsConnection() {
-        val placeId = getPlaceListUseCase().getOrNull()?.firstOrNull()?.placeId
+        val placeId = resolvedPlaceId
         if (placeId == null) {
             navigationManager.emitEvent(AdminDataEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
             return
