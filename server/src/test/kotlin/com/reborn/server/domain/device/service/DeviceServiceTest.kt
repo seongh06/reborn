@@ -10,6 +10,7 @@ import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.device.repository.AutoControlRuleRepository
 import com.reborn.server.domain.device.repository.DeviceRepository
 import com.reborn.server.domain.device.repository.DeviceSerialRepository
+import com.reborn.server.domain.metric.MetricLogRepository
 import com.reborn.server.domain.place.AccessLevel
 import com.reborn.server.domain.place.Place
 import com.reborn.server.domain.place.PlaceRepository
@@ -72,6 +73,9 @@ class DeviceServiceTest {
     @Mock
     private lateinit var arduinoIrControlService: ArduinoIrControlService
 
+    @Mock
+    private lateinit var metricLogRepository: MetricLogRepository
+
     // @Value 문자열 필드(operatorApiKey)가 섞여있어 @InjectMocks 대신 직접 생성한다
     // (SmartThingsServiceTest와 동일 패턴).
     private lateinit var deviceService: DeviceService
@@ -94,6 +98,7 @@ class DeviceServiceTest {
             redisUtil = redisUtil,
             smartThingsDeviceService = smartThingsDeviceService,
             arduinoIrControlService = arduinoIrControlService,
+            metricLogRepository = metricLogRepository,
             operatorApiKey = "test-operator-key",
         )
     }

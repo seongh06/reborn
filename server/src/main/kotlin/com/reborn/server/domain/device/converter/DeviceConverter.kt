@@ -15,13 +15,13 @@ object DeviceConverter {
             createdAt = requireNotNull(entity.createdAt),
         )
 
-    fun toDeviceItem(entity: Device): DeviceDto.DeviceItem =
+    fun toDeviceItem(entity: Device, isOnline: Boolean = entity.isOnline): DeviceDto.DeviceItem =
         DeviceDto.DeviceItem(
             deviceId = entity.deviceKey,
             deviceName = entity.name,
             deviceType = entity.deviceType.name,
             category = entity.category,
-            isOnline = entity.isOnline,
+            isOnline = isOnline,
             hasIrControl = entity.hasIrControl,
             createdAt = requireNotNull(entity.createdAt),
         )

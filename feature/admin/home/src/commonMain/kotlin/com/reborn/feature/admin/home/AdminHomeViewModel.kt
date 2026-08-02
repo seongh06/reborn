@@ -237,7 +237,8 @@ class AdminHomeViewModel(
             group = group,
             category = AdminHomeUiState.AlarmFilter.FEEDBACK,
             content = "새로운 피드백이 도착했습니다: $content",
-            time = formatFeedbackRelativeTime(createdAt)
+            time = formatFeedbackRelativeTime(createdAt),
+            feedbackType = classifyFeedbackType(content),
         )
     }
 
