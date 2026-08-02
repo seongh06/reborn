@@ -18,4 +18,7 @@ class FeedbackRepositoryImpl(
     override suspend fun updateStatus(feedbackId: Long, status: String): Result<Boolean> =
         remote.updateStatus(feedbackId, FeedbackStatusUpdateRequest(status))
             .toResult { response -> response.controlSent }
+
+    override suspend fun markRead(feedbackId: Long): Result<Unit> =
+        remote.markRead(feedbackId).toResult { }
 }

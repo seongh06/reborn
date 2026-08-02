@@ -307,6 +307,17 @@ class FeedbackService(
         return true
     }
 
+    // 승인/거절(status)과는 별도 축이라 이미 처리된 피드백이든 아니든, 이미 읽었든 아니든 항상
+    // 성공한다(멱등) - updateStatus()의 "이미 처리된 피드백" 가드를 재사용하지 않는다.
+    @Transactional
+    fun markRead(userId: Long, feedbackId: Long) {
+        val feedback = feedbackRepository.findById(feedbackId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 피드백입니다.")
+        }
+        requireAdmin(userId, feedback.place.id)
+        feedback.markRead()
+    }
+
     private fun requireAdmin(userId: Long, placeId: Long) {
         if (!placeRepository.existsById(placeId)) {
             throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 장소 정보입니다.")

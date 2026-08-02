@@ -58,7 +58,8 @@ sealed interface AdminFeedbackUiState {
     )
     enum class FeedbackFiltering(val filtering: String, val state: State? = null) {
         ALL("전체", null),
-        WAITING("대기", State.WAITING),
+        UNREAD("안읽음", State.UNREAD),
+        READ("읽음", State.READ),
         APPROVE("승인", State.APPROVE),
         REJECT("거절", State.REJECT)
     }

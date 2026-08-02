@@ -165,11 +165,14 @@ enum class FeedbackType {
     HOT, SMELL, LIGHT, AIR, MUSIC, NOISE, COLD, WIND, DIRT, DARK
 }
 
-// 서버 status 문자열 <-> UI State 매핑 - Home/Feedback 화면이 공유
-fun feedbackStatusToState(status: String): State = when (status) {
+// 서버 status/isRead <-> UI State 매핑 - Home/Feedback 화면이 공유. 승인/거절(status)과
+// 안읽음/읽음(isRead)은 직교하는 두 축이라(#318) 둘 다 받아야 4가지 State를 구분할 수 있다 -
+// 온도 조절이 아닌(승인/거절할 IoT 액션이 없는) 피드백은 읽고 나면 READ에서 종결되고
+// status는 영원히 PENDING으로 남는다(대기에 처리 불가능한 항목이 계속 쌓이던 문제 해결).
+fun feedbackStatusToState(status: String, isRead: Boolean): State = when (status) {
     "APPROVED" -> State.APPROVE
     "REJECTED" -> State.REJECT
-    else -> State.WAITING
+    else -> if (isRead) State.READ else State.UNREAD
 }
 
 // 서버 createdAt(오프셋 없는 LocalDateTime ISO 문자열)을 "n분전" 형태로 변환 - Home/Feedback 화면이 공유
@@ -201,7 +204,7 @@ fun classifyFeedbackType(content: String): FeedbackType = when {
 }
 
 enum class State {
-    WAITING, REJECT, APPROVE
+    UNREAD, READ, REJECT, APPROVE
 }
 
 data class FeedbackUiStyle(
@@ -258,7 +261,8 @@ fun getFeedbackIcon(type: FeedbackType): FeedbackUiStyle {
 @Composable
 fun getStateColor(state: State): Color {
     return when (state) {
-        State.WAITING -> RebornTheme.color.grayScale500
+        State.UNREAD -> RebornTheme.color.grayScale700
+        State.READ -> RebornTheme.color.grayScale400
         State.REJECT -> RebornTheme.color.reject
         State.APPROVE -> RebornTheme.color.approve
     }
@@ -267,7 +271,8 @@ fun getStateColor(state: State): Color {
 // 상태를 색상만으로 구분하면 색약 사용자가 인지하기 어려워 스크린리더용 텍스트 대안 제공
 fun getStateLabel(state: State): String {
     return when (state) {
-        State.WAITING -> "대기"
+        State.UNREAD -> "안읽음"
+        State.READ -> "읽음"
         State.REJECT -> "거절"
         State.APPROVE -> "승인"
     }

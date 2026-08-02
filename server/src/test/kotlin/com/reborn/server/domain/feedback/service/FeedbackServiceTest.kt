@@ -497,4 +497,71 @@ class FeedbackServiceTest {
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.INVALID_INPUT)
     }
+
+    @Test
+    fun `updateStatus - 승인하면 isRead도 함께 true가 된다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+        val request = FeedbackDto.StatusUpdateRequest(status = "APPROVED")
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+
+        feedbackService.updateStatus(1L, 100L, request)
+
+        assertThat(feedback.isRead).isTrue()
+    }
+
+    @Test
+    fun `markRead - 안읽은 피드백을 읽음으로 바꾼다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+
+        feedbackService.markRead(1L, 100L)
+
+        assertThat(feedback.isRead).isTrue()
+    }
+
+    @Test
+    fun `markRead - 이미 읽은 피드백을 다시 호출해도 에러 없이 성공한다`() {
+        val feedback = Feedback(
+            device = device, place = place, content = "덥다", sessionToken = "sess-1",
+            status = FeedbackStatus.APPROVED, isRead = true, id = 100,
+        )
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(placeRepository.existsById(501L)).willReturn(true)
+
+        feedbackService.markRead(1L, 100L)
+
+        assertThat(feedback.isRead).isTrue()
+    }
+
+    @Test
+    fun `markRead - 존재하지 않는 피드백이면 예외가 발생한다`() {
+        given(feedbackRepository.findById(999L)).willReturn(Optional.empty())
+
+        assertThatThrownBy { feedbackService.markRead(1L, 999L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `markRead - ADMIN 권한이 없으면 예외가 발생한다`() {
+        val feedback = Feedback(device = device, place = place, content = "덥다", sessionToken = "sess-1", id = 100)
+
+        given(feedbackRepository.findById(100L)).willReturn(Optional.of(feedback))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(2L, 501L)).willReturn(null)
+        given(placeRepository.existsById(501L)).willReturn(true)
+
+        assertThatThrownBy { feedbackService.markRead(2L, 100L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
+    }
 }
