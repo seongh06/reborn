@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -130,7 +131,8 @@ fun AdminHomeRoute(
                 onDevicePowerToggle = { id -> viewModel.onIntent(AdminHomeIntent.TogglePower(id)) },
                 onAddSmartThingsClick = { viewModel.onIntent(AdminHomeIntent.NavigateToAddSmartThingsDevice) },
                 onDismissTutorial = { stepId -> viewModel.onIntent(AdminHomeIntent.DismissTutorial(stepId)) },
-                onSelectPlace = { placeId -> viewModel.onIntent(AdminHomeIntent.SelectPlace(placeId)) }
+                onSelectPlace = { placeId -> viewModel.onIntent(AdminHomeIntent.SelectPlace(placeId)) },
+                onRefresh = { viewModel.onIntent(AdminHomeIntent.Refresh) }
             )
             is AdminHomeUiState.Alarm -> AdminAlarmScreen(
                 state = state,
@@ -155,7 +157,8 @@ fun AdminHomeScreen(
     onDevicePowerToggle: (String) -> Unit = {},
     onAddSmartThingsClick: () -> Unit = {},
     onDismissTutorial: (String) -> Unit = {},
-    onSelectPlace: (Long) -> Unit = {}
+    onSelectPlace: (Long) -> Unit = {},
+    onRefresh: () -> Unit = {}
 ) {
     var showRoomSwitcher by remember { mutableStateOf(false) }
     // 룸 전환(#166) - 룸이 하나뿐이면 "Re:Born"으로, 2개 이상이면 지금 선택된 룸 이름으로 표시
@@ -249,11 +252,19 @@ fun AdminHomeScreen(
                     onNavigateSetting = onSettingClick,
                     backgroundColor = RebornTheme.color.grayScale100
                 )
+                // 아래로 당겨서 새로고침(pull-to-refresh) - 대시보드/피드백/기기 목록 전체를
+                // 다시 불러온다. 전체 화면을 Loading으로 갈아엎지 않고 지금 화면을 유지한 채
+                // 상단에만 인디케이터를 보여준다(viewModel.refresh() 참고).
+                PullToRefreshBox(
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.weight(1f)
+                ) {
                 // 바텀네비 캡슐 영역(상단 8dp + 캡슐 60dp + 하단 20dp = 88dp) 아래로 마지막
                 // 아이템이 가려지지 않도록 하단 여백 확보. edge-to-edge라 콘텐츠는 그 영역까지
                 // 실제로 그려지고, 스크롤 시 캡슐 위 그라데이션 스크림 너머로 비쳐 보임
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 88.dp)
                 ) {
                     item {
@@ -287,6 +298,7 @@ fun AdminHomeScreen(
                             onMoreClick = onDeviceListClick
                         )
                     }
+                }
                 }
             }
 

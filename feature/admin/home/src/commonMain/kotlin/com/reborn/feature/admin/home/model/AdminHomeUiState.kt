@@ -28,6 +28,9 @@ sealed interface AdminHomeUiState{
         // "Re:Born"으로 표시하고, 2개 이상이면 selectedRoomId에 해당하는 룸 이름을 표시한다.
         val rooms: List<RoomOption> = emptyList(),
         val selectedRoomId: Long? = null,
+        // 당겨서 새로고침(pull-to-refresh) 중인지 - 전체 화면을 Loading으로 안 갈아엎고 지금
+        // 보이는 대시보드를 그대로 둔 채 상단 인디케이터만 보여주기 위한 별도 플래그.
+        val isRefreshing: Boolean = false,
     ): AdminHomeUiState
     data class Alarm(
         val alarm: List<AlarmItem> = emptyList(),
@@ -82,4 +85,5 @@ sealed interface AdminHomeIntent{
     data class ClickAlarmFilter(val filter: AdminHomeUiState.AlarmFilter) : AdminHomeIntent
     data class DismissTutorial(val stepId: String) : AdminHomeIntent
     data class SelectPlace(val placeId: Long) : AdminHomeIntent
+    data object Refresh : AdminHomeIntent
 }
