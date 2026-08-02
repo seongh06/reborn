@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +19,7 @@ import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.ext.rebornDefault
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -47,8 +46,8 @@ fun AdminAddAiSpeakerRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ) { _ ->
         Column(
             modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)

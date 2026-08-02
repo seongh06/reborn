@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +25,7 @@ import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.DeviceListItem
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.component.SectionTitleComponent
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.home.component.IoTDeviceItem
@@ -54,8 +53,8 @@ fun AdminIotDeviceListRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ) { _ ->
         when (val state = uiState) {
             is AdminIotDeviceListUiState.Loading -> RebornLoadingScreen()

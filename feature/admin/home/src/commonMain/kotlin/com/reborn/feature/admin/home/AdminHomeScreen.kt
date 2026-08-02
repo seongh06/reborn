@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +33,7 @@ import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.Dashboard
 import com.reborn.core.ui.component.FeedbackStatusSection
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.component.TutorialHighlightOverlay
 import com.reborn.core.ui.component.tutorialTarget
 import com.reborn.core.ui.ext.rebornDefault
@@ -114,8 +113,8 @@ fun AdminHomeRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState)}
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ){_ ->
         when(val state = uiState) {
             is AdminHomeUiState.Loading -> RebornLoadingScreen()

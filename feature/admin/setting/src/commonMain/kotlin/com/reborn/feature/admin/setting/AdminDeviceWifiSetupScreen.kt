@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +23,7 @@ import com.reborn.core.designsystem.component.RebornButton
 import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.ext.rebornDefault
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -34,6 +33,10 @@ fun AdminDeviceWifiSetupRoute(
     placeId: Long,
     viewModel: AdminDeviceWifiSetupViewModel = koinViewModel(),
     onBackClick: () -> Unit,
+    // WiFi 설정 전송 성공 후 이동할 곳(#309) - 이전엔 onBackClick()을 그대로 재사용해서 기기
+    // 등록 폼 화면(AddArduino/AddAiSpeaker)으로 되돌아갔음. 아두이노/AI 스피커 연결이 끝나면
+    // 항상 홈 화면으로 보내야 해서 별도 콜백으로 분리 - 상단바 뒤로가기(onBackClick)는 그대로 취소 동작 유지.
+    onWifiConfigured: () -> Unit = onBackClick,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -50,7 +53,7 @@ fun AdminDeviceWifiSetupRoute(
             when (event) {
                 is AdminDeviceWifiSetupEvent.ConfigureSuccess -> {
                     snackbarHostState.showSnackbar("설정을 전송했습니다. 기기가 재부팅되며 잠시 후 홈 WiFi로 연결됩니다.")
-                    onBackClick()
+                    onWifiConfigured()
                 }
                 is AdminDeviceWifiSetupEvent.ShowErrorSnackbar ->
                     // 타임아웃/연결거부 등 Ktor 예외 메시지는 사용자에게 의미 없는 기술적 문구라
@@ -67,8 +70,8 @@ fun AdminDeviceWifiSetupRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ) { _ ->
         Column(
             modifier = Modifier.rebornDefault(RebornTheme.color.grayScale200)

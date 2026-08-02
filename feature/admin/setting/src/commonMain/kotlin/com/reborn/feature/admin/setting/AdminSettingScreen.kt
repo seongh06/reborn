@@ -18,8 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +44,7 @@ import com.reborn.core.designsystem.component.RebornTextField
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.component.SettingItem
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.admin.setting.Res
@@ -97,8 +96,8 @@ fun AdminSettingRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ) { _ ->
         when (val state = uiState) {
             is AdminSettingUiState.Loading -> RebornLoadingScreen()

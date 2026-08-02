@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.component.SelectOptionRow
 import com.reborn.core.ui.component.TabBar
 import com.reborn.core.ui.ext.rebornDefault
@@ -60,8 +59,8 @@ fun AdminDataRoute(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ) { _ ->
         when (val state = uiState) {
             is AdminDataUiState.Loading -> RebornLoadingScreen()

@@ -421,6 +421,15 @@ fun App(initialFeedbackId: Int? = null) {
                     adminDeviceWifiSetupNavGraph(
                         onBackClick = {
                             navController.popBackStack()
+                        },
+                        // 아두이노/AI 스피커 WiFi 설정이 끝나면 등록 폼으로 되돌아가지 않고
+                        // 바로 홈 화면으로 이동한다(#309) - IoT 상세 뒤로가기(#235)와 동일한 패턴.
+                        onWifiConfigured = {
+                            navController.navigate(Route.Admin.Home) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     )
                 }

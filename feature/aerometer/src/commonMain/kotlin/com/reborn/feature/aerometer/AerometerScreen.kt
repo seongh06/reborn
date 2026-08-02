@@ -2,8 +2,6 @@ package com.reborn.feature.aerometer
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +18,7 @@ import com.reborn.core.common.rememberToast
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
+import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.ext.rebornDefault
 import com.reborn.feature.aerometer.model.AerometerIntent
 import com.reborn.feature.aerometer.model.AerometerUiState
@@ -59,8 +58,8 @@ fun AeromterRoute(
         viewModel.onIntent(AerometerIntent.LoadInitial)
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    RebornScaffold(
+        snackbarHostState = snackbarHostState
     ) { _ ->
         when (uiState) {
             is AerometerUiState.Loading -> RebornLoadingScreen()
