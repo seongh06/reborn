@@ -98,7 +98,8 @@ fun AdminIotDeviceListScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 groupedDevices.forEach { (place, roomDevices) ->
                     item(key = "room_$place") {
