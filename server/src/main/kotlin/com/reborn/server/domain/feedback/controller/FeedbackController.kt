@@ -169,6 +169,27 @@ class FeedbackController(
     ): ApiResponse<FeedbackDto.StatusUpdateResponse> =
         ApiResponse.success(feedbackService.updateStatus(extractUserId(authentication), feedbackId, request))
 
+    @Operation(
+        summary = "피드백 읽음 처리",
+        description = "관리자가 피드백 상세를 열었을 때 읽음으로 표시합니다. 승인/거절(status)과는 별도 축이라 " +
+            "이미 읽었어도 에러 없이 그대로 성공합니다(멱등). (ADMIN 권한 필요)",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "읽음 처리 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 피드백"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/{feedbackId}/read")
+    fun markRead(
+        @PathVariable feedbackId: Long,
+        authentication: Authentication,
+    ): ApiResponse<Nothing> {
+        feedbackService.markRead(extractUserId(authentication), feedbackId)
+        return ApiResponse.success(null)
+    }
+
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long
             ?: throw BusinessAlertException(CommonErrorCode.UNAUTHORIZED, "인증 정보가 유효하지 않습니다.")

@@ -9,6 +9,7 @@ fun FeedbackItemResponse.toFeedback(): Feedback =
         deviceName = deviceName,
         content = content,
         status = status,
+        isRead = isRead,
         createdAt = createdAt,
         snapshotTemperature = snapshotTemperature,
         snapshotHumidity = snapshotHumidity,

@@ -153,6 +153,7 @@ CREATE TABLE IF NOT EXISTS `feedback`
     `user_agent`    VARCHAR(1024) NULL COMMENT '브라우저 User-Agent',
     `source`        VARCHAR(20)   NOT NULL DEFAULT 'QR' COMMENT '피드백 출처 (QR / VOICE)',
     `status`        VARCHAR(20)   NOT NULL DEFAULT 'PENDING' COMMENT '처리 상태 (PENDING / APPROVED / REJECTED)',
+    `is_read`       TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '관리자가 상세를 열어본 적 있는지',
     `snapshot_temperature`           DOUBLE NULL COMMENT 'AI 추천 계산 시점 온도 스냅샷',
     `snapshot_humidity`              DOUBLE NULL COMMENT 'AI 추천 계산 시점 습도 스냅샷',
     `snapshot_illuminance`           INT    NULL COMMENT 'AI 추천 계산 시점 조도 스냅샷',

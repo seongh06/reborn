@@ -30,4 +30,8 @@ class FeedbackDataSourceImpl(
             setBody(request)
         }
     }.asApiResponse()
+
+    override suspend fun markRead(feedbackId: Long): ApiResponse<Unit?> = runCatching {
+        httpClient.patch("/api/feedback/$feedbackId/read")
+    }.asApiResponse()
 }
