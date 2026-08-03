@@ -30,6 +30,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import kotlin.time.Duration.Companion.minutes
 
 sealed class AdminHomeEvent {
     data object Exit : AdminHomeEvent()
@@ -44,9 +45,9 @@ sealed class AdminHomeEvent {
 
 private const val RECENT_FEEDBACK_COUNT = 3
 
-// 전용 온습도 센서(ARDUINO)가 에어컨 내장 센서(SMART_THINGS)보다 정확할 가능성이 높아 우선한다 -
-// 둘 다 등록된 장소에서 어느 쪽 값이 표시될지가 등록 순서에 따라 뒤바뀌던 문제(#218) 수정.
-private val METRIC_DEVICE_TYPE_PRIORITY = listOf("ARDUINO", "SMART_THINGS")
+// 홈 대시보드에 보여줄 온습도/조도/재실 인원은 이 시간 안에 갱신된 값만 인정한다 - 그보다
+// 오래됐으면 기기가 사실상 끊긴 것으로 보고 다른 소스로 대체하거나(temp/humidity) null로 둔다.
+private val METRIC_FRESHNESS_WINDOW = 10.minutes
 
 class AdminHomeViewModel(
     private val getDeviceListUseCase: GetDeviceListUseCase,
@@ -153,25 +154,28 @@ class AdminHomeViewModel(
             }
 
             // 온습도(아두이노/SmartThings)와 조도·재실 인원(공기계)은 서로 다른 기기가 측정하므로
-            // 각자 조회해서 하나의 카드로 합친다 - 이전엔 METRIC_DEVICE_TYPE_PRIORITY에 AEROMETER가
-            // 아예 빠져있어서 공기계가 정상적으로 조도/재실 인원을 보내도 홈 화면에 영원히 안 보였음.
-            val tempHumidityDevice = METRIC_DEVICE_TYPE_PRIORITY
-                .firstNotNullOfOrNull { type -> serverDevices.firstOrNull { it.deviceType == type } }
+            // 각자 조회해서 하나의 카드로 합친다.
+            val arduinoDevice = serverDevices.firstOrNull { it.deviceType == "ARDUINO" }
+            val smartThingsDevice = serverDevices.firstOrNull { it.deviceType == "SMART_THINGS" }
             val aerometerDevice = serverDevices.firstOrNull { it.deviceType == "AEROMETER" }
 
             // 신규 등록/오프라인 기기는 아직 metric_logs가 없어 서버가 404(UserNotFoundException으로
             // 매핑됨)를 내려주는데, 이게 홈 탭 재진입마다(#305) 매번 스낵바로 떠서 소음이 됐다 -
             // 이 경우만 조용히 무시하고, 그 외 진짜 네트워크/서버 오류는 그대로 노출한다.
-            val tempHumidityMetric = tempHumidityDevice?.let { device ->
-                getCurrentMetricUseCase(device.deviceId)
+            suspend fun fetchFreshMetric(deviceId: String): Metric? =
+                getCurrentMetricUseCase(deviceId)
                     .onFailure { if (it !is DomainException.UserNotFoundException) navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
                     .getOrNull()
-            }
-            val aerometerMetric = aerometerDevice?.let { device ->
-                getCurrentMetricUseCase(device.deviceId)
-                    .onFailure { if (it !is DomainException.UserNotFoundException) navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it)) }
-                    .getOrNull()
-            }
+                    ?.takeIf { isWithinFreshnessWindow(it.createdAt) }
+
+            // 아두이노가 더 정확할 가능성이 높아 우선하지만(#218), 아두이노가 오프라인이라 최근
+            // 10분 내 값이 없으면 SmartThings(에어컨 내장 센서)의 최신 값으로 대체한다 - 이전엔
+            // 아두이노 기기가 "존재"하기만 하면 오래된 값이라도 그대로 붙잡고 있어서, 아두이노와
+            // 공기계가 둘 다 오프라인인데도 화면이 멈춰있는 것처럼 보였다.
+            val arduinoMetric = arduinoDevice?.let { fetchFreshMetric(it.deviceId) }
+            val smartThingsMetric = smartThingsDevice?.let { fetchFreshMetric(it.deviceId) }
+            val tempHumidityMetric = arduinoMetric ?: smartThingsMetric
+            val aerometerMetric = aerometerDevice?.let { fetchFreshMetric(it.deviceId) }
 
             val metric = if (tempHumidityMetric == null && aerometerMetric == null) {
                 null
@@ -181,6 +185,7 @@ class AdminHomeViewModel(
                     humidity = tempHumidityMetric?.humidity,
                     illuminance = aerometerMetric?.illuminance,
                     peopleCount = aerometerMetric?.peopleCount,
+                    createdAt = (tempHumidityMetric ?: aerometerMetric)!!.createdAt,
                 )
             }
 
@@ -253,6 +258,11 @@ class AdminHomeViewModel(
                     navController.emitEvent(AdminHomeEvent.ShowErrorSnackbar(it))
                 }
         }
+    }
+
+    private fun isWithinFreshnessWindow(createdAt: String): Boolean {
+        val createdInstant = LocalDateTime.parse(createdAt).toInstant(TimeZone.currentSystemDefault())
+        return (Clock.System.now() - createdInstant) <= METRIC_FRESHNESS_WINDOW
     }
 
     private fun Feedback.toFeedbackListItem(): FeedbackListItem =

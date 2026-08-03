@@ -5,4 +5,5 @@ data class Metric(
     val humidity: Double?,
     val illuminance: Int?,
     val peopleCount: Int?,
+    val createdAt: String,
 )
