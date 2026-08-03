@@ -107,6 +107,22 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // 릴리즈 서명키(composeApp/release.keystore)는 debug.keystore와 달리 git에 올리지 않음 -
+        // 분실 시 Play 콘솔에 이미 배포한 앱을 재배포할 수 없는 민감 키라 로컬/CI 시크릿으로만 관리.
+        // 로컬 개발자는 local.properties, CI는 환경변수(RELEASE_*)로 값을 주입.
+        val releaseStorePassword = (
+                localProperties.getProperty("RELEASE_STORE_PASSWORD")
+                    ?: providers.gradleProperty("RELEASE_STORE_PASSWORD").orNull
+                    ?: System.getenv("RELEASE_STORE_PASSWORD")
+                ).orEmpty().trim()
+        if (releaseStorePassword.isNotEmpty()) {
+            create("release") {
+                storeFile = file("release.keystore")
+                storePassword = releaseStorePassword
+                keyAlias = "reborn-release"
+                keyPassword = releaseStorePassword
+            }
+        }
     }
     defaultConfig {
         applicationId = "com.reborn"
@@ -128,6 +144,7 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     compileOptions {
