@@ -22,6 +22,7 @@ class MetricRepositoryImpl(
                     humidity = response.humidity,
                     illuminance = response.illuminance,
                     peopleCount = response.peopleCount,
+                    createdAt = response.createdAt,
                 )
             }
 }
