@@ -173,7 +173,11 @@ class AdminHomeViewModel(
             // 아두이노 기기가 "존재"하기만 하면 오래된 값이라도 그대로 붙잡고 있어서, 아두이노와
             // 공기계가 둘 다 오프라인인데도 화면이 멈춰있는 것처럼 보였다.
             val arduinoMetric = arduinoDevice?.let { fetchFreshMetric(it.deviceId) }
-            val smartThingsMetric = smartThingsDevice?.let { fetchFreshMetric(it.deviceId) }
+            val smartThingsMetric = if (arduinoMetric == null) {
+                smartThingsDevice?.let { fetchFreshMetric(it.deviceId) }
+            } else {
+                null
+            }
             val tempHumidityMetric = arduinoMetric ?: smartThingsMetric
             val aerometerMetric = aerometerDevice?.let { fetchFreshMetric(it.deviceId) }
 
@@ -262,7 +266,11 @@ class AdminHomeViewModel(
 
     private fun isWithinFreshnessWindow(createdAt: String): Boolean {
         val createdInstant = LocalDateTime.parse(createdAt).toInstant(TimeZone.currentSystemDefault())
-        return (Clock.System.now() - createdInstant) <= METRIC_FRESHNESS_WINDOW
+        val now = Clock.System.now()
+        // 서버/클라 시계 오차 등으로 createdAt이 미래 시각이면 now - createdInstant가 음수 Duration이
+        // 되어 "10분 이내" 조건을 그냥 통과해버린다(CodeRabbit 리뷰) - 미래 시각은 항상 신선하지 않은
+        // 것으로 취급해야 한다.
+        return createdInstant <= now && (now - createdInstant) <= METRIC_FRESHNESS_WINDOW
     }
 
     private fun Feedback.toFeedbackListItem(): FeedbackListItem =
