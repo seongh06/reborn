@@ -17,6 +17,7 @@ import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -292,6 +293,84 @@ class DeviceController(
         authentication: Authentication,
     ): ApiResponse<DeviceDto.AutoControlRuleResponse?> =
         ApiResponse.success(deviceService.getAutoControlRule(extractUserId(authentication), deviceId))
+
+    @Operation(
+        summary = "시간 기반 자동제어 규칙 생성",
+        description = "지정한 시각/요일에 전원·운전모드를 자동으로 반영하는 규칙을 만듭니다(#325). " +
+            "SmartThings 기기만 지원하며, 기기 하나에 여러 건 등록할 수 있습니다. 해당 장소의 ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "생성 성공"),
+        SwaggerApiResponse(responseCode = "400", description = "필수 필드 누락, 값 범위 오류 또는 SmartThings가 아닌 기기"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/{deviceId}/schedule")
+    fun createScheduleRule(
+        @PathVariable deviceId: String,
+        @RequestBody request: DeviceDto.ScheduleRuleRequest,
+        authentication: Authentication,
+    ): ApiResponse<DeviceDto.ScheduleRuleResponse> =
+        ApiResponse.success(deviceService.createScheduleRule(extractUserId(authentication), deviceId, request))
+
+    @Operation(
+        summary = "시간 기반 자동제어 규칙 목록 조회",
+        description = "기기 하나에 등록된 시간 기반 자동제어 규칙을 모두 조회합니다. 해당 장소의 ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "조회 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 기기"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{deviceId}/schedule")
+    fun getScheduleRules(
+        @PathVariable deviceId: String,
+        authentication: Authentication,
+    ): ApiResponse<DeviceDto.ScheduleRuleListResponse> =
+        ApiResponse.success(deviceService.getScheduleRules(extractUserId(authentication), deviceId))
+
+    @Operation(
+        summary = "시간 기반 자동제어 규칙 활성화/비활성화",
+        description = "규칙을 삭제하지 않고 켜고 끕니다. 해당 장소의 ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "변경 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 규칙"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/schedule/{ruleId}")
+    fun updateScheduleRule(
+        @PathVariable ruleId: Long,
+        @RequestBody request: DeviceDto.ScheduleRuleUpdateRequest,
+        authentication: Authentication,
+    ): ApiResponse<DeviceDto.ScheduleRuleResponse> =
+        ApiResponse.success(deviceService.updateScheduleRule(extractUserId(authentication), ruleId, request))
+
+    @Operation(
+        summary = "시간 기반 자동제어 규칙 삭제",
+        description = "규칙을 완전히 제거합니다. 해당 장소의 ADMIN 권한이 필요합니다.",
+    )
+    @ApiResponses(
+        SwaggerApiResponse(responseCode = "200", description = "삭제 성공"),
+        SwaggerApiResponse(responseCode = "401", description = "인증 실패"),
+        SwaggerApiResponse(responseCode = "403", description = "ADMIN 권한 없음"),
+        SwaggerApiResponse(responseCode = "404", description = "존재하지 않는 규칙"),
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/schedule/{ruleId}")
+    fun deleteScheduleRule(
+        @PathVariable ruleId: Long,
+        authentication: Authentication,
+    ): ApiResponse<Nothing> {
+        deviceService.deleteScheduleRule(extractUserId(authentication), ruleId)
+        return ApiResponse.success(null)
+    }
 
     private fun extractUserId(authentication: Authentication): Long =
         authentication.principal as? Long

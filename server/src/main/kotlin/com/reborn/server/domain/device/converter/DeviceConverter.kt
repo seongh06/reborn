@@ -2,6 +2,7 @@ package com.reborn.server.domain.device.converter
 
 import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.device.DeviceScheduleRule
 import com.reborn.server.domain.device.dto.DeviceDto
 
 object DeviceConverter {
@@ -24,6 +25,18 @@ object DeviceConverter {
             isOnline = isOnline,
             hasIrControl = entity.hasIrControl,
             createdAt = requireNotNull(entity.createdAt),
+        )
+
+    fun toScheduleRuleResponse(entity: DeviceScheduleRule): DeviceDto.ScheduleRuleResponse =
+        DeviceDto.ScheduleRuleResponse(
+            id = entity.id,
+            deviceId = entity.device.deviceKey,
+            hour = entity.hour,
+            minute = entity.minute,
+            daysOfWeek = entity.daysOfWeek.map { it.name },
+            isPowerOn = entity.isPowerOn,
+            operationMode = entity.operationMode,
+            enabled = entity.enabled,
         )
 
     fun toAutoControlRuleResponse(entity: AutoControlRule): DeviceDto.AutoControlRuleResponse =

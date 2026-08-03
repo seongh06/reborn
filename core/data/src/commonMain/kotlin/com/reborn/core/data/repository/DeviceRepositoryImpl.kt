@@ -8,6 +8,7 @@ import com.reborn.core.data.mapper.toPairedDevice
 import com.reborn.core.data.mapper.toPairingCode
 import com.reborn.core.data.mapper.toRegisteredDevice
 import com.reborn.core.data.mapper.toResult
+import com.reborn.core.data.mapper.toScheduleRule
 import com.reborn.core.domain.repository.DeviceRepository
 import com.reborn.core.model.AutoControlRule
 import com.reborn.core.model.Device
@@ -15,11 +16,14 @@ import com.reborn.core.model.DeviceStatus
 import com.reborn.core.model.PairedDevice
 import com.reborn.core.model.PairingCode
 import com.reborn.core.model.RegisteredDevice
+import com.reborn.core.model.ScheduleRule
 import com.reborn.core.network.datasource.DeviceDataSource
 import com.reborn.core.network.model.request.device.AutoControlRuleRequest
 import com.reborn.core.network.model.request.device.ControlDeviceRequest
 import com.reborn.core.network.model.request.device.PairingRequest
 import com.reborn.core.network.model.request.device.RegisterDeviceRequest
+import com.reborn.core.network.model.request.device.ScheduleRuleRequest
+import com.reborn.core.network.model.request.device.ScheduleRuleUpdateRequest
 
 class DeviceRepositoryImpl(
     private val remote: DeviceDataSource,
@@ -83,6 +87,26 @@ class DeviceRepositoryImpl(
 
     override suspend fun getAutoControlRule(deviceId: String): Result<AutoControlRule?> =
         remote.getAutoControlRule(deviceId).toResult { it?.toAutoControlRule() }
+
+    override suspend fun createScheduleRule(
+        deviceId: String,
+        hour: Int,
+        minute: Int,
+        daysOfWeek: List<String>,
+        isPowerOn: Boolean,
+        operationMode: String?,
+    ): Result<ScheduleRule> =
+        remote.createScheduleRule(deviceId, ScheduleRuleRequest(hour, minute, daysOfWeek, isPowerOn, operationMode))
+            .toResult { it.toScheduleRule() }
+
+    override suspend fun getScheduleRules(deviceId: String): Result<List<ScheduleRule>> =
+        remote.getScheduleRules(deviceId).toResult { response -> response.rules.map { it.toScheduleRule() } }
+
+    override suspend fun updateScheduleRuleEnabled(ruleId: Long, enabled: Boolean): Result<ScheduleRule> =
+        remote.updateScheduleRule(ruleId, ScheduleRuleUpdateRequest(enabled)).toResult { it.toScheduleRule() }
+
+    override suspend fun deleteScheduleRule(ruleId: Long): Result<Unit> =
+        remote.deleteScheduleRule(ruleId).toResult { }
 
     override suspend fun getLocalDeviceId(): String? = deviceLocal.getDeviceId()
 }

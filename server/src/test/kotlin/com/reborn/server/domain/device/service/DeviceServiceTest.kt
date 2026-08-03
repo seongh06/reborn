@@ -4,11 +4,13 @@ import com.reborn.server.domain.auth.OAuthProvider
 import com.reborn.server.domain.auth.User
 import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.device.DeviceScheduleRule
 import com.reborn.server.domain.device.DeviceSerial
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.device.repository.AutoControlRuleRepository
 import com.reborn.server.domain.device.repository.DeviceRepository
+import com.reborn.server.domain.device.repository.DeviceScheduleRuleRepository
 import com.reborn.server.domain.device.repository.DeviceSerialRepository
 import com.reborn.server.domain.metric.MetricLogRepository
 import com.reborn.server.domain.place.AccessLevel
@@ -62,6 +64,9 @@ class DeviceServiceTest {
     private lateinit var autoControlRuleRepository: AutoControlRuleRepository
 
     @Mock
+    private lateinit var deviceScheduleRuleRepository: DeviceScheduleRuleRepository
+
+    @Mock
     private lateinit var userPlaceMappingRepository: UserPlaceMappingRepository
 
     @Mock
@@ -94,6 +99,7 @@ class DeviceServiceTest {
             deviceRepository = deviceRepository,
             deviceSerialRepository = deviceSerialRepository,
             autoControlRuleRepository = autoControlRuleRepository,
+            deviceScheduleRuleRepository = deviceScheduleRuleRepository,
             userPlaceMappingRepository = userPlaceMappingRepository,
             redisUtil = redisUtil,
             smartThingsDeviceService = smartThingsDeviceService,
@@ -538,5 +544,122 @@ class DeviceServiceTest {
             .isInstanceOf(BusinessAlertException::class.java)
             .extracting("errorCode")
             .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `createScheduleRule - SmartThings 기기면 규칙을 저장한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val request = DeviceDto.ScheduleRuleRequest(
+            hour = 22, minute = 0, daysOfWeek = listOf("MONDAY", "TUESDAY"), isPowerOn = false,
+        )
+        given(deviceRepository.findByDeviceKey("ST001")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(deviceScheduleRuleRepository.save(any())).willAnswer { it.arguments[0] }
+
+        val response = deviceService.createScheduleRule(1L, "ST001", request)
+
+        assertThat(response.hour).isEqualTo(22)
+        assertThat(response.minute).isEqualTo(0)
+        assertThat(response.daysOfWeek).containsExactlyInAnyOrder("MONDAY", "TUESDAY")
+        assertThat(response.isPowerOn).isFalse()
+        verify(deviceScheduleRuleRepository).save(any())
+    }
+
+    @Test
+    fun `createScheduleRule - SmartThings가 아니면 예외가 발생한다`() {
+        val device = Device(place = place, deviceType = DeviceType.ARDUINO, deviceKey = "AR001", id = 10)
+        val request = DeviceDto.ScheduleRuleRequest(hour = 22, minute = 0, daysOfWeek = listOf("MONDAY"), isPowerOn = false)
+        given(deviceRepository.findByDeviceKey("AR001")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+
+        assertThatThrownBy { deviceService.createScheduleRule(1L, "AR001", request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `createScheduleRule - 요일이 비어있으면 예외가 발생한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val request = DeviceDto.ScheduleRuleRequest(hour = 22, minute = 0, daysOfWeek = emptyList(), isPowerOn = false)
+        given(deviceRepository.findByDeviceKey("ST001")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+
+        assertThatThrownBy { deviceService.createScheduleRule(1L, "ST001", request) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.INVALID_INPUT)
+    }
+
+    @Test
+    fun `getScheduleRules - 기기에 등록된 규칙 목록을 반환한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val rule = DeviceScheduleRule(
+            device = device, hour = 7, minute = 30, daysOfWeekCsv = "MONDAY", isPowerOn = true, id = 100,
+        )
+        given(deviceRepository.findByDeviceKey("ST001")).willReturn(device)
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+        given(deviceScheduleRuleRepository.findAllByDeviceId(10L)).willReturn(listOf(rule))
+
+        val response = deviceService.getScheduleRules(1L, "ST001")
+
+        assertThat(response.rules).hasSize(1)
+        assertThat(response.rules[0].hour).isEqualTo(7)
+    }
+
+    @Test
+    fun `updateScheduleRule - ADMIN이면 활성화 상태를 바꾼다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val rule = DeviceScheduleRule(
+            device = device, hour = 7, minute = 30, daysOfWeekCsv = "MONDAY", isPowerOn = true, id = 100,
+        )
+        given(deviceScheduleRuleRepository.findById(100L)).willReturn(Optional.of(rule))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+
+        val response = deviceService.updateScheduleRule(1L, 100L, DeviceDto.ScheduleRuleUpdateRequest(enabled = false))
+
+        assertThat(response.enabled).isFalse()
+    }
+
+    @Test
+    fun `updateScheduleRule - 존재하지 않는 규칙이면 예외가 발생한다`() {
+        given(deviceScheduleRuleRepository.findById(999L)).willReturn(Optional.empty())
+
+        assertThatThrownBy {
+            deviceService.updateScheduleRule(1L, 999L, DeviceDto.ScheduleRuleUpdateRequest(enabled = false))
+        }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.NOT_FOUND)
+    }
+
+    @Test
+    fun `deleteScheduleRule - ADMIN이면 규칙을 삭제한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val rule = DeviceScheduleRule(
+            device = device, hour = 7, minute = 30, daysOfWeekCsv = "MONDAY", isPowerOn = true, id = 100,
+        )
+        given(deviceScheduleRuleRepository.findById(100L)).willReturn(Optional.of(rule))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(adminMapping)
+
+        deviceService.deleteScheduleRule(1L, 100L)
+
+        verify(deviceScheduleRuleRepository).delete(rule)
+    }
+
+    @Test
+    fun `deleteScheduleRule - ADMIN 권한이 없으면 예외가 발생한다`() {
+        val device = Device(place = place, deviceType = DeviceType.SMART_THINGS, deviceKey = "ST001", id = 10)
+        val rule = DeviceScheduleRule(
+            device = device, hour = 7, minute = 30, daysOfWeekCsv = "MONDAY", isPowerOn = true, id = 100,
+        )
+        val userMapping = UserPlaceMapping(user = user, place = place, accessLevel = AccessLevel.USER)
+        given(deviceScheduleRuleRepository.findById(100L)).willReturn(Optional.of(rule))
+        given(userPlaceMappingRepository.findByUserIdAndPlaceId(1L, 501L)).willReturn(userMapping)
+
+        assertThatThrownBy { deviceService.deleteScheduleRule(1L, 100L) }
+            .isInstanceOf(BusinessAlertException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(CommonErrorCode.FORBIDDEN)
     }
 }

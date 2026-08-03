@@ -2,12 +2,14 @@ package com.reborn.server.domain.device.service
 
 import com.reborn.server.domain.device.AutoControlRule
 import com.reborn.server.domain.device.Device
+import com.reborn.server.domain.device.DeviceScheduleRule
 import com.reborn.server.domain.device.DeviceSerial
 import com.reborn.server.domain.device.DeviceType
 import com.reborn.server.domain.device.converter.DeviceConverter
 import com.reborn.server.domain.device.dto.DeviceDto
 import com.reborn.server.domain.device.repository.AutoControlRuleRepository
 import com.reborn.server.domain.device.repository.DeviceRepository
+import com.reborn.server.domain.device.repository.DeviceScheduleRuleRepository
 import com.reborn.server.domain.device.repository.DeviceSerialRepository
 import com.reborn.server.domain.metric.MetricLogRepository
 import com.reborn.server.domain.place.AccessLevel
@@ -25,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -35,6 +38,7 @@ class DeviceService(
     private val deviceRepository: DeviceRepository,
     private val deviceSerialRepository: DeviceSerialRepository,
     private val autoControlRuleRepository: AutoControlRuleRepository,
+    private val deviceScheduleRuleRepository: DeviceScheduleRuleRepository,
     private val userPlaceMappingRepository: UserPlaceMappingRepository,
     private val redisUtil: RedisUtil,
     private val smartThingsDeviceService: SmartThingsDeviceService,
@@ -294,6 +298,74 @@ class DeviceService(
 
         return autoControlRuleRepository.findByDeviceId(device.id)
             ?.let { DeviceConverter.toAutoControlRuleResponse(it) }
+    }
+
+    // 시간 기반 자동제어 규칙(#325) - SmartThings 기기만 대상. auto_control_rule(#190)과 달리 기기당
+    // 여러 건 등록 가능해서 upsert가 아니라 매번 새로 생성한다.
+    @Transactional
+    fun createScheduleRule(userId: Long, deviceKey: String, request: DeviceDto.ScheduleRuleRequest): DeviceDto.ScheduleRuleResponse {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        requireAdmin(userId, device.place.id)
+        if (device.deviceType != DeviceType.SMART_THINGS) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "시간 기반 자동제어는 SmartThings 기기만 지원합니다.")
+        }
+
+        val hour = request.hour ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "시(hour)는 필수입니다.")
+        val minute = request.minute ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "분(minute)은 필수입니다.")
+        val isPowerOn = request.isPowerOn ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "전원 상태는 필수입니다.")
+        if (hour !in 0..23 || minute !in 0..59) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "시/분 값이 올바르지 않습니다.")
+        }
+        val days = request.daysOfWeek.orEmpty().mapNotNull { name ->
+            runCatching { DayOfWeek.valueOf(name) }.getOrNull()
+        }.toSet()
+        if (days.isEmpty()) {
+            throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "요일을 하나 이상 선택해주세요.")
+        }
+
+        val rule = deviceScheduleRuleRepository.save(
+            DeviceScheduleRule(
+                device = device,
+                hour = hour,
+                minute = minute,
+                daysOfWeekCsv = DeviceScheduleRule.encodeDaysOfWeek(days),
+                isPowerOn = isPowerOn,
+                operationMode = request.operationMode,
+            ),
+        )
+        return DeviceConverter.toScheduleRuleResponse(rule)
+    }
+
+    fun getScheduleRules(userId: Long, deviceKey: String): DeviceDto.ScheduleRuleListResponse {
+        val device = deviceRepository.findByDeviceKey(deviceKey)
+            ?: throw BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 기기입니다.")
+        requireAdmin(userId, device.place.id)
+
+        val rules = deviceScheduleRuleRepository.findAllByDeviceId(device.id)
+            .map { DeviceConverter.toScheduleRuleResponse(it) }
+        return DeviceDto.ScheduleRuleListResponse(rules = rules)
+    }
+
+    @Transactional
+    fun updateScheduleRule(userId: Long, ruleId: Long, request: DeviceDto.ScheduleRuleUpdateRequest): DeviceDto.ScheduleRuleResponse {
+        val rule = deviceScheduleRuleRepository.findById(ruleId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 규칙입니다.")
+        }
+        requireAdmin(userId, rule.device.place.id)
+
+        val enabled = request.enabled ?: throw BusinessAlertException(CommonErrorCode.INVALID_INPUT, "enabled는 필수입니다.")
+        rule.enabled = enabled
+        return DeviceConverter.toScheduleRuleResponse(rule)
+    }
+
+    @Transactional
+    fun deleteScheduleRule(userId: Long, ruleId: Long) {
+        val rule = deviceScheduleRuleRepository.findById(ruleId).orElseThrow {
+            BusinessAlertException(CommonErrorCode.NOT_FOUND, "존재하지 않는 규칙입니다.")
+        }
+        requireAdmin(userId, rule.device.place.id)
+        deviceScheduleRuleRepository.delete(rule)
     }
 
     private fun requireAdmin(userId: Long, placeId: Long) {

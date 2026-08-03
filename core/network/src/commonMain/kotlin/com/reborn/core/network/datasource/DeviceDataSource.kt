@@ -12,6 +12,10 @@ import com.reborn.core.network.model.response.device.DeviceStatusResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
 import com.reborn.core.network.model.response.device.RegisterDeviceResponse
+import com.reborn.core.network.model.request.device.ScheduleRuleRequest
+import com.reborn.core.network.model.request.device.ScheduleRuleUpdateRequest
+import com.reborn.core.network.model.response.device.ScheduleRuleListResponse
+import com.reborn.core.network.model.response.device.ScheduleRuleResponse
 
 interface DeviceDataSource {
     suspend fun generatePairingCode(placeId: Long): ApiResponse<PairingCodeResponse>
@@ -40,4 +44,13 @@ interface DeviceDataSource {
 
     // 저장된 규칙이 없으면 서버가 data: null을 내려준다(#190)
     suspend fun getAutoControlRule(deviceId: String): ApiResponse<AutoControlRuleResponse?>
+
+    // 시간 기반 자동제어 규칙(#325) - SmartThings 기기만 대상, 기기당 여러 건 등록 가능.
+    suspend fun createScheduleRule(deviceId: String, request: ScheduleRuleRequest): ApiResponse<ScheduleRuleResponse>
+
+    suspend fun getScheduleRules(deviceId: String): ApiResponse<ScheduleRuleListResponse>
+
+    suspend fun updateScheduleRule(ruleId: Long, request: ScheduleRuleUpdateRequest): ApiResponse<ScheduleRuleResponse>
+
+    suspend fun deleteScheduleRule(ruleId: Long): ApiResponse<Unit?>
 }
