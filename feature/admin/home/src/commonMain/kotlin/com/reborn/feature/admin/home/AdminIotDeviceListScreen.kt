@@ -21,10 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.reborn.core.common.rememberToast
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
 import com.reborn.core.ui.RebornLoadingScreen
 import com.reborn.core.ui.component.DeviceListItem
+import com.reborn.core.ui.component.DeviceRemoveBottomSheet
 import com.reborn.core.ui.component.RebornScaffold
 import com.reborn.core.ui.component.SectionTitleComponent
 import com.reborn.core.ui.ext.rebornDefault
@@ -40,6 +42,7 @@ fun AdminIotDeviceListRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val showToast = rememberToast()
 
     LaunchedEffect(Unit) {
         viewModel.loadDevices()
@@ -48,6 +51,9 @@ fun AdminIotDeviceListRoute(
             when (event) {
                 is AdminIotDeviceListEvent.ShowErrorSnackbar -> {
                     snackbarHostState.showSnackbar(message = event.throwable.message ?: "에러가 발생했습니다.")
+                }
+                is AdminIotDeviceListEvent.DeviceRemoved -> {
+                    showToast("기기를 삭제했습니다.")
                 }
             }
         }
@@ -58,13 +64,23 @@ fun AdminIotDeviceListRoute(
     ) { _ ->
         when (val state = uiState) {
             is AdminIotDeviceListUiState.Loading -> RebornLoadingScreen()
-            is AdminIotDeviceListUiState.Loaded -> AdminIotDeviceListScreen(
-                devices = state.devices,
-                onBackClick = onBackClick,
-                onAddDeviceClick = onAddDeviceClick,
-                onPowerToggle = { deviceId -> viewModel.togglePower(deviceId) },
-                onDeviceClick = onDeviceClick
-            )
+            is AdminIotDeviceListUiState.Loaded -> {
+                AdminIotDeviceListScreen(
+                    devices = state.devices,
+                    onBackClick = onBackClick,
+                    onAddDeviceClick = onAddDeviceClick,
+                    onPowerToggle = { deviceId -> viewModel.togglePower(deviceId) },
+                    onDeviceClick = onDeviceClick,
+                    onDeviceLongClick = { deviceId -> viewModel.showRemoveSheet(deviceId) }
+                )
+                state.deviceToRemove?.let { device ->
+                    DeviceRemoveBottomSheet(
+                        deviceName = device.name,
+                        onRemove = { viewModel.removeDevice(device.id) },
+                        onDismiss = { viewModel.dismissRemoveSheet() }
+                    )
+                }
+            }
         }
     }
 }
@@ -75,7 +91,8 @@ fun AdminIotDeviceListScreen(
     onBackClick: () -> Unit,
     onPowerToggle: (String) -> Unit,
     onDeviceClick: (String) -> Unit = {},
-    onAddDeviceClick: () -> Unit = {}
+    onAddDeviceClick: () -> Unit = {},
+    onDeviceLongClick: (String) -> Unit = {}
 ) {
     val groupedDevices = devices.groupBy { it.place }
 
@@ -122,7 +139,8 @@ fun AdminIotDeviceListScreen(
                                         isPowerOn = device.isPowerOn,
                                         deviceType = device.deviceType,
                                         onPowerToggle = { onPowerToggle(device.id) },
-                                        onClick = { onDeviceClick(device.id) }
+                                        onClick = { onDeviceClick(device.id) },
+                                        onLongClick = { onDeviceLongClick(device.id) }
                                     )
                                 }
                             }

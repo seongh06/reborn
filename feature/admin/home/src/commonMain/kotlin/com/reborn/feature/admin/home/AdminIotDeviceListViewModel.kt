@@ -3,6 +3,7 @@ package com.reborn.feature.admin.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
+import com.reborn.core.domain.usecase.DeleteDeviceUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetPlaceListUseCase
 import com.reborn.core.ui.component.DeviceType
@@ -18,17 +19,23 @@ import kotlinx.coroutines.launch
 
 sealed interface AdminIotDeviceListUiState {
     data object Loading : AdminIotDeviceListUiState
-    data class Loaded(val devices: List<IoTDeviceItem> = emptyList()) : AdminIotDeviceListUiState
+    data class Loaded(
+        val devices: List<IoTDeviceItem> = emptyList(),
+        // 롱클릭으로 삭제 바텀시트를 띄운 대상 기기(#327) - null이면 바텀시트 숨김.
+        val deviceToRemove: IoTDeviceItem? = null,
+    ) : AdminIotDeviceListUiState
 }
 
 sealed class AdminIotDeviceListEvent {
     data class ShowErrorSnackbar(val throwable: Throwable) : AdminIotDeviceListEvent()
+    data object DeviceRemoved : AdminIotDeviceListEvent()
 }
 
 class AdminIotDeviceListViewModel(
     private val getPlaceListUseCase: GetPlaceListUseCase,
     private val getDeviceListUseCase: GetDeviceListUseCase,
     private val controlDeviceUseCase: ControlDeviceUseCase,
+    private val deleteDeviceUseCase: DeleteDeviceUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AdminIotDeviceListUiState>(AdminIotDeviceListUiState.Loading)
@@ -38,6 +45,11 @@ class AdminIotDeviceListViewModel(
     val event = _event.asSharedFlow()
 
     private var devices: List<IoTDeviceItem> = emptyList()
+    private var deviceToRemove: IoTDeviceItem? = null
+
+    private fun emitLoaded() {
+        _uiState.value = AdminIotDeviceListUiState.Loaded(devices, deviceToRemove)
+    }
 
     // 기기 상세(설정 > IoT 기기 목록)는 "지금 선택된 룸"만 보여주는 화면이 아니라 관리자가 가진
     // 모든 룸의 기기를 한 번에 보여줘야 해서(#166, 피그마 요구사항) 첫 장소로 고정하던 이전 로직을
@@ -55,7 +67,9 @@ class AdminIotDeviceListViewModel(
                 if (placeListResult.isSuccess) {
                     _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(IllegalStateException("등록된 장소가 없습니다.")))
                 }
-                _uiState.value = AdminIotDeviceListUiState.Loaded(emptyList())
+                devices = emptyList()
+                deviceToRemove = null
+                emitLoaded()
                 return@launch
             }
 
@@ -80,7 +94,8 @@ class AdminIotDeviceListViewModel(
                     )
                 }
             }
-            _uiState.value = AdminIotDeviceListUiState.Loaded(devices)
+            deviceToRemove = null
+            emitLoaded()
         }
     }
 
@@ -100,7 +115,7 @@ class AdminIotDeviceListViewModel(
         devices = devices.map { device ->
             if (device.id == deviceId) device.copy(isPowerOn = nextPowerOn) else device
         }
-        _uiState.value = AdminIotDeviceListUiState.Loaded(devices)
+        emitLoaded()
 
         viewModelScope.launch {
             controlDeviceUseCase(deviceId = deviceId, isPowerOn = nextPowerOn)
@@ -108,7 +123,35 @@ class AdminIotDeviceListViewModel(
                     devices = devices.map { device ->
                         if (device.id == deviceId) device.copy(isPowerOn = target.isPowerOn) else device
                     }
-                    _uiState.value = AdminIotDeviceListUiState.Loaded(devices)
+                    emitLoaded()
+                    _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(it))
+                }
+        }
+    }
+
+    // 기기 리스트 롱클릭(#327) - 삭제 바텀시트를 띄운다.
+    fun showRemoveSheet(deviceId: String) {
+        deviceToRemove = devices.find { it.id == deviceId } ?: return
+        emitLoaded()
+    }
+
+    fun dismissRemoveSheet() {
+        deviceToRemove = null
+        emitLoaded()
+    }
+
+    fun removeDevice(deviceId: String) {
+        viewModelScope.launch {
+            deleteDeviceUseCase(deviceId)
+                .onSuccess {
+                    devices = devices.filterNot { it.id == deviceId }
+                    deviceToRemove = null
+                    emitLoaded()
+                    _event.emit(AdminIotDeviceListEvent.DeviceRemoved)
+                }
+                .onFailure {
+                    deviceToRemove = null
+                    emitLoaded()
                     _event.emit(AdminIotDeviceListEvent.ShowErrorSnackbar(it))
                 }
         }
