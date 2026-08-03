@@ -152,6 +152,7 @@ class AdminAdjustViewModel(
                             isOnline = device.isOnline,
                             deviceType = resolveDeviceType(device.deviceType, device.category),
                             serverDeviceType = device.deviceType,
+                            hasIrControl = device.hasIrControl,
                         )
                     }
                     // 이 화면(Adjust 목록)은 바텀탭에서 빠져서 실제로는 항상 특정 기기(deviceId)로만

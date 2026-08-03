@@ -67,6 +67,9 @@ fun AdminDeviceDetailScreen(
 ) {
     val deviceType = state.device.deviceType
     val isSmartThings = state.device.serverDeviceType == "SMART_THINGS"
+    // IR 송신 모듈이 물려있는 아두이노(#288/#325)는 SmartThings와 별개 경로지만 전원/희망온도만은
+    // 원격 제어에서 똑같이 노출한다 - 운전모드/바람세기는 IR MVP 어휘에 대응 신호가 없어 그대로 숨김.
+    val isIrArduino = state.device.serverDeviceType == "ARDUINO" && state.device.hasIrControl
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var tabContentRect by remember { mutableStateOf<Rect?>(null) }
 
@@ -87,12 +90,13 @@ fun AdminDeviceDetailScreen(
     var isPowerOn by remember(state.deviceId, status) { mutableStateOf(initialPowerOn) }
 
     // 이 기기가 실제로 지원하는 컨트롤만 보여준다(#221) - SmartThings 조회 결과가 아직 없으면(로딩 중)
-    // 우선 다 보여주고, 로드 완료 후 null인 필드는 화면에서 숨긴다. SmartThings가 아니면 전원만 노출.
+    // 우선 다 보여주고, 로드 완료 후 null인 필드는 화면에서 숨긴다. IR 아두이노는 조회 자체가 없어
+    // (status는 항상 null) 전원과 함께 희망온도까지 노출 - 운전모드/바람세기는 여전히 SmartThings 전용.
     val supportsOperationMode = isSmartThings && (status == null || status.operationMode != null)
     val supportsWindSpeed = isSmartThings && (status == null || status.windSpeed != null)
-    val supportsTemperature = isSmartThings && (status == null || status.temperature != null)
+    val supportsTemperature = (isSmartThings || isIrArduino) && (status == null || status.temperature != null)
 
-    val isChanged = if (isSmartThings) {
+    val isChanged = if (isSmartThings || isIrArduino) {
         (supportsTemperature && temperature != initialTemperature) ||
             (supportsOperationMode && operationMode != initialOperationMode) ||
             (supportsWindSpeed && windSpeed != initialWindSpeed) ||
@@ -104,7 +108,7 @@ fun AdminDeviceDetailScreen(
     // 서버에서 규칙을 불러오기 전(null)에는 화면 프리셋 기본값을 보여주다가, 로드/저장 완료 시
     // state.autoControlState가 갱신되면 편집 기준선도 함께 새로 잡는다(#190).
     val initialAutoControlState = remember(state.autoControlState) {
-        state.autoControlState ?: defaultAutoControlState(deviceType)
+        state.autoControlState ?: defaultAutoControlState(deviceType, state.device.hasIrControl)
     }
     var autoControlState by remember(state.autoControlState) { mutableStateOf(initialAutoControlState) }
 

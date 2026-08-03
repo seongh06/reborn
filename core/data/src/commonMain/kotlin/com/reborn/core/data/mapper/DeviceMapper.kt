@@ -27,6 +27,7 @@ fun DeviceItemResponse.toDevice(): Device =
         isOnline = isOnline,
         createdAt = createdAt,
         category = category,
+        hasIrControl = hasIrControl,
     )
 
 fun RegisterDeviceResponse.toRegisteredDevice(): RegisteredDevice =

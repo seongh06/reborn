@@ -74,10 +74,12 @@ fun AutoControlUiState.applySimpleAction(field: SimpleAutoControlField, action: 
     }
 
 // 처음 진입 시(서버에 저장된 규칙이 없을 때) 보여줄 기본 액션 문구 - 에어컨은 기존 프리셋 그대로,
-// 그 외 기기는 "냉방 시작" 같은 에어컨 전용 문구 대신 켜기/끄기로 초기화한다.
-fun defaultAutoControlState(deviceType: DeviceType): AutoControlUiState =
-    if (deviceType == DeviceType.AIR_CONDITIONER) {
-        AutoControlUiState()
-    } else {
-        AutoControlUiState(temperatureHighAction = "끄기", temperatureLowAction = "켜기")
+// 그 외 기기는 "냉방 시작" 같은 에어컨 전용 문구 대신 켜기/끄기로 초기화한다. IR 아두이노(#325)는
+// deviceType이 ARDUINO로 고정돼(AIR_CONDITIONER가 아님) 일반 "그 외 기기" 분기를 타지만, 실제로는
+// 에어컨이라 온도가 높으면 켜고 낮으면 꺼야 하는 반대 방향 - hasIrControl로 별도 기본값을 준다.
+fun defaultAutoControlState(deviceType: DeviceType, hasIrControl: Boolean = false): AutoControlUiState =
+    when {
+        deviceType == DeviceType.AIR_CONDITIONER -> AutoControlUiState()
+        hasIrControl -> AutoControlUiState(temperatureHighAction = "켜기", temperatureLowAction = "끄기")
+        else -> AutoControlUiState(temperatureHighAction = "끄기", temperatureLowAction = "켜기")
     }
