@@ -20,6 +20,9 @@ data class Device(
     // 아이콘 구분용(LAMP/PLUG/TV/AIR_CONDITIONER/AIR_PURIFIER/VENTILATOR/OTHER) - SmartThings만 값이 있을 수 있고,
     // Arduino/AI스피커/공기계는 항상 null(UI에서 OTHER로 처리)
     val category: String? = null,
+    // ARDUINO에 IR 송신 모듈이 실제로 물려있는지(#288) - true면 원격 제어에서 전원/희망온도 조절이
+    // 가능하고, 자동 제어의 온도 조건도 실행 대상이 된다. SmartThings/AEROMETER/AI_SPEAKER는 항상 false.
+    val hasIrControl: Boolean = false,
 )
 
 // 필드가 null이면 이 기기가 그 컨트롤을 지원하지 않는다는 뜻(#221) - SMART_THINGS 기기에만 의미 있음.

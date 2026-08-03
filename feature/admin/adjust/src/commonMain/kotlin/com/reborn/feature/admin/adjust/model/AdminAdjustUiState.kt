@@ -55,6 +55,9 @@ sealed interface AdminAdjustUiState {
         // UI 카테고리(deviceType)와 별개로 실제 서버 기기 유형("ARDUINO"/"SMART_THINGS"/"AI_SPEAKER") -
         // 현재 상태 조회(#221)는 SMART_THINGS에만 의미가 있어 이 값으로 호출 여부를 가른다.
         val serverDeviceType: String = "",
+        // ARDUINO에 IR 송신 모듈이 물려있는지(#288) - true면 원격 제어에서 전원/희망온도 조절이
+        // 가능하다(SmartThings와 별개 경로).
+        val hasIrControl: Boolean = false,
     )
 }
 
