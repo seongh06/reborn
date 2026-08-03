@@ -1,7 +1,9 @@
 package com.reborn.core.ui.component
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,7 @@ val DeviceType.icon
         DeviceType.OTHER -> Res.drawable.ic_device
     }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DeviceListItem(
     place: String,
@@ -70,7 +73,10 @@ fun DeviceListItem(
     isPowerOn: Boolean,
     deviceType: DeviceType = DeviceType.OTHER,
     onPowerToggle: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    // 기기 리스트(#327)에서 롱클릭 시 삭제 바텀시트를 띄우기 위한 훅 - 다른 화면(Home 대시보드,
+    // Adjust)은 안 넘기면 기존과 동일하게 동작하도록 기본값 없음(no-op).
+    onLongClick: () -> Unit = {}
 ) {
     // 배경이 isPowerOn 기준으로 어둡게/밝게 반전되므로(#235 CodeRabbit 리뷰), 아이콘/이름
     // 색상도 같은 기준으로 반전해야 켜짐(어두운 배경) 상태에서 글자가 묻히지 않는다.
@@ -90,7 +96,7 @@ fun DeviceListItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(if (isPowerOn) RebornTheme.color.grayScale500 else RebornTheme.color.grayScale200)
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
