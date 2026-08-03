@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.reborn.core.common.KeepScreenOn
 import com.reborn.core.common.rememberToast
 import com.reborn.core.designsystem.component.RebornTopAppBar
 import com.reborn.core.designsystem.theme.RebornTheme
@@ -35,6 +36,10 @@ fun AeromterRoute(
     val isSaveImageEnabled by viewModel.isSaveImageEnabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val showToast = rememberToast()
+
+    // 공기계는 센서를 계속 수집해야 하는 전용 기기라 이 화면(수집/설정 전체)에 있는 동안 화면이
+    // 자동으로 꺼지지 않게 한다 - 동영상 재생 중 화면 유지와 동일한 개념.
+    KeepScreenOn()
 
     LaunchedEffect(Unit) {
         launch {
