@@ -13,11 +13,16 @@ import com.reborn.core.network.model.response.device.DeviceStatusResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
 import com.reborn.core.network.model.response.device.RegisterDeviceResponse
+import com.reborn.core.network.model.request.device.ScheduleRuleRequest
+import com.reborn.core.network.model.request.device.ScheduleRuleUpdateRequest
+import com.reborn.core.network.model.response.device.ScheduleRuleListResponse
+import com.reborn.core.network.model.response.device.ScheduleRuleResponse
 import com.reborn.core.network.util.asApiResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
@@ -79,5 +84,31 @@ class DeviceDataSourceImpl(
 
     override suspend fun getAutoControlRule(deviceId: String): ApiResponse<AutoControlRuleResponse?> = runCatching {
         httpClient.get("/api/device/$deviceId/auto-control")
+    }.asApiResponse()
+
+    override suspend fun createScheduleRule(
+        deviceId: String,
+        request: ScheduleRuleRequest
+    ): ApiResponse<ScheduleRuleResponse> = runCatching {
+        httpClient.post("/api/device/$deviceId/schedule") {
+            setBody(request)
+        }
+    }.asApiResponse()
+
+    override suspend fun getScheduleRules(deviceId: String): ApiResponse<ScheduleRuleListResponse> = runCatching {
+        httpClient.get("/api/device/$deviceId/schedule")
+    }.asApiResponse()
+
+    override suspend fun updateScheduleRule(
+        ruleId: Long,
+        request: ScheduleRuleUpdateRequest
+    ): ApiResponse<ScheduleRuleResponse> = runCatching {
+        httpClient.patch("/api/device/schedule/$ruleId") {
+            setBody(request)
+        }
+    }.asApiResponse()
+
+    override suspend fun deleteScheduleRule(ruleId: Long): ApiResponse<Unit?> = runCatching {
+        httpClient.delete("/api/device/schedule/$ruleId")
     }.asApiResponse()
 }

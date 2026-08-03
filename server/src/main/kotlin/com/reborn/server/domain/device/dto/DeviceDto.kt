@@ -116,6 +116,35 @@ class DeviceDto {
         val autoOffMinutes: String? = null,
     )
 
+    // 시간 기반 자동제어 규칙(#325) - SmartThings 기기만 대상. daysOfWeek는 java.time.DayOfWeek
+    // 이름("MONDAY" 등) 문자열 목록.
+    data class ScheduleRuleRequest(
+        @field:NotNull val hour: Int? = null,
+        @field:NotNull val minute: Int? = null,
+        val daysOfWeek: List<String>? = null,
+        @field:NotNull val isPowerOn: Boolean? = null,
+        val operationMode: OperationMode? = null,
+    )
+
+    data class ScheduleRuleResponse(
+        val id: Long,
+        val deviceId: String,
+        val hour: Int,
+        val minute: Int,
+        val daysOfWeek: List<String>,
+        val isPowerOn: Boolean,
+        val operationMode: OperationMode?,
+        val enabled: Boolean,
+    )
+
+    data class ScheduleRuleListResponse(
+        val rules: List<ScheduleRuleResponse>,
+    )
+
+    data class ScheduleRuleUpdateRequest(
+        @field:NotNull val enabled: Boolean? = null,
+    )
+
     data class AutoControlRuleResponse(
         val discomfortThreshold: String?,
         val discomfortAction: String?,

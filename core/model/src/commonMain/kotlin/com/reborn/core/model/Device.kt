@@ -54,3 +54,16 @@ data class AutoControlRule(
     val isAutoOffEnabled: Boolean,
     val autoOffMinutes: String?,
 )
+
+// 시간 기반 자동제어 규칙(#325) - SmartThings 기기만 대상. daysOfWeek는 java.time.DayOfWeek 이름
+// ("MONDAY" 등) 문자열 목록, operationMode는 DeviceStatus와 동일하게 서버 enum 이름 그대로.
+data class ScheduleRule(
+    val id: Long,
+    val deviceId: String,
+    val hour: Int,
+    val minute: Int,
+    val daysOfWeek: List<String>,
+    val isPowerOn: Boolean,
+    val operationMode: String?,
+    val enabled: Boolean,
+)

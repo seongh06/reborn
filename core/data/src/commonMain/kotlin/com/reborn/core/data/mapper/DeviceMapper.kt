@@ -6,12 +6,14 @@ import com.reborn.core.model.DeviceStatus
 import com.reborn.core.model.PairedDevice
 import com.reborn.core.model.PairingCode
 import com.reborn.core.model.RegisteredDevice
+import com.reborn.core.model.ScheduleRule
 import com.reborn.core.network.model.response.device.AutoControlRuleResponse
 import com.reborn.core.network.model.response.device.DeviceItemResponse
 import com.reborn.core.network.model.response.device.DeviceStatusResponse
 import com.reborn.core.network.model.response.device.PairingCodeResponse
 import com.reborn.core.network.model.response.device.PairingResponse
 import com.reborn.core.network.model.response.device.RegisterDeviceResponse
+import com.reborn.core.network.model.response.device.ScheduleRuleResponse
 
 fun PairingCodeResponse.toPairingCode(): PairingCode =
     PairingCode(code = pairingCode, expiresAt = expiresAt)
@@ -62,4 +64,16 @@ fun AutoControlRuleResponse.toAutoControlRule(): AutoControlRule =
         occupancyAction = occupancyAction,
         isAutoOffEnabled = isAutoOffEnabled,
         autoOffMinutes = autoOffMinutes,
+    )
+
+fun ScheduleRuleResponse.toScheduleRule(): ScheduleRule =
+    ScheduleRule(
+        id = id,
+        deviceId = deviceId,
+        hour = hour,
+        minute = minute,
+        daysOfWeek = daysOfWeek,
+        isPowerOn = isPowerOn,
+        operationMode = operationMode,
+        enabled = enabled,
     )

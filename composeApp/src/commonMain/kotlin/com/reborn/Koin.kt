@@ -6,8 +6,10 @@ import com.reborn.core.datastore.di.dataStoreModule
 import com.reborn.core.datastore.di.platformDataStoreModule
 import com.reborn.core.domain.usecase.ConfigureDeviceWifiUseCase
 import com.reborn.core.domain.usecase.ControlDeviceUseCase
+import com.reborn.core.domain.usecase.CreateScheduleRuleUseCase
 import com.reborn.core.domain.usecase.DeleteDeviceUseCase
 import com.reborn.core.domain.usecase.DeletePlaceUseCase
+import com.reborn.core.domain.usecase.DeleteScheduleRuleUseCase
 import com.reborn.core.domain.usecase.LeavePlaceUseCase
 import com.reborn.core.domain.usecase.TransferPlaceOwnerUseCase
 import com.reborn.core.domain.usecase.GenerateAdminCodeUseCase
@@ -19,6 +21,7 @@ import com.reborn.core.domain.usecase.GetGoogleSheetsAuthorizeUrlUseCase
 import com.reborn.core.domain.usecase.GetCurrentMetricUseCase
 import com.reborn.core.domain.usecase.GetDeviceListUseCase
 import com.reborn.core.domain.usecase.GetDeviceStatusUseCase
+import com.reborn.core.domain.usecase.GetScheduleRulesUseCase
 import com.reborn.core.domain.usecase.GetFeedbackListUseCase
 import com.reborn.core.domain.usecase.GetLocalDeviceIdUseCase
 import com.reborn.core.domain.usecase.GetPlaceAdminsUseCase
@@ -44,6 +47,7 @@ import com.reborn.core.domain.usecase.ResolveSelectedPlaceUseCase
 import com.reborn.core.domain.usecase.SaveAutoControlRuleUseCase
 import com.reborn.core.domain.usecase.SelectPlaceUseCase
 import com.reborn.core.domain.usecase.SendMetricUseCase
+import com.reborn.core.domain.usecase.UpdateScheduleRuleEnabledUseCase
 import com.reborn.core.domain.usecase.MarkTutorialStepSeenUseCase
 import com.reborn.core.domain.usecase.UpdateFcmTokenUseCase
 import com.reborn.core.domain.usecase.UpdateFeedbackStatusUseCase
@@ -114,6 +118,10 @@ val appDependenciesModule = module {
     factory { DeleteDeviceUseCase(get()) }
     factory { SaveAutoControlRuleUseCase(get()) }
     factory { GetAutoControlRuleUseCase(get()) }
+    factory { CreateScheduleRuleUseCase(get()) }
+    factory { GetScheduleRulesUseCase(get()) }
+    factory { UpdateScheduleRuleEnabledUseCase(get()) }
+    factory { DeleteScheduleRuleUseCase(get()) }
     factory { GetFeedbackListUseCase(get()) }
     factory { UpdateFeedbackStatusUseCase(get()) }
     factory { MarkFeedbackReadUseCase(get()) }
