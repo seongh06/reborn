@@ -72,3 +72,30 @@ jobs:
           path: composeApp/build/outputs/apk/debug/composeApp-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Restore release keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          : "${RELEASE_KEYSTORE_BASE64:?RELEASE_KEYSTORE_BASE64 secret is required}"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > composeApp/release.keystore
+
+      - name: Build release APK
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KAKAO_APP_KEY: ${{ secrets.KAKAO_APP_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          BASE_URL: https://www.reborn-energy.com
+        run: |
+          set -euo pipefail
+          : "${RELEASE_STORE_PASSWORD:?RELEASE_STORE_PASSWORD secret is required}"
+          ./gradlew :composeApp:assembleRelease
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reborn-release-apk
+          path: composeApp/build/outputs/apk/release/composeApp-release.apk
+          if-no-files-found: error
+          retention-days: 30

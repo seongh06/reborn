@@ -34,6 +34,8 @@ docker-compose.override.yml
 google-services.json
 GoogleService-Info.plist
 composeApp/debug.keystore
+composeApp/release.keystore
+*.jks
 
 # ── IDE ───────────────────────────────
 .idea/

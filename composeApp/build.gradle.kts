@@ -107,6 +107,25 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // 릴리즈 서명키(composeApp/release.keystore)는 debug.keystore와 달리 git에 올리지 않음 -
+        // 분실 시 Play 콘솔에 이미 배포한 앱을 재배포할 수 없는 민감 키라 로컬/CI 시크릿으로만 관리.
+        // 로컬 개발자는 local.properties, CI는 환경변수(RELEASE_*)로 값을 주입.
+        val releaseStorePassword = (
+                localProperties.getProperty("RELEASE_STORE_PASSWORD")
+                    ?: providers.gradleProperty("RELEASE_STORE_PASSWORD").orNull
+                    ?: System.getenv("RELEASE_STORE_PASSWORD")
+                ).orEmpty()
+        // 존재 여부만 trim해서 판단하고, SigningConfig에는 원문을 그대로 넘긴다 - 비밀번호 자체를
+        // trim하면 공백이 비밀번호의 일부인 경우 다른 자격증명으로 서명이 조용히 성공해버린다
+        // (CodeRabbit 리뷰, PR #324).
+        if (releaseStorePassword.trim().isNotEmpty()) {
+            create("release") {
+                storeFile = file("release.keystore")
+                storePassword = releaseStorePassword
+                keyAlias = "reborn-release"
+                keyPassword = releaseStorePassword
+            }
+        }
     }
     defaultConfig {
         applicationId = "com.reborn"
@@ -128,6 +147,7 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     compileOptions {
@@ -142,6 +162,19 @@ android {
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
+// release 서명이 없으면 AGP는 조용히 서명 안 된 산출물을 만들고 넘어간다(assemble 자체는
+// 성공) - RELEASE_STORE_PASSWORD 미설정을 빌드 실패가 아니라 "그냥 안 된 채로 성공"으로
+// 놔두면 CI/로컬에서 미서명 release APK를 못 알아채고 지나칠 수 있어 release 관련 태스크
+// 실행 시점에만 명시적으로 막는다(CodeRabbit 리뷰, PR #324) - debug 빌드는 영향 없음.
+tasks.matching { it.name.contains("Release") }.configureEach {
+    doFirst {
+        check(android.signingConfigs.findByName("release") != null) {
+            "RELEASE_STORE_PASSWORD가 설정되지 않아 release 서명을 할 수 없습니다. " +
+                "local.properties 또는 환경변수로 설정해주세요."
+        }
     }
 }
 
