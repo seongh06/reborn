@@ -22,6 +22,12 @@
 //    (참고로 그 왜곡의 절반은 별개 버그였음 - streamPlayback()의 TLS 스트리밍 읽기가 부분
 //    수신을 완성된 청크로 오인해 샘플 경계가 밀리던 문제도 같이 있었다. 둘 다 고쳐야 깨끗함.)
 //
+// ⚠️ RX(마이크)도 같은 하드웨어 workaround의 영향을 받는 것으로 추정된다(#337) - MONO로 열면
+//    실제 녹음이 완전 무음(샘플 전부 0)으로만 나오는 게 실기기(음성 피드백 2회, 서버 로그+WAV
+//    분석으로 확인)에서 재현됨. TX와 동일하게 STEREO로 명시 + fromStereoInterleaved()로 왼쪽
+//    채널만 뽑아 쓰도록 고쳤으나, 이 수정 자체는 아직 실기기 미검증 - 다음 업로드 때 반드시
+//    실제 목소리가 녹음되는지(무음 여부) 확인할 것.
+//
 // 서버 등록 선행 필요(#147): 프로비저닝 포털에 입력하는 값은 실물에 부착된 8자리 시리얼 번호이며,
 // 관리자 앱에서 그 시리얼로 기기를 등록해야 POST /api/feedback/voice 가 성공합니다.
 //
@@ -257,7 +263,26 @@ void i2sInstall() {
 }
 
 void i2sSetRxRate(uint32_t rate) {
-  i2s.configureRX(rate, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO);
+  // TX와 동일한 이유(SOC_I2S_HW_VERSION_1 workaround, #276 참고 - 파일 상단 주석) - MONO로
+  // 요청하면 이 칩은 내부적으로 BOTH(stereo) 슬롯으로 강제 전환하는데, "라이브러리가 투명하게
+  // mono로 되돌려준다"는 가정이 TX에서도 틀렸던 것과 똑같은 검증 안 된 가정이었다. 실제로 녹음된
+  // 파일이 바이트 수는 정확한데 샘플이 전부 0인 완전 무음으로 나오는 문제(#337, Gemini가 두 번
+  // 다 "인식 실패"로 응답한 원인)가 이 가정과 정확히 들어맞아 STEREO로 명시하고
+  // fromStereoInterleaved()로 한 채널만 뽑아 쓰도록 변경했다.
+  // ⚠️ 실기기로 검증 못 한 수정 - 다음 업로드 시 반드시 실제 녹음이 무음에서 벗어났는지 확인할 것.
+  i2s.configureRX(rate, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO);
+}
+
+// stereo(L/R) 인터리브 16비트 PCM에서 왼쪽 채널만 뽑아 mono로 변환 - toStereoInterleaved()의
+// 반대 방향. 반환값: monoOut에 쓴 바이트 수.
+size_t fromStereoInterleaved(const uint8_t *stereoIn, size_t stereoBytes, uint8_t *monoOut) {
+  size_t sampleCount = stereoBytes / 4; // 채널 2개 * 2바이트
+  const int16_t *stereoSamples = reinterpret_cast<const int16_t *>(stereoIn);
+  int16_t *monoSamples = reinterpret_cast<int16_t *>(monoOut);
+  for (size_t i = 0; i < sampleCount; i++) {
+    monoSamples[i] = stereoSamples[i * 2]; // 왼쪽 채널
+  }
+  return sampleCount * 2;
 }
 
 void i2sSetTxRate(uint32_t rate) {
@@ -490,8 +515,15 @@ vepuoxtGzi4CZ68zJpiq1UvSqTbFJjtbD4seiMHl
 
 // ===== 온라인 하트비트(#276) =====
 // WiFi 연결 성공 직후 1회 호출 - 관리자 앱이 "등록만 되고 실제로 한 번도 연결에 성공한 적
-// 없는 기기"를 구분해서 보여줄 수 있도록 서버에 알린다. 응답은 확인하지 않는다(fire-and-forget) -
-// 이게 실패해도 음성 피드백을 한 번이라도 성공하면 서버가 그때도 온라인 처리해준다.
+// 없는 기기"를 구분해서 보여줄 수 있도록 서버에 알린다. 음성 피드백을 한 번이라도 성공하면
+// 서버가 그때도 온라인 처리해주므로 이 호출 자체가 실패해도 치명적이진 않다.
+//
+// ⚠️ 실기기에서 이 함수만 유독 서버에 도달을 못 해서(#337, 실제로는 정상 접속인데 is_online이
+// 계속 0으로 남는 버그로 발견됨) 응답을 한 줄도 안 읽고 바로 client.stop()하던 이전 버전을
+// 고쳤다 - ESP32 WiFiClientSecure는 요청을 print()로 쓴 직후 바로 닫으면 TLS 레코드가 실제로
+// 나가기 전에 연결이 끊겨 서버에 도달하지 못하는 경우가 흔하다. recordUploadAndPlay()가
+// 응답을 끝까지 읽고 나서야 stop()하는 것과 동일한 이유로, 여기도 응답 상태줄 최소 1줄은
+// 받은 뒤에 닫는다(fire-and-forget이라 그 이후 내용까지 파싱할 필요는 없음).
 void notifyOnline() {
   WiFiClientSecure client;
   client.setCACert(SERVER_ROOT_CA_PEM);
@@ -504,8 +536,24 @@ void notifyOnline() {
   client.printf("X-Device-Id: %s\r\n", g_deviceId.c_str());
   client.print("Content-Length: 0\r\n");
   client.print("Connection: close\r\n\r\n");
+
+  unsigned long deadline = millis() + 5000UL;
+  String statusLine = "";
+  while (client.connected() && millis() < deadline) {
+    if (client.available()) {
+      statusLine = client.readStringUntil('\n');
+      break;
+    }
+    delay(5);
+  }
   client.stop();
-  Serial.println("온라인 알림 전송 완료");
+
+  if (statusLine.indexOf(" 200 ") >= 0) {
+    Serial.println("온라인 알림 전송 완료");
+  } else {
+    Serial.print("온라인 알림 실패(응답 확인 안 됨): ");
+    Serial.println(statusLine);
+  }
 }
 
 // ===== 녹음 → 스트리밍 업로드 → 응답 재생 (한 사이클) =====
@@ -545,9 +593,11 @@ bool recordUploadAndPlay(unsigned long recordWindowMs) {
       break;
     }
 
-    size_t bytesRead = i2s.readBytes((char *)streamBuf, STREAM_CHUNK_BYTES);
-    if (bytesRead > 0) {
-      writeChunk(client, streamBuf, bytesRead);
+    // RX가 STEREO로 열려있어(#337) 요청 바이트의 2배를 stereoBuf에 받아 왼쪽 채널만 뽑아 쓴다.
+    size_t stereoBytesRead = i2s.readBytes((char *)stereoBuf, STREAM_CHUNK_BYTES * 2);
+    if (stereoBytesRead > 0) {
+      size_t monoBytes = fromStereoInterleaved(stereoBuf, stereoBytesRead, streamBuf);
+      writeChunk(client, streamBuf, monoBytes);
     }
   }
   (void)stoppedEarly;
